@@ -1,7 +1,0 @@
-export { AdminConsole }     from './AdminConsole'
-export { UserManagement }   from './UserManagement'
-export { MarketManagement } from './MarketManagement'
-export { AuditLogs }        from './AuditLogs'
-export { RiskDashboard }    from './RiskDashboard'
-export { KYCReview }        from './KYCReview'
-export { SystemHealth }     from './SystemHealth'

@@ -1,102 +1,27 @@
-// Backend DTOs + normalization adapters — the canonical wire contract. Domain
-// types carry historical inconsistencies, so we pin one normalized shape here and
-// adapt DTO → domain in a single place. Live services receive DTOs and call these
-// adapters; the mock skips them (already in domain shape).
+// Backend DTO → domain adapters — the single translation point between the
+// engine's snake_case wire shapes and the app's camelCase domain types. Live
+// services receive DTOs and call these; the mock returns domain shapes directly.
 //
 // Wire conventions:
-//   • Scores / percentages are 0–100 ints (suffix `Pct`); internal ratios stay 0–1
-//   • Confidence ships BOTH a level and a 0–1 score
-//   • Money is explicit USD (`Usd`); cent prices are explicit (`Cents`)
-//   • Entity timestamps are ISO 8601 strings; time-series points use epoch ms
+//   • Entity timestamps are ISO 8601 strings → normalized to epoch ms here
+//   • Money is USD floats; percentages arrive as the backend sends them
 
-import type {
-  Market, AssetClass, BitcoinSegment, MarketStatus, SentimentBias,
-} from '@/types/market'
-import type {
-  ConsensusState, Bias, SignalLevel, ConfidenceLevel, VolatilityLevel, MarketStructure,
-} from '@/types/consensus'
-import { asMarketId } from '@/types/branded'
 import type {
   EngineHealthDTO, HealthComponentDTO, RuntimeComponentsDTO,
   EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
   EngineMarketsDTO, EnginePositionsDTO, EngineEventsDTO, EngineEdgesDTO,
+  EngineIdentityDTO, ExecutionStatusDTO, RateLimitBucketDTO,
   EngineHealth, HealthComponent, RuntimeComponents, EngineRuntime, EngineStats,
   EngineConfig, SurvivalStatus, PriceHistory,
   EngineMarkets, EnginePositions, EngineEvents, EngineEdges,
+  EngineIdentity, ExecutionStatus, RateLimitBucket,
   EngineHealthStatus, SurvivalState, EngineMode,
 } from '@/types/engine'
 
-// ─── Normalization primitives ──────────────────────────────────────────────────
-
-/** 0–1 ratio → 0–100 percent (wire). */
-export const scoreToPct = (score01: number): number => Math.round(score01 * 100)
-/** 0–100 percent (wire) → 0–1 ratio (domain). */
-export const pctToScore = (pct: number): number => pct / 100
-
-export function confidenceLevelFromScore(score01: number): ConfidenceLevel {
-  if (score01 >= 0.66) return 'high'
-  if (score01 >= 0.40) return 'medium'
-  return 'low'
-}
-export function confidenceScoreFromLevel(level: ConfidenceLevel): number {
-  return level === 'high' ? 0.85 : level === 'medium' ? 0.5 : 0.25
-}
+// ─── Time normalization ─────────────────────────────────────────────────────────
 
 export const isoToMs = (iso: string): number => new Date(iso).getTime()
 export const msToIso = (ms: number): string => new Date(ms).toISOString()
-
-// ─── Market DTO ────────────────────────────────────────────────────────────────
-
-export interface MarketDTO {
-  id:                 string
-  assetClass:         AssetClass
-  segment:            BitcoinSegment
-  title:              string
-  description:        string
-  probability:        number          // 0–1
-  yesPriceCents:      number          // 0–100
-  volume24hUsd:       number
-  volumeTotalUsd:     number
-  liquidityUsd:       number
-  openInterestUsd:    number
-  status:             MarketStatus
-  sentiment:          SentimentBias
-  closesAt:           string          // ISO 8601
-  createdAt:          string          // ISO 8601
-  updatedAt:          string          // ISO 8601
-  resolvedAt:         string | null   // ISO 8601 | null
-  resolutionCriteria: string
-  tags:               string[]
-}
-
-export function toMarket(dto: MarketDTO): Market {
-  const yesPrice = dto.yesPriceCents
-  return {
-    id:                 asMarketId(dto.id),
-    assetClass:         dto.assetClass,
-    segment:            dto.segment,
-    title:              dto.title,
-    question:           dto.title,            // domain alias
-    description:        dto.description,
-    probability:        dto.probability,
-    yesPrice,
-    noPrice:            100 - yesPrice,
-    volume:             dto.volume24hUsd,     // domain `volume` aliases 24h
-    volume24h:          dto.volume24hUsd,
-    volumeTotal:        dto.volumeTotalUsd,
-    liquidity:          dto.liquidityUsd,
-    openInterest:       dto.openInterestUsd,
-    status:             dto.status,
-    sentiment:          dto.sentiment,
-    resolutionDate:     dto.closesAt,         // domain alias of closesAt
-    closesAt:           dto.closesAt,
-    resolvedAt:         dto.resolvedAt,
-    resolutionCriteria: dto.resolutionCriteria,
-    tags:               dto.tags,
-    createdAt:          dto.createdAt,
-    updatedAt:          dto.updatedAt,
-  }
-}
 
 // ─── Engine shared helpers ────────────────────────────────────────────────────
 
@@ -243,13 +168,90 @@ export function toPriceHistory(dto: PriceHistoryDTO): PriceHistory {
   }
 }
 
-// ─── /api/markets ─────────────────────────────────────────────────────────────
+// ─── / (API root — identity) ──────────────────────────────────────────────────
+
+export function toEngineIdentity(dto: EngineIdentityDTO): EngineIdentity {
+  return {
+    status:        dto.status as EngineHealthStatus,
+    bot:           dto.bot,
+    version:       dto.version,
+    mode:          dto.runtime.mode as EngineMode,
+    initializedAt: isoToMs(dto.runtime.initialized_at),
+    components:    toRuntimeComponents(dto.runtime.components),
+  }
+}
+
+// ─── /api/execution/status ────────────────────────────────────────────────────
+
+function toRateLimitBucket(dto: RateLimitBucketDTO): RateLimitBucket {
+  return {
+    name:            dto.name,
+    ratePerSec:      dto.rate_per_sec,
+    capacity:        dto.capacity,
+    currentTokens:   dto.current_tokens,
+    totalRequests:   dto.total_requests,
+    totalWaits:      dto.total_waits,
+    waitRatePct:     dto.wait_rate_pct,
+    avgWaitMs:       dto.avg_wait_ms,
+    totalWaitTimeMs: dto.total_wait_time_ms,
+  }
+}
+
+export function toExecutionStatus(dto: ExecutionStatusDTO): ExecutionStatus {
+  const s = dto.status
+  return {
+    available:          dto.available,
+    mode:               dto.mode as EngineMode,
+    totalTrades:        s.total_trades,
+    wins:               s.wins,
+    losses:             s.losses,
+    winRate:            s.win_rate,
+    totalPnl:           s.total_pnl,
+    activePositions:    s.active_positions,
+    closedPositions:    s.closed_positions,
+    avgExecutionMs:     s.avg_execution_ms,
+    fastestTradeMs:     s.fastest_trade_ms,
+    slowestTradeMs:     s.slowest_trade_ms,
+    balance:            s.balance,
+    balanceCacheAgeSec: s.balance_cache_age_sec,
+    retryStats: {
+      totalRetries:       s.retry_stats.total_retries,
+      successfulRetries:  s.retry_stats.successful_retries,
+      failedAfterRetries: s.retry_stats.failed_after_retries,
+      networkErrors:      s.retry_stats.network_errors,
+      balanceErrors:      s.retry_stats.balance_errors,
+      invalidOrderErrors: s.retry_stats.invalid_order_errors,
+    },
+    rateLimitBuckets: {
+      market: toRateLimitBucket(s.rate_limiting.buckets.market),
+      price:  toRateLimitBucket(s.rate_limiting.buckets.price),
+      order:  toRateLimitBucket(s.rate_limiting.buckets.order),
+    },
+    backoff: {
+      active:         s.rate_limiting.backoff.active,
+      until:          s.rate_limiting.backoff.until === null ? null : isoToMs(s.rate_limiting.backoff.until),
+      durationMs:     s.rate_limiting.backoff.duration_ms,
+      total429s:      s.rate_limiting.backoff.total_429s,
+      recent429s5min: s.rate_limiting.backoff.recent_429s_5min,
+    },
+    resolutionStats: {
+      totalResolved:    s.resolution_stats.total_resolved,
+      wins:             s.resolution_stats.wins,
+      losses:           s.resolution_stats.losses,
+      autoClosed:       s.resolution_stats.auto_closed,
+      resolutionErrors: s.resolution_stats.resolution_errors,
+      trackedPositions: s.resolution_stats.tracked_positions,
+      isRunning:        s.resolution_stats.is_running,
+    },
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+// ─── Collection envelopes (items stay unknown[] until schemas are confirmed) ───
 
 export function toEngineMarkets(dto: EngineMarketsDTO): EngineMarkets {
   return { markets: dto.markets, count: dto.count, timestamp: isoToMs(dto.timestamp) }
 }
-
-// ─── /api/positions ───────────────────────────────────────────────────────────
 
 export function toEnginePositions(dto: EnginePositionsDTO): EnginePositions {
   return {
@@ -260,54 +262,10 @@ export function toEnginePositions(dto: EnginePositionsDTO): EnginePositions {
   }
 }
 
-// ─── /api/events ──────────────────────────────────────────────────────────────
-
 export function toEngineEvents(dto: EngineEventsDTO): EngineEvents {
   return { events: dto.events, count: dto.count, limit: dto.limit, types: dto.types, timestamp: isoToMs(dto.timestamp) }
 }
 
-// ─── /api/edges ───────────────────────────────────────────────────────────────
-
 export function toEngineEdges(dto: EngineEdgesDTO): EngineEdges {
   return { edges: dto.edges, count: dto.count, limit: dto.limit, timestamp: isoToMs(dto.timestamp) }
-}
-
-// ─── Consensus DTO ───────────────────────────────────────────────────────────────
-
-export interface ConsensusDTO {
-  marketId:                     string
-  consensusScorePct:            number          // 0–100 (canonical wire scale)
-  bias:                         Bias
-  institutionalBias:            Bias
-  retailBias:                   Bias
-  signalStrength:               SignalLevel
-  confidenceLevel:              ConfidenceLevel
-  confidenceScore:              number          // 0–1
-  trendStrengthPct:             number          // 0–100
-  volatility:                   VolatilityLevel
-  marketStructure:              MarketStructure
-  institutionalParticipationPct: number         // 0–100
-  consensusVelocity:            number          // -1..1
-  updatedAt:                    string          // ISO 8601
-}
-
-export function toConsensusState(dto: ConsensusDTO): ConsensusState {
-  const instPart = pctToScore(dto.institutionalParticipationPct)
-  return {
-    marketId:                   asMarketId(dto.marketId),
-    score:                      pctToScore(dto.consensusScorePct),
-    bias:                       dto.bias,
-    institutionalBias:          dto.institutionalBias,
-    retailBias:                 dto.retailBias,
-    signalStrength:             dto.signalStrength,
-    confidence:                 dto.confidenceLevel,
-    trendStrength:              pctToScore(dto.trendStrengthPct),
-    volatilityRating:           dto.volatility,
-    predictionConfidence:       dto.confidenceScore,
-    marketStructure:            dto.marketStructure,
-    institutionalParticipation: instPart,
-    retailParticipation:        1 - instPart,
-    consensusVelocity:          dto.consensusVelocity,
-    updatedAt:                  dto.updatedAt,
-  }
 }

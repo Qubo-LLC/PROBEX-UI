@@ -1,11 +1,7 @@
-import type { Metadata } from 'next'
-import { WatchlistView }  from '@/components/watchlist/WatchlistView'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = {
-  title: 'Watchlist — Probex',
-  description: 'Markets you are watching closely.',
-}
-
-export default function WatchlistPage() {
-  return <WatchlistView />
+// Legacy route — watchlists have no backend and no meaning for 5-minute
+// markets (PROBEX_PRODUCT_SPEC.md §7 P4-05). Removed entirely in M5.
+export default function LegacyWatchlistPage() {
+  redirect('/dashboard')
 }

@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import { PositionsView } from '@/components/positions/PositionsView'
+import { PositionsConsole } from '@/components/positions/PositionsConsole'
 
 export const metadata: Metadata = {
   title: 'Positions',
-  description: 'Your open and settled prediction market positions with consensus alignment.',
+  description: 'Capital currently deployed by the engine, and resolution outcomes.',
 }
 
 export default function PositionsPage() {
-  return <PositionsView />
+  return <PositionsConsole />
 }

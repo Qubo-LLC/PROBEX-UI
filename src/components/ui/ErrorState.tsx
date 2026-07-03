@@ -48,7 +48,7 @@ export function ErrorState({
       {/* Icon */}
       <div
         className="w-16 h-16 rounded-2xl flex items-center justify-center"
-        style={{ background: 'var(--probex-negative-dim)', border: '1px solid rgba(239,68,68,0.22)' }}
+        style={{ background: 'var(--probex-negative-dim)', border: '1px solid var(--probex-negative-border)' }}
         aria-hidden="true"
       >
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--probex-negative)' }}>
@@ -60,7 +60,7 @@ export function ErrorState({
         <h1 className="text-xl font-bold" style={{ color: 'var(--probex-text-primary)' }}>{title}</h1>
         <p className="text-sm" style={{ color: 'var(--probex-text-muted)' }}>{description}</p>
         {detail && (
-          <p className="text-2xs font-data mt-1 px-2 py-1 rounded inline-block mx-auto" style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--probex-text-disabled)' }}>
+          <p className="text-2xs font-data mt-1 px-2 py-1 rounded inline-block mx-auto" style={{ background: 'var(--probex-surface-2)', color: 'var(--probex-text-disabled)' }}>
             {detail}
           </p>
         )}

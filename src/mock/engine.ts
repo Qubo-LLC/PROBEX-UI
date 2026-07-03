@@ -6,6 +6,7 @@ import type {
   EngineHealth, EngineRuntime, EngineStats, EngineConfig,
   SurvivalStatus, PriceHistory,
   EngineMarkets, EnginePositions, EngineEvents, EngineEdges,
+  EngineIdentity, ExecutionStatus, RateLimitBucket,
 } from '@/types/engine'
 
 const NOW = Date.now()
@@ -112,6 +113,54 @@ export const MOCK_PRICE_HISTORY: PriceHistory = (() => {
   }))
   return { current: history[history.length - 1]!.price, history, timestamp: NOW }
 })()
+
+export const MOCK_ENGINE_IDENTITY: EngineIdentity = {
+  status:        'online',
+  bot:           'BTC 5-Minute Trading Bot',
+  version:       '1.0.0',
+  mode:          'paper',
+  initializedAt: NOW - UPTIME_MS,
+  components:    MOCK_COMPONENTS,
+}
+
+const mockBucket = (name: string, ratePerSec: number, capacity: number): RateLimitBucket => ({
+  name, ratePerSec, capacity,
+  currentTokens: capacity,
+  totalRequests: 0, totalWaits: 0, waitRatePct: 0, avgWaitMs: 0, totalWaitTimeMs: 0,
+})
+
+// Mirrors the 2026-07-02 /api/execution/status capture: fresh paper session, no trades.
+export const MOCK_EXECUTION_STATUS: ExecutionStatus = {
+  available:          true,
+  mode:               'paper',
+  totalTrades:        0,
+  wins:               0,
+  losses:             0,
+  winRate:            0,
+  totalPnl:           0,
+  activePositions:    0,
+  closedPositions:    0,
+  avgExecutionMs:     0,
+  fastestTradeMs:     0,
+  slowestTradeMs:     0,
+  balance:            100,
+  balanceCacheAgeSec: 0,
+  retryStats: {
+    totalRetries: 0, successfulRetries: 0, failedAfterRetries: 0,
+    networkErrors: 0, balanceErrors: 0, invalidOrderErrors: 0,
+  },
+  rateLimitBuckets: {
+    market: mockBucket('market_fetch', 1 / 6, 5),
+    price:  mockBucket('price_fetch',  1,     10),
+    order:  mockBucket('order_submit', 0.5,   5),
+  },
+  backoff: { active: false, until: null, durationMs: 1_000, total429s: 0, recent429s5min: 0 },
+  resolutionStats: {
+    totalResolved: 0, wins: 0, losses: 0, autoClosed: 0,
+    resolutionErrors: 0, trackedPositions: 0, isRunning: true,
+  },
+  timestamp: NOW,
+}
 
 // Empty-array mocks mirror the Postman samples — the engine has no active data yet.
 export const MOCK_ENGINE_MARKETS: EngineMarkets   = { markets: [],   count: 0, timestamp: NOW }

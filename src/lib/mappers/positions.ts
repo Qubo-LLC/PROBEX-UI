@@ -14,8 +14,7 @@
 //   usePositions() will pick up automatically
 
 import type { EnginePositions } from '@/types/engine'
-import type { Position }        from '@/types/wallet'
-import type { PositionId, MarketId, OrderId } from '@/types/branded'
+import { parseItems, isRecord, str, num, type ParseResult } from './parse'
 
 // ─── Required wire schema (DTO) ───────────────────────────────────────────────
 // THIS IS THE BACKEND CONTRACT.
@@ -88,35 +87,6 @@ export interface EnginePositionsResponseDTO {
   timestamp:            string   // ISO 8601
 }
 
-// ─── Mapper (ready to activate) ───────────────────────────────────────────────
-
-/** Convert a single wire DTO to the frontend Position domain type. */
-export function toPosition(dto: EnginePositionItemDTO): Position {
-  return {
-    id:               dto.id           as PositionId,
-    marketId:         dto.market_id    as MarketId,
-    marketTitle:      dto.market_title,
-    segment:          dto.segment,
-    side:             dto.side         as Position['side'],
-    contracts:        dto.contracts,
-    entryPrice:       dto.entry_price,
-    currentPrice:     dto.current_price,
-    costBasis:        dto.cost_basis,
-    currentValue:     dto.current_value,
-    unrealizedPnl:    dto.unrealized_pnl,
-    unrealizedPnlPct: dto.unrealized_pnl_pct,
-    status:           dto.status       as Position['status'],
-    openedAt:         dto.opened_at,
-    closedAt:         dto.closed_at,
-    orderId:          dto.order_id     as OrderId,
-  }
-}
-
-/** Convert a populated positions envelope to a Position[]. */
-export function toPositions(p: EnginePositions): Position[] {
-  return (p.positions as EnginePositionItemDTO[]).map(toPosition)
-}
-
 // ─── Envelope-only helpers (available today) ─────────────────────────────────
 
 /** Aggregate summary available from the positions envelope even when items are []. */
@@ -130,4 +100,40 @@ export function toPositionsSummary(p: EnginePositions): PositionsSummary {
     count:              p.count,
     totalUnrealizedPnl: p.totalUnrealizedPnl,
   }
+}
+
+// ─── Cockpit row parsing (M4) ─────────────────────────────────────────────────
+
+export interface PositionRow {
+  id:               string
+  marketTitle:      string | null
+  side:             string
+  contracts:        number | null
+  entryPrice:       number | null   // cents
+  currentPrice:     number | null   // cents
+  costBasis:        number | null   // USD
+  currentValue:     number | null   // USD
+  unrealizedPnl:    number | null   // USD, signed
+  unrealizedPnlPct: number | null   // signed fraction
+  openedAt:         number | null   // epoch ms
+}
+
+function isPositionItem(x: unknown): x is Record<string, unknown> {
+  return isRecord(x) && str(x.id) && str(x.side)
+}
+
+export function parsePositionRows(p: EnginePositions): ParseResult<PositionRow> {
+  return parseItems(p.positions, isPositionItem, (dto) => ({
+    id:               dto.id as string,
+    marketTitle:      str(dto.market_title) ? dto.market_title : null,
+    side:             dto.side as string,
+    contracts:        num(dto.contracts) ? dto.contracts : null,
+    entryPrice:       num(dto.entry_price) ? dto.entry_price : null,
+    currentPrice:     num(dto.current_price) ? dto.current_price : null,
+    costBasis:        num(dto.cost_basis) ? dto.cost_basis : null,
+    currentValue:     num(dto.current_value) ? dto.current_value : null,
+    unrealizedPnl:    num(dto.unrealized_pnl) ? dto.unrealized_pnl : null,
+    unrealizedPnlPct: num(dto.unrealized_pnl_pct) ? dto.unrealized_pnl_pct : null,
+    openedAt:         str(dto.opened_at) ? new Date(dto.opened_at).getTime() : null,
+  }))
 }

@@ -1,16 +1,15 @@
 import type { Metadata } from 'next'
-import { DashboardOverview } from '@/components/dashboard/DashboardOverview'
+import { CommandCenter } from '@/components/overview/CommandCenter'
 
 export const metadata: Metadata = {
   title: 'Overview',
-  description: 'Real-time Bitcoin prediction intelligence. Consensus-driven market discovery.',
+  description: 'PROBEX Quant Engine command center — live engine vitals, capital, and health.',
 }
 
 /**
- * Dashboard Overview page — /dashboard
- * Kalshi-style market discovery experience.
- * No hero bloat — immediate market value.
+ * Overview page — /dashboard
+ * Command center for the Quant Engine operator (PROBEX_PRODUCT_SPEC.md §4).
  */
 export default function DashboardPage() {
-  return <DashboardOverview />
+  return <CommandCenter />
 }

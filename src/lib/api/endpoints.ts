@@ -48,7 +48,8 @@ export const ENDPOINTS = {
     // NOTE: /health is at the host root, NOT under the /api base prefix.
     // Use apiGetHost() from lib/api/client instead of the normal apiGet().
     health:           def('GET',  '/health',    'confirmed', 'Engine health probe',             'Health'),
-    apiRoot:          def('GET',  null,         'placeholder', 'API root / info',               'Api Root'),
+    // NOTE: also at the host root (outside /api) — use apiGetHost().
+    apiRoot:          def('GET',  '/',          'confirmed', 'Engine identity (bot/version/mode)', 'Api Root'),
     stats:            def('GET',  '/stats',     'confirmed', 'Dashboard / analytics stats',     'Stats'),
     updateStats:      def('POST', null,         'placeholder', 'Engine stats write',            'Update Stats'),
     runtime:          def('GET',  '/runtime',   'confirmed', 'Engine runtime status',           'Engine Runtime'),

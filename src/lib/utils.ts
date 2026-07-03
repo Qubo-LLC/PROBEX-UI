@@ -28,6 +28,16 @@ export function formatCurrency(
   return new Intl.NumberFormat('en-US', compact ? COMPACT_CURRENCY_FORMAT : CURRENCY_FORMAT).format(value)
 }
 
+/**
+ * Format a signed USD amount for P&L display (institutional convention):
+ * gains are explicitly marked, zero stays neutral.
+ * e.g. 3.15 → "+$3.15" · -1.2 → "-$1.20" · 0 → "$0.00"
+ */
+export function formatSignedCurrency(value: number, compact = false): string {
+  const sign = value > 0 ? '+' : ''
+  return `${sign}${formatCurrency(value, compact)}`
+}
+
 /** Format a probability (0–1) as a percentage string. */
 export function formatProbability(value: number, decimals = 0): string {
   return `${(value * 100).toFixed(decimals)}%`

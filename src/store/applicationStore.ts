@@ -20,6 +20,8 @@ import type {
   EnginePositions,
   EngineEvents,
   EngineEdges,
+  EngineIdentity,
+  ExecutionStatus,
 } from '@/types/engine'
 
 // ─── Per-endpoint state map ───────────────────────────────────────────────────
@@ -35,6 +37,8 @@ export interface EngineEndpoints {
   positions:    ServiceState<EnginePositions>
   events:       ServiceState<EngineEvents>
   edges:        ServiceState<EngineEdges>
+  identity:        ServiceState<EngineIdentity>
+  executionStatus: ServiceState<ExecutionStatus>
 }
 
 // ─── Store shape ─────────────────────────────────────────────────────────────
@@ -61,6 +65,8 @@ const initialEndpoints: EngineEndpoints = {
   positions:    loadingState<EnginePositions>(),
   events:       loadingState<EngineEvents>(),
   edges:        loadingState<EngineEdges>(),
+  identity:        loadingState<EngineIdentity>(),
+  executionStatus: loadingState<ExecutionStatus>(),
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────

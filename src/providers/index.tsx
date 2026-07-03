@@ -3,16 +3,17 @@
 /**
  * AppProviders
  *
- * Provider composition root. Updated to include RealtimeProvider.
- * Order matters: StoreProvider must come before RealtimeProvider so liveStore
- * is available when the stream client boots.
+ * Provider composition root.
+ *
+ * RealtimeProvider (the simulated WebSocket stream) was unmounted in M4 —
+ * live data flows through ApplicationStateLoader polling instead
+ * (PROBEX_PRODUCT_SPEC.md §5). The mock stream files are deleted in M5;
+ * a real WebSocket client returns at this mount point with P1-04.
  */
 
 import type { ReactNode } from 'react'
 import { ThemeProvider } from './ThemeProvider'
-import { QueryProvider } from './QueryProvider'
 import { StoreProvider } from './StoreProvider'
-import { RealtimeProvider } from './RealtimeProvider'
 import { TooltipProvider } from '@/components/ui/Tooltip'
 
 interface AppProvidersProps {
@@ -23,21 +24,15 @@ interface AppProvidersProps {
 export function AppProviders({ children, initialTheme }: AppProvidersProps) {
   return (
     <ThemeProvider initialTheme={initialTheme}>
-      <QueryProvider>
-        <StoreProvider>
-          <RealtimeProvider>
-            <TooltipProvider delayDuration={250} skipDelayDuration={300}>
-              {children}
-            </TooltipProvider>
-          </RealtimeProvider>
-        </StoreProvider>
-      </QueryProvider>
+      <StoreProvider>
+        <TooltipProvider delayDuration={250} skipDelayDuration={300}>
+          {children}
+        </TooltipProvider>
+      </StoreProvider>
     </ThemeProvider>
   )
 }
 
 // Named exports
-export { QueryProvider }   from './QueryProvider'
 export { ThemeProvider }   from './ThemeProvider'
 export { StoreProvider }   from './StoreProvider'
-export { RealtimeProvider } from './RealtimeProvider'

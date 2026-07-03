@@ -3,8 +3,7 @@
 import type { ReactNode } from 'react'
 import { Sidebar }       from './Sidebar'
 import { TopNavigation } from './TopNavigation'
-import { ActivityDrawer } from './ActivityDrawer'
-import { CommandPalette }        from '@/components/command/CommandPalette'
+import { AuthGate }               from '@/components/providers/AuthGate'
 import { ApplicationStateLoader } from '@/components/providers/ApplicationStateLoader'
 import { cn }            from '@/lib/utils'
 import { useMobileOpen, useSidebarStore } from '@/store/sidebarStore'
@@ -21,6 +20,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const closeMobile  = useSidebarStore((s) => s.closeMobile)
 
   return (
+    <AuthGate>
     <div
       className="flex flex-col h-screen overflow-hidden"
       style={{ background: 'var(--probex-bg)' }}
@@ -102,12 +102,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         Skip to content
       </a>
 
-      {/* ── Global overlays (mounted once) ────────────────────────────── */}
-      <CommandPalette />
-      <ActivityDrawer />
       {/* ApplicationStateLoader fetches all engine endpoints once and writes
           to the ApplicationStore — no rendering, no HTTP duplication. */}
       <ApplicationStateLoader />
     </div>
+    </AuthGate>
   )
 }

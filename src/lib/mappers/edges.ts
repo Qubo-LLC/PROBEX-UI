@@ -18,6 +18,7 @@
 //   useMarketStream() merges edge data into MergedMarketView per market
 
 import type { EngineEdges } from '@/types/engine'
+import { parseItems, isRecord, str, num, type ParseResult } from './parse'
 
 // ─── Required wire schema (DTO) ───────────────────────────────────────────────
 // THIS IS THE BACKEND CONTRACT.
@@ -80,52 +81,6 @@ export interface EngineEdgesResponseDTO {
   timestamp: string   // ISO 8601
 }
 
-// ─── View model ───────────────────────────────────────────────────────────────
-
-/**
- * Slim edge view keyed by market_id — ready to merge into MergedMarketView.
- * The LiveMarketsView sorts and renders based on these fields.
- */
-export interface EdgeViewModel {
-  marketId:       string
-  direction:      'yes' | 'no'
-  edge:           number
-  kellySizes:     number
-  confidence:     number
-  signal:         string
-  recommendation: 'strong_buy_yes' | 'buy_yes' | 'hold' | 'buy_no' | 'strong_buy_no'
-  detectedAt:     number   // epoch ms
-  expiresAt:      number | null
-}
-
-// ─── Mappers (ready to activate) ─────────────────────────────────────────────
-
-export function toEdgeViewModel(dto: EngineEdgeItemDTO): EdgeViewModel {
-  return {
-    marketId:       dto.market_id,
-    direction:      dto.direction       as EdgeViewModel['direction'],
-    edge:           dto.edge,
-    kellySizes:     dto.kelly_size,
-    confidence:     dto.confidence,
-    signal:         dto.signal,
-    recommendation: dto.recommendation  as EdgeViewModel['recommendation'],
-    detectedAt:     new Date(dto.detected_at).getTime(),
-    expiresAt:      dto.expires_at ? new Date(dto.expires_at).getTime() : null,
-  }
-}
-
-/**
- * Convert a populated edges envelope to a Map<marketId, EdgeViewModel>.
- * Keyed by market_id for O(1) lookup in the market stream merge layer.
- */
-export function toEdgeMap(e: EngineEdges): Map<string, EdgeViewModel> {
-  const map = new Map<string, EdgeViewModel>()
-  for (const raw of e.edges as EngineEdgeItemDTO[]) {
-    map.set(raw.market_id, toEdgeViewModel(raw))
-  }
-  return map
-}
-
 // ─── Envelope-only helpers (available today) ─────────────────────────────────
 
 export interface EdgesSummary {
@@ -135,4 +90,39 @@ export interface EdgesSummary {
 
 export function toEdgesSummary(e: EngineEdges): EdgesSummary {
   return { count: e.count, limit: e.limit }
+}
+
+// ─── Cockpit row parsing (M4) ─────────────────────────────────────────────────
+// Guards the minimal fields the Strategy / Live Feed edge tables render.
+// Optional fields degrade gracefully; a non-matching shape yields
+// { kind: 'unrecognized' } and the console says so (never guesses).
+
+export interface EdgeRow {
+  id:              string
+  marketTitle:     string | null
+  direction:       string
+  edgePct:         number          // edge as % (0.08 → 8.0)
+  kellySize:       number | null   // fraction of bankroll
+  confidence:      number | null   // 0–1
+  signal:          string | null
+  recommendation:  string | null
+  detectedAt:      number | null   // epoch ms
+}
+
+function isEdgeItem(x: unknown): x is Record<string, unknown> {
+  return isRecord(x) && str(x.id) && str(x.direction) && num(x.edge)
+}
+
+export function parseEdgeRows(e: EngineEdges): ParseResult<EdgeRow> {
+  return parseItems(e.edges, isEdgeItem, (dto) => ({
+    id:             dto.id as string,
+    marketTitle:    str(dto.market_title) ? dto.market_title : null,
+    direction:      dto.direction as string,
+    edgePct:        (dto.edge as number) * 100,
+    kellySize:      num(dto.kelly_size) ? dto.kelly_size : null,
+    confidence:     num(dto.confidence) ? dto.confidence : null,
+    signal:         str(dto.signal) ? dto.signal : null,
+    recommendation: str(dto.recommendation) ? dto.recommendation : null,
+    detectedAt:     str(dto.detected_at) ? new Date(dto.detected_at).getTime() : null,
+  }))
 }

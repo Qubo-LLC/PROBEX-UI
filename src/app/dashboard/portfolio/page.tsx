@@ -1,19 +1,7 @@
-import type { Metadata } from 'next'
-import { PortfolioPage } from '@/components/portfolio/PortfolioPage'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = {
-  title:       'Portfolio — Probex',
-  description: 'Track positions, performance, exposure, and Consensus Engine alignment.',
-}
-
-/**
- * Portfolio page — /dashboard/portfolio
- * Full portfolio experience with positions, performance charts,
- * allocation breakdowns, and Consensus Engine accuracy tracking.
- *
- * All data is sourced from mock/positions.ts, mock/portfolio.ts, and
- * mock/performance.ts. replace with IPortfolioService.
- */
-export default function Page() {
-  return <PortfolioPage />
+// Legacy route — the capital story lives on Overview and Survival
+// (PROBEX_PRODUCT_SPEC.md §3). Removed entirely in M5.
+export default function LegacyPortfolioPage() {
+  redirect('/dashboard')
 }

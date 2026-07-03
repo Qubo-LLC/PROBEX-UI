@@ -29,7 +29,21 @@
       "Bash(node -e \"const ax=require\\('axios'\\); const c=ax.create\\({baseURL:'http://136.171.119.6:8000/api'}\\); console.log\\('execution/status =>', c.getUri\\({url:'/execution/status'}\\)\\); console.log\\('with params     =>', c.getUri\\({url:'/execution/status', params:{a:1,b:'x y'}}\\)\\);\")",
       "Bash(grep -rnE \"\\\\bfetch\\\\\\(|axios|apiClient|apiGet|apiPost\" src/hooks)",
       "Bash(grep -rnE \"from '@/lib/services'|from '@/store/|from '@/mock/|from '@/lib/realtime\" src/hooks)",
-      "PowerShell(cd C:\\\\Dev\\\\QUBO\\\\PROBEX; npm run type-check 2>&1; Write-Host \"EXIT:$LASTEXITCODE\")"
+      "PowerShell(cd C:\\\\Dev\\\\QUBO\\\\PROBEX; npm run type-check 2>&1; Write-Host \"EXIT:$LASTEXITCODE\")",
+      "PowerShell(npx tsc --noEmit 2>&1)",
+      "PowerShell(npm run build)",
+      "PowerShell(npm run build 2>&1)",
+      "PowerShell(Remove-Item \"src\\\\components\\\\overview\\\\TargetProgress.tsx\" -Confirm:$false)",
+      "PowerShell(Remove-Item \"src\\\\components\\\\dev\\\\DevModeIndicator.tsx\" -Confirm:$false)",
+      "PowerShell(Move-Item \"src\\\\components\\\\overview\\\\PriceCard.tsx\" \"src\\\\components\\\\shared\\\\PriceCard.tsx\")",
+      "PowerShell(Remove-Item \"src\\\\components\\\\dev\\\\EngineChainProbe.tsx\" -Confirm:$false)",
+      "PowerShell(Remove-Item \"src\\\\components\\\\dev\" -Recurse -Force -Confirm:$false)",
+      "Bash(git checkout *)",
+      "Bash(echo \"=== typecheck exit: $? ===\")",
+      "Bash(rm -f \\\\ *)",
+      "Bash(echo \"=== exit: $? ===\")",
+      "Bash(git ls-tree *)",
+      "Bash(awk -F/ '{print $3}')"
     ]
   }
 }

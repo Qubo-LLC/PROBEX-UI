@@ -1,12 +1,7 @@
-import type { Metadata } from 'next'
-import { ResearchOverview } from '@/components/research'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = {
-  title: 'Research | Probex',
-  description:
-    'Intelligence reports, deep dives, and market analysis from the Probex Consensus Engine team.',
-}
-
-export default function ResearchPage() {
-  return <ResearchOverview />
+// Legacy route — research is a FUTURE capability (LLM trade rationale, P4).
+// Removed entirely in M5.
+export default function LegacyResearchPage() {
+  redirect('/dashboard')
 }

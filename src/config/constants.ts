@@ -1,4 +1,4 @@
-import type { AssetClass } from '@/types'
+import type { AssetClass } from '@/types/market'
 
 /**
  * Application-wide constants
@@ -105,18 +105,25 @@ export const ROUTES = {
   RESET_PASSWORD:  '/auth/reset-password',
   VERIFY:          '/auth/verify',
 
-  // Dashboard
+  // Cockpit (PROBEX_PRODUCT_SPEC.md §3)
   HOME:       '/dashboard',
-  MARKETS:    '/dashboard/markets',
   LIVE:       '/dashboard/live',
-  PORTFOLIO:  '/dashboard/portfolio',
+  STRATEGY:   '/dashboard/strategy',
   POSITIONS:  '/dashboard/positions',
+  EXECUTION:  '/dashboard/execution',
+  SURVIVAL:   '/dashboard/survival',
+  EVENTS:     '/dashboard/events',
+  SYSTEM:     '/dashboard/system',
+  SETTINGS:   '/dashboard/settings',
+
+  // Legacy (routes 302 to cockpit homes; removed in M5)
+  MARKETS:    '/dashboard/markets',
+  PORTFOLIO:  '/dashboard/portfolio',
   WATCHLIST:  '/dashboard/watchlist',
   WALLET:     '/dashboard/wallet',
   RESEARCH:   '/dashboard/research',
   ANALYTICS:  '/dashboard/analytics',
   CONSENSUS:  '/dashboard/consensus',
-  SETTINGS:   '/dashboard/settings',
   ADMIN:      '/dashboard/admin',
 } as const
 

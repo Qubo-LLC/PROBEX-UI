@@ -9,6 +9,18 @@
 @tailwind utilities;
 
 /* ─────────────────────────────────────────────────────────────────────────
+   DERIVED TONE TOKENS
+   Border-strength variants of the semantic tone colors. Defined once via
+   color-mix over the per-theme base vars, so they adapt automatically to
+   all five themes (M6 — replaces hardcoded rgba literals in components).
+───────────────────────────────────────────────────────────────────────── */
+:root {
+  --probex-positive-border: color-mix(in srgb, var(--probex-positive) 25%, transparent);
+  --probex-negative-border: color-mix(in srgb, var(--probex-negative) 28%, transparent);
+  --probex-warning-border:  color-mix(in srgb, var(--probex-warning) 30%, transparent);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    BASE RESETS
 ───────────────────────────────────────────────────────────────────────── */
 @layer base {

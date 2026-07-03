@@ -14,8 +14,7 @@
 //   useMarkets() / useMarketStream() will pick up automatically
 
 import type { EngineMarkets }  from '@/types/engine'
-import type { Market }         from '@/types/market'
-import type { MarketId }       from '@/types/branded'
+import { parseItems, isRecord, str, num, type ParseResult } from './parse'
 
 // ─── Required wire schema (DTO) ───────────────────────────────────────────────
 // THIS IS THE BACKEND CONTRACT.
@@ -107,45 +106,39 @@ export interface EngineMarketsResponseDTO {
   timestamp: string          // ISO 8601
 }
 
-// ─── Mapper (ready to activate) ───────────────────────────────────────────────
-
-/** Convert a single wire DTO to the frontend Market domain type. */
-export function toMarket(dto: EngineMarketItemDTO): Market {
-  return {
-    id:                 dto.id              as MarketId,
-    assetClass:         dto.asset_class     as Market['assetClass'],
-    segment:            dto.segment         as Market['segment'],
-    title:              dto.title,
-    question:           dto.title,          // alias
-    description:        dto.description,
-    probability:        dto.probability,
-    yesPrice:           dto.yes_price,
-    noPrice:            dto.no_price,
-    volume:             dto.volume_24h,
-    volume24h:          dto.volume_24h,
-    volumeTotal:        dto.volume_total,
-    liquidity:          dto.liquidity,
-    openInterest:       dto.open_interest,
-    status:             dto.status          as Market['status'],
-    sentiment:          dto.sentiment       as Market['sentiment'],
-    resolutionDate:     dto.closes_at,
-    closesAt:           dto.closes_at,
-    resolvedAt:         dto.resolved_at,
-    resolutionCriteria: dto.resolution_criteria,
-    tags:               dto.tags,
-    createdAt:          dto.created_at,
-    updatedAt:          dto.updated_at,
-  }
-}
-
-/** Convert a populated markets envelope to a Market[]. */
-export function toMarkets(m: EngineMarkets): Market[] {
-  return (m.markets as EngineMarketItemDTO[]).map(toMarket)
-}
-
 // ─── Envelope-only helpers (available today) ─────────────────────────────────
 
 /** Returns the raw market count from the envelope (works even when items are []). */
 export function engineMarketsCount(m: EngineMarkets): number {
   return m.count
+}
+
+// ─── Cockpit row parsing (M4) ─────────────────────────────────────────────────
+// Minimal guard: the Polymarket 5-minute market serialization is unconfirmed;
+// require only an id and a title-like field, degrade everything else.
+
+export interface MarketRow {
+  id:          string
+  title:       string
+  probability: number | null   // 0–1 YES probability
+  yesPrice:    number | null   // cents
+  noPrice:     number | null   // cents
+  closesAt:    number | null   // epoch ms
+  status:      string | null
+}
+
+function isMarketItem(x: unknown): x is Record<string, unknown> {
+  return isRecord(x) && str(x.id) && (str(x.title) || str(x.question))
+}
+
+export function parseMarketRows(m: EngineMarkets): ParseResult<MarketRow> {
+  return parseItems(m.markets, isMarketItem, (dto) => ({
+    id:          dto.id as string,
+    title:       str(dto.title) ? dto.title : (dto.question as string),
+    probability: num(dto.probability) ? dto.probability : null,
+    yesPrice:    num(dto.yes_price) ? dto.yes_price : null,
+    noPrice:     num(dto.no_price) ? dto.no_price : null,
+    closesAt:    str(dto.closes_at) ? new Date(dto.closes_at).getTime() : null,
+    status:      str(dto.status) ? dto.status : null,
+  }))
 }

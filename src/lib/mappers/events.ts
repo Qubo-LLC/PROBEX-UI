@@ -14,8 +14,7 @@
 //   useActivity() will pick up automatically
 
 import type { EngineEvents } from '@/types/engine'
-import type { ActivityItem } from '@/types/activity'
-import type { MarketId }     from '@/types/branded'
+import { parseItems, isRecord, str, num, type ParseResult } from './parse'
 
 // ─── Required wire schema (DTO) ───────────────────────────────────────────────
 // THIS IS THE BACKEND CONTRACT.
@@ -77,29 +76,6 @@ export interface EngineEventsResponseDTO {
   timestamp: string          // ISO 8601
 }
 
-// ─── Mapper (ready to activate) ───────────────────────────────────────────────
-
-/** Convert a single wire DTO to the frontend ActivityItem domain type. */
-export function toActivityItem(dto: EngineEventItemDTO): ActivityItem {
-  return {
-    id:          dto.id,
-    type:        dto.type        as ActivityItem['type'],
-    marketId:    dto.market_id   as MarketId,
-    marketTitle: dto.market_title,
-    segment:     dto.segment,
-    description: dto.description,
-    // exactOptionalPropertyTypes: spread omits the key entirely when value is null
-    ...(dto.amount      !== null && { amount:      dto.amount }),
-    ...(dto.probability !== null && { probability: dto.probability }),
-    timestamp:   new Date(dto.timestamp).getTime(),
-  }
-}
-
-/** Convert a populated events envelope to an ActivityItem[]. */
-export function toActivityItems(e: EngineEvents): ActivityItem[] {
-  return (e.events as EngineEventItemDTO[]).map(toActivityItem)
-}
-
 // ─── Envelope-only helpers (available today) ─────────────────────────────────
 
 /** Summary available from the events envelope even when items are []. */
@@ -111,4 +87,32 @@ export interface EventsSummary {
 
 export function toEventsSummary(e: EngineEvents): EventsSummary {
   return { count: e.count, types: e.types, limit: e.limit }
+}
+
+// ─── Cockpit row parsing (M4) ─────────────────────────────────────────────────
+
+export interface EventRow {
+  id:          string
+  type:        string
+  description: string
+  marketTitle: string | null
+  amount:      number | null   // USD, when the event is financial
+  probability: number | null   // 0–1, when the event carries one
+  timestamp:   number | null   // epoch ms
+}
+
+function isEventItem(x: unknown): x is Record<string, unknown> {
+  return isRecord(x) && str(x.id) && str(x.type)
+}
+
+export function parseEventRows(e: EngineEvents): ParseResult<EventRow> {
+  return parseItems(e.events, isEventItem, (dto) => ({
+    id:          dto.id as string,
+    type:        dto.type as string,
+    description: str(dto.description) ? dto.description : (dto.type as string),
+    marketTitle: str(dto.market_title) ? dto.market_title : null,
+    amount:      num(dto.amount) ? dto.amount : null,
+    probability: num(dto.probability) ? dto.probability : null,
+    timestamp:   str(dto.timestamp) ? new Date(dto.timestamp).getTime() : null,
+  }))
 }

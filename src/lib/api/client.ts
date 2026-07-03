@@ -46,8 +46,10 @@ function attachRequestInterceptor(client: AxiosInstance, label: string): void {
       const endpoint = config.url ?? ''
       config._reqMeta = { method, endpoint, startTime: Date.now() }
 
+      // Diagnostics recording is always on — it feeds the System console
+      // Diagnostics panel in production. Console logging stays dev-only.
+      diagnostics.recordRequest(method, endpoint)
       if (process.env.NODE_ENV === 'development') {
-        diagnostics.recordRequest(method, endpoint)
         console.debug(`[${label}] ${method} ${endpoint}`)
       } else if (env.DEBUG) {
         console.debug(`[${label}] → ${method} ${config.baseURL ?? ''}${endpoint}`)
@@ -67,8 +69,8 @@ function attachResponseInterceptor(client: AxiosInstance, label: string): void {
       const endpoint   = meta?.endpoint ?? (response.config.url ?? '')
       const status     = response.status
 
+      diagnostics.recordCompleted(method, endpoint, status, durationMs)
       if (process.env.NODE_ENV === 'development') {
-        diagnostics.recordResponse(status, durationMs)
         console.debug(
           `[${label}] ${method} ${endpoint} | Status:${status} | Duration:${durationMs}ms`,
         )
@@ -82,8 +84,8 @@ function attachResponseInterceptor(client: AxiosInstance, label: string): void {
       const endpoint   = meta?.endpoint ?? (error.config?.url ?? '')
       const status     = error.response?.status ?? 0
 
+      diagnostics.recordCompleted(method, endpoint, status, durationMs)
       if (process.env.NODE_ENV === 'development') {
-        diagnostics.recordResponse(status, durationMs)
         console.warn(
           `[${label}] ${method} ${endpoint} | Status:${status || 'ERR'} | Duration:${durationMs}ms`,
         )

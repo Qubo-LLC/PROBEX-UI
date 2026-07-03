@@ -1,15 +1,6 @@
-import type { Metadata } from 'next'
-import { MarketsView }   from '@/components/markets/MarketsView'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = {
-  title:       'Markets',
-  description: 'Discover prediction markets powered by the Probex Consensus Engine.',
-}
-
-/**
- * Markets discovery page — /dashboard/markets
- *: Full market discovery with filtering, search, and navigation to detail.
- */
-export default function MarketsPage() {
-  return <MarketsView />
+// Legacy route — the market catalog was replaced by the Live Feed
+export default function LegacyMarketsPage() {
+  redirect('/dashboard/live')
 }

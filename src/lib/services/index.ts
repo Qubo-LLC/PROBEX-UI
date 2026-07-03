@@ -1,11 +1,8 @@
 // Components and hooks import `services` and never touch mock data or fetch()
-// directly. Flipping NEXT_PUBLIC_API_MODE=live (config/env.ts) is the only
-// change required once live services are implemented behind these interfaces.
+// directly. Flipping NEXT_PUBLIC_API_MODE (config/env.ts) between 'live' and
+// 'mock' is the only change required to swap the engine implementation.
 //
-//   components / hooks → services.<domain>.<method>() → mock | live impl
-//
-// Hybrid registry (live mode): engine is live; all other domains stay on mock
-// until their backend endpoints are confirmed and their item schemas are known.
+//   components / hooks → services.engine.<method>() → mock | live impl
 
 import { env } from '@/config/env'
 import { mockServices } from './mock'
@@ -13,7 +10,7 @@ import { LiveEngineService } from './live'
 import type { ServiceRegistry } from './interfaces'
 import { diagnostics } from '@/lib/diagnostics'
 
-// Record mode and base URL as early as possible so the dev indicator can
+// Record mode and base URL as early as possible so the diagnostics panel can
 // display accurate state even before the first request leaves the browser.
 diagnostics.init(env.API_MODE, env.API_BASE_URL)
 
@@ -23,10 +20,7 @@ function resolveServices(): ServiceRegistry {
     if (process.env.NODE_ENV === 'development') {
       console.info('[LIVE] ServiceRegistry: LiveEngineService instantiated')
     }
-    return {
-      ...mockServices,
-      engine: new LiveEngineService(),
-    }
+    return { engine: new LiveEngineService() }
   }
   diagnostics.setRegistry('MockEngineService')
   if (process.env.NODE_ENV === 'development') {
