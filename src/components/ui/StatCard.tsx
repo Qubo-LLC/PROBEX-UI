@@ -1,6 +1,8 @@
 import type { ReactNode, HTMLAttributes } from 'react'
 import { cn, formatDelta } from '@/lib/utils'
 import { Card } from './Card'
+import { ProvenanceBadge, type Provenance } from '@/components/shared/ProvenanceBadge'
+import { ValueFlash } from '@/components/shared/ValueFlash'
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -19,6 +21,18 @@ interface StatCardProps extends HTMLAttributes<HTMLDivElement> {
   valueColor?: string | undefined
   /** Loading state — shows skeleton */
   isLoading?:  boolean
+  // ── V3 additions (realizes the blueprint's "MetricStat" via extension) ──
+  /** Data-lineage badge shown in the label row (live/derived/awaiting/stale). */
+  provenance?: Provenance
+  /** Optional endpoint id shown alongside the provenance badge. */
+  provenanceDetail?: string
+  /** When set, the value flashes on change (liveness). Pass the raw driving
+   *  number so directional inference is correct even if `value` is formatted. */
+  flashKey?:   number | string
+  /** Phase 6A: 'lg' bumps this card's value to the page's focal-metric scale
+   *  — use on the one stat that should read as the hero of a multi-stat row.
+   *  Defaults to 'md' (unchanged) everywhere else. */
+  valueSize?:  'md' | 'lg'
 }
 
 /**
@@ -39,6 +53,10 @@ export function StatCard({
   icon,
   valueColor,
   isLoading = false,
+  provenance,
+  provenanceDetail,
+  flashKey,
+  valueSize = 'md',
   className,
   ...props
 }: StatCardProps) {
@@ -46,33 +64,42 @@ export function StatCard({
   const deltaDisplay = deltaLabel ?? (hasDelta ? formatDelta(delta) : undefined)
   const isPositive   = delta !== undefined && delta >= 0
 
+  const valueNode = (
+    <div
+      className={`${valueSize === 'lg' ? 'text-3xl' : 'text-2xl'} font-bold leading-none tabular-nums`}
+      style={valueColor ? { color: valueColor } : undefined}
+    >
+      {flashKey !== undefined ? <ValueFlash value={flashKey}>{value}</ValueFlash> : value}
+    </div>
+  )
+
   return (
     <Card
       className={cn('flex flex-col gap-1.5 min-h-[88px]', className)}
       {...props}
     >
       {/* Label row */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <span className="text-2xs font-semibold uppercase tracking-wider text-text-muted">
           {label}
         </span>
-        {icon && (
-          <span className="text-text-muted opacity-60 text-sm">
-            {icon}
-          </span>
-        )}
+        <span className="flex items-center gap-2">
+          {provenance && (
+            <ProvenanceBadge provenance={provenance} {...(provenanceDetail !== undefined && { detail: provenanceDetail })} />
+          )}
+          {icon && (
+            <span className="text-text-muted opacity-60 text-sm">
+              {icon}
+            </span>
+          )}
+        </span>
       </div>
 
       {/* Value */}
       {isLoading ? (
         <div className="skeleton h-7 w-24 rounded" />
       ) : (
-        <div
-          className="text-2xl font-bold leading-none tabular-nums"
-          style={valueColor ? { color: valueColor } : undefined}
-        >
-          {value}
-        </div>
+        valueNode
       )}
 
       {/* Delta */}

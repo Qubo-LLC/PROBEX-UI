@@ -1,6 +1,6 @@
 'use client'
 
-// ExecutionConsole — execution quality console (/dashboard/execution).
+// ExecutionConsole — execution quality console (/execution).
 //
 // Operator questions, in order (PROBEX_PRODUCT_SPEC.md §4):
 //   1. What has the engine traded, and with what result? → trading record

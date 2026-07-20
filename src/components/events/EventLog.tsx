@@ -1,6 +1,6 @@
 'use client'
 
-// EventLog — the engine event log (/dashboard/events).
+// EventLog — the engine event log (/events).
 //
 // Renders /api/events truthfully at every level:
 //   • empty envelope   → designed empty state (log resets on engine restart)

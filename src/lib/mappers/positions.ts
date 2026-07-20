@@ -106,6 +106,11 @@ export function toPositionsSummary(p: EnginePositions): PositionsSummary {
 
 export interface PositionRow {
   id:               string
+  /** V3 Phase 4: join keys so Portfolio/Positions can link back to the
+   *  market and its live edge (e.g. Edge Alignment, click-through to Market
+   *  Detail) — extends the existing row, mirrors EdgeRow/EventRow.marketId. */
+  marketId:         string | null
+  segment:          string | null
   marketTitle:      string | null
   side:             string
   contracts:        number | null
@@ -125,6 +130,8 @@ function isPositionItem(x: unknown): x is Record<string, unknown> {
 export function parsePositionRows(p: EnginePositions): ParseResult<PositionRow> {
   return parseItems(p.positions, isPositionItem, (dto) => ({
     id:               dto.id as string,
+    marketId:         str(dto.market_id) ? dto.market_id : null,
+    segment:          str(dto.segment) ? dto.segment : null,
     marketTitle:      str(dto.market_title) ? dto.market_title : null,
     side:             dto.side as string,
     contracts:        num(dto.contracts) ? dto.contracts : null,

@@ -110,6 +110,22 @@
   --probex-gradient-no:    linear-gradient(135deg, #6D5EF7 0%, #4F46E5 100%);
   --probex-gradient-surface: linear-gradient(180deg, #0B1120 0%, #050816 100%);
 
+  /* Canonical surface shadows (Phase 1 · T5) — tokenized from the former inline
+     card literals; theme-invariant (subtle black), so defined once on :root and
+     inherited by every theme. */
+  --probex-shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.10);
+  --probex-shadow-lift: 0 8px 24px rgba(0, 0, 0, 0.16);
+
+  /* Environmental light field (Phase 1 · T6) — a fixed atmospheric glow painted
+     behind the content plane so glass surfaces have something to refract. Built
+     from the ACTIVE theme's own brand hues via var(), so it adapts per theme
+     automatically (this :root definition serves every dark theme; Institutional
+     overrides it to a fainter value). pointer-events never apply — it is a
+     background layer, not an element. */
+  --probex-lightfield:
+    radial-gradient(60% 55% at 12% -5%, color-mix(in srgb, var(--probex-primary) 7%, transparent), transparent 60%),
+    radial-gradient(55% 50% at 105% 108%, color-mix(in srgb, var(--probex-secondary) 6%, transparent), transparent 58%);
+
   /* Scrollbar */
   --probex-scrollbar-thumb: rgba(255, 255, 255, 0.1);
   --probex-scrollbar-track: transparent;
@@ -351,6 +367,11 @@
   --probex-gradient-yes:     linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
   --probex-gradient-no:      linear-gradient(135deg, #4F46E5 0%, #3730a3 100%);
   --probex-gradient-surface: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+
+  /* Light theme: keep the field barely-there so it never muddies white surfaces. */
+  --probex-lightfield:
+    radial-gradient(60% 55% at 12% -5%, color-mix(in srgb, var(--probex-primary) 3%, transparent), transparent 60%),
+    radial-gradient(55% 50% at 105% 108%, color-mix(in srgb, var(--probex-secondary) 3%, transparent), transparent 58%);
 
   --probex-scrollbar-thumb: rgba(15, 23, 42, 0.15);
   --probex-scrollbar-track: transparent;

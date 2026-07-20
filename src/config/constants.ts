@@ -106,37 +106,32 @@ export const ROUTES = {
   VERIFY:          '/auth/verify',
 
   // Cockpit (PROBEX_PRODUCT_SPEC.md §3)
-  HOME:       '/dashboard',
-  LIVE:       '/dashboard/live',
-  STRATEGY:   '/dashboard/strategy',
-  POSITIONS:  '/dashboard/positions',
-  EXECUTION:  '/dashboard/execution',
-  SURVIVAL:   '/dashboard/survival',
-  EVENTS:     '/dashboard/events',
-  SYSTEM:     '/dashboard/system',
-  SETTINGS:   '/dashboard/settings',
+  // Routes are root-relative: nginx owns external routing, the app must not
+  // re-prefix with /dashboard (pages live in the app/(dashboard) route group).
+  HOME:       '/',
+  LIVE:       '/live',
+  STRATEGY:   '/strategy',
+  POSITIONS:  '/positions',
+  EXECUTION:  '/execution',
+  SURVIVAL:   '/survival',
+  EVENTS:     '/events',
+  SYSTEM:     '/system',
+  SETTINGS:   '/settings',
 
   // Legacy (routes 302 to cockpit homes; removed in M5)
-  MARKETS:    '/dashboard/markets',
-  PORTFOLIO:  '/dashboard/portfolio',
-  WATCHLIST:  '/dashboard/watchlist',
-  WALLET:     '/dashboard/wallet',
-  RESEARCH:   '/dashboard/research',
-  ANALYTICS:  '/dashboard/analytics',
-  CONSENSUS:  '/dashboard/consensus',
-  ADMIN:      '/dashboard/admin',
+  MARKETS:    '/markets',
+  PORTFOLIO:  '/portfolio',
+  WATCHLIST:  '/watchlist',
+  WALLET:     '/wallet',
+  RESEARCH:   '/research',
+  ANALYTICS:  '/analytics',
+  CONSENSUS:  '/consensus',
+  ADMIN:      '/admin',
 } as const
 
 /** Route builder for market detail pages */
 export function MARKET_DETAIL_PATH(marketId: string): string {
-  return `/dashboard/markets/${marketId}`
+  return `/markets/${marketId}`
 }
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES]
-
-// ─── Route helpers ──────────────────────────────────────────────────
-
-/** @deprecated Use ROUTES.MARKETS + "/" + marketId. Kept for compatibility. */
-export function MARKET_DETAIL_ROUTE(marketId: string): string {
-  return `${ROUTES.MARKETS}/${marketId}`
-}

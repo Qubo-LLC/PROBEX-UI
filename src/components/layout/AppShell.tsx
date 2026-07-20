@@ -22,7 +22,7 @@ interface AppShellProps {
  * This two-layer pattern keeps layout concerns out of provider concerns.
  *
  * Used by:
- *   src/app/dashboard/layout.tsx
+ *   src/app/(dashboard)/layout.tsx
  */
 export function AppShell({ children }: AppShellProps) {
   return (

@@ -113,18 +113,34 @@ export function engineMarketsCount(m: EngineMarkets): number {
   return m.count
 }
 
-// ─── Cockpit row parsing (M4) ─────────────────────────────────────────────────
+// ─── Cockpit row parsing (M4, extended in V3 Phase 1) ─────────────────────────
 // Minimal guard: the Polymarket 5-minute market serialization is unconfirmed;
 // require only an id and a title-like field, degrade everything else.
+//
+// V3 Phase 1 extends the optional field set (segment/volume/liquidity/
+// openInterest/sentiment/description/tags) so the restored HeroCarousel and
+// FeaturedGrid can render V1-grade richness the moment P0-01 lands — this is
+// an extension of the existing parse-or-report row, not a new mechanism.
+// Every added field degrades to null/[] independently; none is required.
 
 export interface MarketRow {
-  id:          string
-  title:       string
-  probability: number | null   // 0–1 YES probability
-  yesPrice:    number | null   // cents
-  noPrice:     number | null   // cents
-  closesAt:    number | null   // epoch ms
-  status:      string | null
+  id:                 string
+  title:              string
+  description:        string | null
+  segment:            string | null
+  probability:        number | null   // 0–1 YES probability
+  yesPrice:           number | null   // cents
+  noPrice:            number | null   // cents
+  volume24h:          number | null   // USD
+  liquidity:          number | null   // USD
+  openInterest:       number | null   // USD
+  sentiment:          string | null   // 'bullish' | 'bearish' | 'neutral' (as reported)
+  tags:               string[]
+  /** V3 Phase 2: plain-English resolution criteria for Market Detail's
+   *  Resolution section. Additive — degrades to null like every other field. */
+  resolutionCriteria: string | null
+  closesAt:           number | null   // epoch ms
+  status:             string | null
 }
 
 function isMarketItem(x: unknown): x is Record<string, unknown> {
@@ -133,12 +149,20 @@ function isMarketItem(x: unknown): x is Record<string, unknown> {
 
 export function parseMarketRows(m: EngineMarkets): ParseResult<MarketRow> {
   return parseItems(m.markets, isMarketItem, (dto) => ({
-    id:          dto.id as string,
-    title:       str(dto.title) ? dto.title : (dto.question as string),
-    probability: num(dto.probability) ? dto.probability : null,
-    yesPrice:    num(dto.yes_price) ? dto.yes_price : null,
-    noPrice:     num(dto.no_price) ? dto.no_price : null,
-    closesAt:    str(dto.closes_at) ? new Date(dto.closes_at).getTime() : null,
-    status:      str(dto.status) ? dto.status : null,
+    id:            dto.id as string,
+    title:         str(dto.title) ? dto.title : (dto.question as string),
+    description:   str(dto.description) ? dto.description : null,
+    segment:       str(dto.segment) ? dto.segment : null,
+    probability:   num(dto.probability) ? dto.probability : null,
+    yesPrice:      num(dto.yes_price) ? dto.yes_price : null,
+    noPrice:       num(dto.no_price) ? dto.no_price : null,
+    volume24h:     num(dto.volume_24h) ? dto.volume_24h : null,
+    liquidity:     num(dto.liquidity) ? dto.liquidity : null,
+    openInterest:  num(dto.open_interest) ? dto.open_interest : null,
+    sentiment:     str(dto.sentiment) ? dto.sentiment : null,
+    tags:               Array.isArray(dto.tags) ? dto.tags.filter(str) : [],
+    resolutionCriteria: str(dto.resolution_criteria) ? dto.resolution_criteria : null,
+    closesAt:           str(dto.closes_at) ? new Date(dto.closes_at).getTime() : null,
+    status:             str(dto.status) ? dto.status : null,
   }))
 }

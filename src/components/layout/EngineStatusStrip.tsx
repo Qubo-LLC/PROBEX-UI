@@ -11,6 +11,7 @@
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatBtcPrice } from '@/lib/mappers/priceHistory'
 import { survivalStateColor, survivalStateLabel } from '@/lib/display/engine'
+import { LiveHeartbeat } from '@/components/shared/LiveHeartbeat'
 
 export function EngineStatusStrip() {
   const stats    = useApplicationStore((s) => s.engine.stats)
@@ -93,6 +94,8 @@ export function EngineStatusStrip() {
           {mode}
         </span>
       )}
+
+      <LiveHeartbeat />
     </div>
   )
 }

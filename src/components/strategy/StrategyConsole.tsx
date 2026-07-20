@@ -1,6 +1,6 @@
 'use client'
 
-// StrategyConsole — PROBEX's flagship experience (/dashboard/strategy).
+// StrategyConsole — PROBEX's flagship experience (/strategy).
 //
 // This page explains HOW THE ENGINE THINKS, not just what its numbers are
 // (PROBEX_PRODUCT_SPEC.md §1, §4). It walks the operator through the live
@@ -25,6 +25,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Card }       from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { EdgeTable }  from '@/components/shared/EdgeTable'
+import { DecisionPipeline } from '@/components/shared/DecisionPipeline'
 
 export function StrategyConsole() {
   const survival  = useApplicationStore((s) => s.engine.survival)
@@ -73,44 +74,15 @@ export function StrategyConsole() {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-          <PipelineStage
-            step={1}
-            name="Scan"
-            value={markets.data ? String(markets.data.count) : '…'}
-            unit={markets.data?.count === 1 ? 'market' : 'markets'}
-            gate="Polymarket 5-minute BTC markets, refreshed each cycle"
-          />
-          <PipelineStage
-            step={2}
-            name="Detect"
-            value={sv ? sv.totalPatterns.toLocaleString() : '…'}
-            unit="patterns"
-            gate="price patterns evaluated against market odds"
-          />
-          <PipelineStage
-            step={3}
-            name="Filter"
-            value={sv ? sv.filteredPatterns.toLocaleString() : '…'}
-            unit="passed"
-            gate={sv ? `edge must exceed ${sv.minEdgeThreshold.toFixed(2)}%` : 'edge threshold gate'}
-            accent
-          />
-          <PipelineStage
-            step={4}
-            name="Size"
-            value={effectiveKelly !== null ? `${effectiveKelly.toFixed(2)}×` : '…'}
-            unit="Kelly"
-            gate={cfg ? `capped at ${cfg.maxBetPercent}% of bankroll` : 'fractional Kelly sizing'}
-          />
-          <PipelineStage
-            step={5}
-            name="Execute"
-            value={ex ? String(ex.totalTrades) : '…'}
-            unit={ex?.totalTrades === 1 ? 'trade' : 'trades'}
-            gate={cfg ? `only if execution < ${cfg.maxLatencyMs}ms` : 'latency-guarded execution'}
-          />
-        </div>
+        <DecisionPipeline
+          stages={[
+            { step: 1, name: 'Scan',    value: markets.data ? String(markets.data.count) : '…', unit: markets.data?.count === 1 ? 'market' : 'markets', gate: 'Polymarket 5-minute BTC markets, refreshed each cycle' },
+            { step: 2, name: 'Detect',  value: sv ? sv.totalPatterns.toLocaleString() : '…', unit: 'patterns', gate: 'price patterns evaluated against market odds' },
+            { step: 3, name: 'Filter',  value: sv ? sv.filteredPatterns.toLocaleString() : '…', unit: 'passed', gate: sv ? `edge must exceed ${sv.minEdgeThreshold.toFixed(2)}%` : 'edge threshold gate', accent: true },
+            { step: 4, name: 'Size',    value: effectiveKelly !== null ? `${effectiveKelly.toFixed(2)}×` : '…', unit: 'Kelly', gate: cfg ? `capped at ${cfg.maxBetPercent}% of bankroll` : 'fractional Kelly sizing' },
+            { step: 5, name: 'Execute', value: ex ? String(ex.totalTrades) : '…', unit: ex?.totalTrades === 1 ? 'trade' : 'trades', gate: cfg ? `only if execution < ${cfg.maxLatencyMs}ms` : 'latency-guarded execution' },
+          ]}
+        />
 
         {sv && sv.totalPatterns === 0 && (
           <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
@@ -223,33 +195,6 @@ export function StrategyConsole() {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-
-function PipelineStage({
-  step, name, value, unit, gate, accent = false,
-}: {
-  step: number; name: string; value: string; unit: string; gate: string; accent?: boolean
-}) {
-  return (
-    <div
-      className="flex flex-col gap-1.5 rounded-lg p-3"
-      style={{
-        background: 'var(--probex-surface-2)',
-        border:     `1px solid ${accent ? 'var(--probex-primary)' : 'var(--probex-border)'}`,
-      }}
-    >
-      <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: accent ? 'var(--probex-primary)' : 'var(--probex-text-muted)' }}>
-        {step} · {name}
-      </span>
-      <span className="text-xl font-bold tabular-nums leading-none" style={{ color: 'var(--probex-text-primary)' }}>
-        {value}
-        <span className="text-2xs font-medium ml-1" style={{ color: 'var(--probex-text-muted)' }}>{unit}</span>
-      </span>
-      <span className="text-2xs leading-snug" style={{ color: 'var(--probex-text-disabled)' }}>
-        {gate}
-      </span>
-    </div>
-  )
-}
 
 function SizingTerm({ label, value, warn = false, strong = false }: { label: string; value: string; warn?: boolean; strong?: boolean }) {
   return (

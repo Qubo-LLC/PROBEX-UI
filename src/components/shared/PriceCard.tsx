@@ -11,16 +11,22 @@ import { useMemo } from 'react'
 import { Area, AreaChart, ResponsiveContainer, YAxis } from 'recharts'
 import { formatBtcPrice, formatPriceChangePct, type BtcPriceChartViewModel } from '@/lib/mappers/priceHistory'
 import { Card } from '@/components/ui/Card'
+import { ValueFlash } from './ValueFlash'
 
 interface PriceCardProps {
   chart: BtcPriceChartViewModel
   /** From /api/stats — shown when available so feed quality is visible next to price. */
   feed: { connected: boolean; latencyMs: number } | null
+  /** 'hero' bumps the price to the page's focal-metric scale (Overview's
+   *  "one hero number per page" — Phase 6A). Everywhere else keeps the
+   *  original density unchanged. */
+  size?: 'default' | 'hero'
 }
 
-export function PriceCard({ chart, feed }: PriceCardProps) {
+export function PriceCard({ chart, feed, size = 'default' }: PriceCardProps) {
   const isUp    = chart.priceChange >= 0
   const accent  = isUp ? 'var(--probex-positive)' : 'var(--probex-negative)'
+  const isHero  = size === 'hero'
 
   const windowLabel = useMemo(() => {
     const first = chart.points.at(0)?.ts
@@ -32,17 +38,17 @@ export function PriceCard({ chart, feed }: PriceCardProps) {
   }, [chart])
 
   return (
-    <Card className="flex flex-col gap-3">
+    <Card variant={isHero ? 'elevated' : 'default'} className="flex flex-col gap-3">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex flex-col gap-1">
           <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
             BTC / USD
           </span>
           <div className="flex items-baseline gap-2.5">
-            <span className="text-3xl font-bold leading-none tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>
-              {formatBtcPrice(chart.currentPrice)}
+            <span className={`${isHero ? 'text-5xl' : 'text-3xl'} font-bold leading-none tabular-nums`} style={{ color: 'var(--probex-text-primary)' }}>
+              {isHero ? <ValueFlash value={chart.currentPrice}>{formatBtcPrice(chart.currentPrice)}</ValueFlash> : formatBtcPrice(chart.currentPrice)}
             </span>
-            <span className="text-sm font-semibold tabular-nums" style={{ color: accent }}>
+            <span className={`${isHero ? 'text-base' : 'text-sm'} font-semibold tabular-nums`} style={{ color: accent }}>
               {formatPriceChangePct(chart.priceChangePct)}
             </span>
           </div>
@@ -63,7 +69,7 @@ export function PriceCard({ chart, feed }: PriceCardProps) {
         </div>
       </div>
 
-      <div style={{ height: 120 }} aria-hidden="true">
+      <div style={{ height: isHero ? 180 : 120 }} aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chart.points} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
             <defs>

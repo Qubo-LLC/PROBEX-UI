@@ -12,7 +12,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name:       'Probex',
     description:      'Prediction intelligence powered by the Consensus Engine. Institutional-grade forecasting across prediction markets.',
 
-    start_url:        '/dashboard',
+    start_url:        '/',
     scope:            '/',
     display:          'standalone',
     orientation:      'portrait-primary',
@@ -66,19 +66,19 @@ export default function manifest(): MetadataRoute.Manifest {
         name:        'Markets',
         short_name:  'Markets',
         description: 'Browse Bitcoin prediction markets',
-        url:         '/dashboard/markets',
+        url:         '/markets',
       },
       {
         name:        'Portfolio',
         short_name:  'Portfolio',
         description: 'View your positions and performance',
-        url:         '/dashboard/portfolio',
+        url:         '/portfolio',
       },
       {
         name:        'Research',
         short_name:  'Research',
         description: 'Read market intelligence reports',
-        url:         '/dashboard/research',
+        url:         '/research',
       },
     ],
   }

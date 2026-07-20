@@ -1,7 +1,7 @@
 'use client'
 
 // SystemConsole — the operational console for the engine's infrastructure
-// (/dashboard/system). Panels in operator-priority order
+// (/system). Panels in operator-priority order
 // (PROBEX_PRODUCT_SPEC.md §4):
 //
 //   1. Health      — is anything failing right now? (per-probe truth)

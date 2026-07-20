@@ -15,7 +15,15 @@ export const THEME_NAMES = [
 
 export type ThemeName = (typeof THEME_NAMES)[number]
 
-export const DEFAULT_THEME: ThemeName = 'aurora'
+export const DEFAULT_THEME: ThemeName = 'midnight'
+
+/**
+ * Themes surfaced in the settings switcher (Phase 1 · T10). The full THEME_NAMES
+ * set stays valid in the engine — demoted themes (aurora / quantum / emerald)
+ * still resolve if already persisted — but only these two are offered going
+ * forward: Midnight (canonical dark) + Institutional (light).
+ */
+export const SURFACED_THEMES = ['midnight', 'institutional'] as const satisfies readonly ThemeName[]
 
 // ─── Theme metadata (for switcher UI) ────────────────────────────────────
 

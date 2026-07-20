@@ -79,44 +79,15 @@ interface EnvRequirement {
 }
 
 const ENV_REQUIREMENTS: EnvRequirement[] = [
-  // Public — required in live mode only
+  // The engine API base is the only variable live mode cannot run without.
+  // Consensus/WS/auth/database vars return to this list when those layers
+  // actually ship — requiring them today would fail production builds for
+  // features the app does not yet consume.
   {
     key: 'NEXT_PUBLIC_API_BASE_URL',
     serverOnly: false,
     required: env.API_MODE === 'live',
     description: 'Probex backend API base URL',
-  },
-  {
-    key: 'NEXT_PUBLIC_CONSENSUS_API_URL',
-    serverOnly: false,
-    required: env.API_MODE === 'live',
-    description: 'Consensus Engine API URL',
-  },
-  {
-    key: 'NEXT_PUBLIC_WS_URL',
-    serverOnly: false,
-    required: env.API_MODE === 'live',
-    description: 'WebSocket URL for live updates',
-  },
-  {
-    key: 'NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID',
-    serverOnly: false,
-    required: false,
-    description: 'WalletConnect project ID',
-  },
-
-  // Server-only — required in live mode
-  {
-    key: 'JWT_SECRET',
-    serverOnly: true,
-    required: env.API_MODE === 'live',
-    description: 'JWT signing secret (server-only)',
-  },
-  {
-    key: 'DATABASE_URL',
-    serverOnly: true,
-    required: env.API_MODE === 'live',
-    description: 'Database connection string (server-only)',
   },
 ]
 

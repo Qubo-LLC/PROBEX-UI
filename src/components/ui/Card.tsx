@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 
 // ─── Card variants ─────────────────────────────────────────────────────────
 
-type CardVariant = 'default' | 'elevated' | 'interactive' | 'glow'
+type CardVariant = 'default' | 'elevated' | 'interactive' | 'recessed'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?:    CardVariant
@@ -15,7 +15,7 @@ const variantStyles: Record<CardVariant, string> = {
   default:     'card',
   elevated:    'card-elevated',
   interactive: 'card-interactive',
-  glow:        'card border rounded-lg shadow-cyan-glow-sm',
+  recessed:    'card-recessed',
 }
 
 /**

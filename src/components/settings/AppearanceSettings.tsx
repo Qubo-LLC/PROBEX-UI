@@ -1,10 +1,12 @@
 'use client'
 
-// Theme selection panel within /dashboard/settings.
-// All 5 Probex themes available with live preview swatches.
+// Theme selection panel within /settings.
+// Surfaces the canonical theme set (Phase 1 · T10): Midnight (dark) +
+// Institutional (light), with live preview swatches. Demoted themes remain in
+// the engine and still render if already persisted — they are just not offered.
 
-import { useThemeStore }           from '@/store/themeStore'
-import { THEME_NAMES, THEME_META } from '@/types/theme'
+import { useThemeStore }               from '@/store/themeStore'
+import { SURFACED_THEMES, THEME_META } from '@/types/theme'
 
 export function AppearanceSettings() {
   const { theme, setTheme } = useThemeStore()
@@ -21,7 +23,7 @@ export function AppearanceSettings() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 12 }}>
-        {THEME_NAMES.map((t) => {
+        {SURFACED_THEMES.map((t) => {
           const meta    = THEME_META[t]
           const isActive = theme === t
 

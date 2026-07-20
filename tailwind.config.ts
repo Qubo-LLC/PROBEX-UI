@@ -95,69 +95,16 @@ const config: Config = {
       },
 
       // ─── Animation ───────────────────────────────────────────────────────
-      keyframes: {
-        // Pulse for live indicators
-        "live-pulse": {
-          "0%, 100%": { opacity: "1" },
-          "50%":      { opacity: "0.35" },
-        },
-        // Consensus gauge fill
-        "gauge-fill": {
-          from: { "stroke-dashoffset": "251" },
-          to:   { "stroke-dashoffset": "var(--gauge-offset)" },
-        },
-        // Probability bar fill
-        "bar-fill": {
-          from: { width: "0%" },
-          to:   { width: "var(--bar-width)" },
-        },
-        // Fade in up (page transitions, cards)
-        "fade-in-up": {
-          from: { opacity: "0", transform: "translateY(8px)" },
-          to:   { opacity: "1", transform: "translateY(0)" },
-        },
-        // Fade in
-        "fade-in": {
-          from: { opacity: "0" },
-          to:   { opacity: "1" },
-        },
-        // Slide in from left (sidebar)
-        "slide-in-left": {
-          from: { transform: "translateX(-100%)", opacity: "0" },
-          to:   { transform: "translateX(0)", opacity: "1" },
-        },
-        // Trading panel slide
-        "slide-in-right": {
-          from: { transform: "translateX(32px)", opacity: "0" },
-          to:   { transform: "translateX(0)", opacity: "1" },
-        },
-        // Number counter
-        "count-up": {
-          from: { transform: "translateY(10px)", opacity: "0" },
-          to:   { transform: "translateY(0)", opacity: "1" },
-        },
-        // Shimmer loading
-        shimmer: {
-          "0%":   { backgroundPosition: "-700px 0" },
-          "100%": { backgroundPosition: "700px 0" },
-        },
-        // Ticker scroll
-        "ticker-scroll": {
-          from: { transform: "translateX(0)" },
-          to:   { transform: "translateX(-50%)" },
-        },
-      },
+      // Canonical motion system (Phase 1 · T4). Each keyframe is defined
+      // exactly once. Keyframes that back raw component classes live in
+      // globals.css (`.live-dot` → live-pulse, `.skeleton` → shimmer, the
+      // HeroCarousel progress bar → hero-progress). The only Tailwind
+      // utility-backed motion is `animate-fade-in-up` (page/section entrance),
+      // whose keyframe is also defined once — in globals.css — so no keyframe
+      // is duplicated here. Dead animations (gauge-fill, bar-fill, slide-in-*,
+      // count-up, ticker-scroll, fade-in) were removed as unused tokens.
       animation: {
-        "live-pulse":     "live-pulse 1.8s ease-in-out infinite",
-        "gauge-fill":     "gauge-fill 1s cubic-bezier(.4,0,.2,1) forwards",
-        "bar-fill":       "bar-fill 0.6s cubic-bezier(.4,0,.2,1) forwards",
-        "fade-in-up":     "fade-in-up 0.3s ease-out",
-        "fade-in":        "fade-in 0.2s ease-out",
-        "slide-in-left":  "slide-in-left 0.25s cubic-bezier(.4,0,.2,1)",
-        "slide-in-right": "slide-in-right 0.25s cubic-bezier(.4,0,.2,1)",
-        "count-up":       "count-up 0.4s ease-out",
-        shimmer:          "shimmer 1.8s linear infinite",
-        "ticker-scroll":  "ticker-scroll 30s linear infinite",
+        "fade-in-up": "fade-in-up 0.3s ease-out",
       },
 
       // ─── Box Shadow ──────────────────────────────────────────────────────
@@ -180,12 +127,18 @@ const config: Config = {
       },
 
       // ─── Z-Index Scale ───────────────────────────────────────────────────
+      // Canonical stacking hierarchy (Phase 1 · T9). The shell consumes these
+      // tokens instead of raw z-index literals; overlays mount above chrome per
+      // this order. `backdrop` sits just below `sidebar` (drawer scrims);
+      // `skiplink` sits above all chrome so the a11y skip link is always reachable.
       zIndex: {
+        backdrop:        "30",
         sidebar:         "40",
         topnav:          "50",
         modal:           "60",
         toast:           "70",
         tooltip:         "80",
+        skiplink:        "90",
       },
 
       // ─── Screen Breakpoints ──────────────────────────────────────────────

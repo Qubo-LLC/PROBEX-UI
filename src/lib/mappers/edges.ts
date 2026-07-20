@@ -99,6 +99,10 @@ export function toEdgesSummary(e: EngineEdges): EdgesSummary {
 
 export interface EdgeRow {
   id:              string
+  /** V3 Phase 1: join key so product pages can attach an edge to its market
+   *  (e.g. an "edge chip" on a market card). Extends the existing row shape —
+   *  the parse-or-report mechanism itself is unchanged. */
+  marketId:        string | null
   marketTitle:     string | null
   direction:       string
   edgePct:         number          // edge as % (0.08 → 8.0)
@@ -116,6 +120,7 @@ function isEdgeItem(x: unknown): x is Record<string, unknown> {
 export function parseEdgeRows(e: EngineEdges): ParseResult<EdgeRow> {
   return parseItems(e.edges, isEdgeItem, (dto) => ({
     id:             dto.id as string,
+    marketId:       str(dto.market_id) ? dto.market_id : null,
     marketTitle:    str(dto.market_title) ? dto.market_title : null,
     direction:      dto.direction as string,
     edgePct:        (dto.edge as number) * 100,
@@ -125,4 +130,15 @@ export function parseEdgeRows(e: EngineEdges): ParseResult<EdgeRow> {
     recommendation: str(dto.recommendation) ? dto.recommendation : null,
     detectedAt:     str(dto.detected_at) ? new Date(dto.detected_at).getTime() : null,
   }))
+}
+
+/** Build a marketId → EdgeRow lookup for O(1) joins (cards, tables). Markets
+ *  without a live edge simply have no entry — never fabricated. */
+export function toEdgeRowMap(result: ParseResult<EdgeRow>): Map<string, EdgeRow> {
+  const map = new Map<string, EdgeRow>()
+  if (result.kind !== 'rows') return map
+  for (const row of result.rows) {
+    if (row.marketId) map.set(row.marketId, row)
+  }
+  return map
 }

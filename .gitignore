@@ -19,3 +19,5 @@ dist/
 
 # misc
 .DS_Store
+# TypeScript incremental build state
+tsconfig.tsbuildinfo

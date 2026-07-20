@@ -14,7 +14,7 @@ import type { ServiceState } from '@/lib/services/response'
 import type {
   EngineStats, EngineIdentity, SurvivalStatus, ExecutionStatus,
   EngineEdges, EngineHealth, HealthComponent,
-  EngineMode, SurvivalState, RuntimeComponents,
+  EngineMode, SurvivalState, RuntimeComponents, EngineHealthStatus,
 } from '@/types/engine'
 
 // ─── View model ───────────────────────────────────────────────────────────────
@@ -85,6 +85,11 @@ export interface CommandCenterVM {
 
   /** Health probe components (from /health); null until resolved. */
   healthComponents: HealthComponent[] | null
+
+  /** Overall health status ('online'|'degraded'|'offline'); null until resolved.
+   *  V3 Phase 1 addition — feeds the Overview EnginePulseCard's condensed
+   *  health summary (full per-probe detail remains the Admin console's job). */
+  healthStatus: EngineHealthStatus | null
 
   /** Derived operator alerts, most severe first. Empty = all clear. */
   attention: AttentionItem[]
@@ -233,6 +238,7 @@ export function toCommandCenter(s: CommandCenterSlices): CommandCenterVM {
 
     runtimeComponents: stats ? toRuntimeChips(stats.runtimeComponents) : null,
     healthComponents:  health ? health.components : null,
+    healthStatus:      health ? health.status : null,
 
     attention: [...critical, ...warning],
 

@@ -1,29 +1,45 @@
 'use client'
 
-// PositionsConsole — the engine's open positions (/dashboard/positions).
+// PositionsConsole — the engine's open positions (/positions).
 //
-// Sources: /api/positions (envelope + items) and /api/execution/status
-// (closed count + resolution record). Replaces the mock-backed PositionsView.
+// Sources: /api/positions (envelope + items), /api/execution/status (closed
+// count + resolution record), /api/edges (live edge alignment per position).
 //
-// Truth rules: envelope figures (count, total unrealized P&L) render even
-// while item schemas are unconfirmed; unrecognized items are reported, not
-// guessed at; the settled-history section states plainly that the backend
-// keeps no trade ledger yet (P2-02).
+// V3 Phase 4 enrichment: restores V1's filters (search/side/segment/P&L),
+// a click-to-expand detail panel (market link + live Edge Alignment, not
+// V1's fabricated consensus snapshot/entry thesis), and the Settled
+// Positions section as a full table shell with real aggregate win/loss
+// counts and honestly-pending per-row ledger data (P2-02).
+//
+// Truth rules unchanged from M4/M6: envelope figures render even while item
+// schemas are unconfirmed; unrecognized items are reported, not guessed at.
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
-import { parsePositionRows } from '@/lib/mappers/positions'
-import { formatCurrency, formatSignedCurrency, formatDelta } from '@/lib/utils'
+import { parsePositionRows, type PositionRow } from '@/lib/mappers/positions'
+import { parseEdgeRows, toEdgeRowMap, type EdgeRow } from '@/lib/mappers/edges'
+import { formatSignedCurrency } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard }   from '@/components/ui/StatCard'
 import { Card }       from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
-import { TableShell, Thead, Th, Tr, Td } from '@/components/shared/DataTable'
+import { PositionFilters, type Side, type PnlState } from './PositionFilters'
+import { PositionTable } from './PositionTable'
+import { PositionDetail } from './PositionDetail'
+import { SettledPositions } from './SettledPositions'
+import type { BitcoinSegment } from '@/types/market'
 
 export function PositionsConsole() {
   const positions = useApplicationStore((s) => s.engine.positions)
   const execution = useApplicationStore((s) => s.engine.executionStatus)
+  const edgesSlice = useApplicationStore((s) => s.engine.edges)
+
+  const [search, setSearch]   = useState('')
+  const [side, setSide]       = useState<Side | null>(null)
+  const [segment, setSegment] = useState<BitcoinSegment | null>(null)
+  const [pnlState, setPnl]    = useState<PnlState | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const pos = positions.data
   const ex  = execution.data
@@ -32,6 +48,26 @@ export function PositionsConsole() {
     () => (pos ? parsePositionRows(pos) : null),
     [pos],
   )
+
+  const edgeMap = useMemo(
+    () => (edgesSlice.data ? toEdgeRowMap(parseEdgeRows(edgesSlice.data)) : new Map<string, EdgeRow>()),
+    [edgesSlice.data],
+  )
+
+  const filteredRows: PositionRow[] = useMemo(() => {
+    if (rows?.kind !== 'rows') return []
+    let result = rows.rows
+    if (side) result = result.filter((p) => p.side === side)
+    if (segment) result = result.filter((p) => p.segment === segment)
+    if (pnlState) result = result.filter((p) => pnlState === 'profit' ? (p.unrealizedPnl ?? 0) >= 0 : (p.unrealizedPnl ?? 0) < 0)
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      result = result.filter((p) => (p.marketTitle ?? '').toLowerCase().includes(q))
+    }
+    return result
+  }, [rows, side, segment, pnlState, search])
+
+  const selectedPosition = filteredRows.find((p) => p.id === selectedId)
 
   return (
     <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
@@ -103,8 +139,8 @@ export function PositionsConsole() {
             )}
           </div>
 
-          {/* Open positions table */}
-          <section className="flex flex-col gap-2">
+          {/* Open positions: filters + table + detail panel */}
+          <section className="flex flex-col gap-3">
             <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>
               Open Positions
             </h2>
@@ -127,81 +163,34 @@ export function PositionsConsole() {
               </Card>
             )}
 
-            {rows?.kind === 'rows' && (
-              <TableShell label="Open positions">
-                <Thead>
-                  <Th align="left">Market</Th>
-                  <Th align="center">Side</Th>
-                  <Th align="right">Contracts</Th>
-                  <Th align="right">Entry → Now</Th>
-                  <Th align="right">Cost / Value</Th>
-                  <Th align="right">Unrealized P&L</Th>
-                  <Th align="right">Opened</Th>
-                </Thead>
-                <tbody>
-                  {rows.rows.map((p) => (
-                    <Tr key={p.id}>
-                      <Td align="left"><span className="font-medium" style={{ color: 'var(--probex-text-primary)' }}>{p.marketTitle ?? p.id}</span></Td>
-                      <Td align="center">
-                        <span
-                          className="text-2xs font-bold uppercase rounded px-1.5 py-0.5"
-                          style={{
-                            color:      p.side === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)',
-                            background: 'var(--probex-surface-2)',
-                          }}
-                        >
-                          {p.side}
-                        </span>
-                      </Td>
-                      <Td align="right">
-                        <span className="tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>
-                          {p.contracts !== null ? p.contracts.toLocaleString() : '—'}
-                        </span>
-                      </Td>
-                      <Td align="right">
-                        <span className="tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>
-                          {p.entryPrice !== null && p.currentPrice !== null ? `${p.entryPrice}¢ → ${p.currentPrice}¢` : '—'}
-                        </span>
-                      </Td>
-                      <Td align="right">
-                        <span className="tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>
-                          {p.costBasis !== null && p.currentValue !== null
-                            ? `${formatCurrency(p.costBasis)} / ${formatCurrency(p.currentValue)}`
-                            : '—'}
-                        </span>
-                      </Td>
-                      <Td align="right">
-                        <span className="tabular-nums font-bold" style={{
-                          color: p.unrealizedPnl === null ? 'var(--probex-text-muted)'
-                            : p.unrealizedPnl > 0 ? 'var(--probex-positive)'
-                            : p.unrealizedPnl < 0 ? 'var(--probex-negative)' : 'var(--probex-text-primary)',
-                        }}>
-                          {p.unrealizedPnl !== null
-                            ? `${formatSignedCurrency(p.unrealizedPnl)}${p.unrealizedPnlPct !== null ? ` (${formatDelta(p.unrealizedPnlPct)})` : ''}`
-                            : '—'}
-                        </span>
-                      </Td>
-                      <Td align="right">
-                        <span className="tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
-                          {p.openedAt !== null ? new Date(p.openedAt).toLocaleTimeString() : '—'}
-                        </span>
-                      </Td>
-                    </Tr>
-                  ))}
-                </tbody>
-              </TableShell>
+            {rows?.kind === 'rows' && rows.rows.length > 0 && (
+              <>
+                <PositionFilters
+                  search={search} onSearchChange={setSearch}
+                  side={side} onSideChange={setSide}
+                  segment={segment} onSegmentChange={setSegment}
+                  pnlState={pnlState} onPnlChange={setPnl}
+                />
+
+                {filteredRows.length === 0 ? (
+                  <EmptyState size="sm" title="No positions match your filters" description="Clear a filter to see more results." />
+                ) : (
+                  <PositionTable positions={filteredRows} edgeMap={edgeMap} selectedId={selectedId} onSelectRow={(id) => setSelectedId(id === selectedId ? null : id)} dense />
+                )}
+
+                {selectedPosition && (
+                  <PositionDetail
+                    position={selectedPosition}
+                    edge={selectedPosition.marketId ? edgeMap.get(selectedPosition.marketId) : undefined}
+                    onClose={() => setSelectedId(null)}
+                  />
+                )}
+              </>
             )}
           </section>
 
-          {/* Settled history — honest about the persistence gap */}
-          <Card>
-            <p className="text-2xs leading-relaxed" style={{ color: 'var(--probex-text-disabled)' }}>
-              Settled-position history is not available: the engine keeps no trade
-              ledger yet, and in-memory state resets on restart. A persistent trade
-              history endpoint is on the backend roadmap (P2-02) — this section
-              becomes the full blotter when it lands.
-            </p>
-          </Card>
+          {/* Settled history */}
+          <SettledPositions />
         </>
       )}
     </div>

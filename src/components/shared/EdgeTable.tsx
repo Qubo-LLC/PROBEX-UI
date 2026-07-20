@@ -19,12 +19,16 @@ interface EdgeTableProps {
   result: ParseResult<EdgeRow>
   emptyTitle?: string
   emptyDescription?: string
+  /** When supplied, rows become clickable and select the row's market
+   *  (e.g. Consensus flagship's Opportunity Intelligence → focus market). */
+  onSelectMarket?: (marketId: string) => void
 }
 
 export function EdgeTable({
   result,
   emptyTitle = 'No qualifying edges this cycle',
   emptyDescription = 'The engine is scanning 5-minute markets. Edges appear here the moment one clears the threshold.',
+  onSelectMarket,
 }: EdgeTableProps) {
   if (result.kind === 'empty') {
     return <EmptyState title={emptyTitle} description={emptyDescription} size="sm" />
@@ -54,8 +58,11 @@ export function EdgeTable({
         <Th align="right">Detected</Th>
       </Thead>
       <tbody>
-        {result.rows.map((row) => (
-          <Tr key={row.id}>
+        {result.rows.map((row) => {
+          const marketId = row.marketId
+          const onClick = onSelectMarket && marketId ? () => onSelectMarket(marketId) : undefined
+          return (
+          <Tr key={row.id} onClick={onClick}>
             <Td align="left">
               <span className="font-medium" style={{ color: 'var(--probex-text-primary)' }}>
                 {row.marketTitle ?? row.id}
@@ -96,7 +103,8 @@ export function EdgeTable({
               </span>
             </Td>
           </Tr>
-        ))}
+          )
+        })}
       </tbody>
     </TableShell>
   )

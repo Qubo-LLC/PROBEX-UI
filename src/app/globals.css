@@ -121,9 +121,18 @@
    SURFACE COMPONENTS
 ───────────────────────────────────────────────────────────────────────── */
 @layer components {
-  /* ── Card variants ──────────────────────────────────────── */
+  /* ── Canonical surface tiers (Phase 1 · T5) ───────────────────────────────
+     Five material tiers encode widget priority. All build on theme tokens; the
+     `default` tier is unchanged from before this milestone.
+       primary / focal → .card-elevated  (brighter surface, larger blur, shadow)
+       instrument      → .card           (the standard data surface)
+       interactive     → .card-interactive (adds hover lift)
+       recessed        → .card-recessed  (more opaque, less blur, dashed — pending/awaiting)
+       status          → semantic -dim tokens (var(--probex-{tone}-dim) + border);
+                         applied inline per panel, not a card class.
+  ──────────────────────────────────────────────────────────────────────────── */
   .card {
-    @apply rounded-lg border;
+    @apply rounded-md border;
     background-color: color-mix(in srgb, var(--probex-surface) 88%, transparent);
     border-color: var(--probex-border);
     backdrop-filter: blur(6px);
@@ -131,16 +140,16 @@
   }
 
   .card-elevated {
-    @apply rounded-lg border;
+    @apply rounded-md border;
     background-color: color-mix(in srgb, var(--probex-surface-2) 90%, transparent);
     border-color: var(--probex-border-default);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.10);
+    box-shadow: var(--probex-shadow-sm);
   }
 
   .card-interactive {
-    @apply rounded-lg border transition-all duration-150 cursor-pointer;
+    @apply rounded-md border transition-all duration-150 cursor-pointer;
     background-color: color-mix(in srgb, var(--probex-surface) 88%, transparent);
     border-color: var(--probex-border);
     backdrop-filter: blur(6px);
@@ -151,7 +160,19 @@
     border-color: var(--probex-border-strong);
     background-color: var(--probex-surface-2);
     transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.16);
+    box-shadow: var(--probex-shadow-lift);
+  }
+
+  /* Recessed tier — pending / awaiting surfaces. More opaque and less blurred
+     than .card (honesty expressed as material: unbuilt capability reads duller),
+     with the dashed border that signals "not real data yet". */
+  .card-recessed {
+    @apply rounded-md border;
+    background-color: color-mix(in srgb, var(--probex-surface) 94%, transparent);
+    border-color: var(--probex-border);
+    border-style: dashed;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
   }
 
   /* ── Input base ─────────────────────────────────────────── */
@@ -263,15 +284,6 @@
     text-transform: uppercase;
   }
 
-  .badge-admin {
-    @apply badge text-2xs;
-    background-color: rgba(239, 68, 68, 0.12);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.22);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
   .badge-retail {
     @apply badge text-2xs;
     background-color: var(--probex-primary-dim);
@@ -279,13 +291,6 @@
     border: 1px solid var(--probex-yes-border);
     letter-spacing: 0.08em;
     text-transform: uppercase;
-  }
-
-  .badge-live {
-    @apply badge;
-    background-color: rgba(16, 185, 129, 0.1);
-    color: var(--probex-positive);
-    border: 1px solid rgba(16, 185, 129, 0.2);
   }
 
   /* ── Probability bar ────────────────────────────────────── */
@@ -364,35 +369,9 @@
     border-radius: inherit;
   }
 
-  /* ── Table styles ───────────────────────────────────────── */
-  .data-table {
-    @apply w-full border-collapse;
-  }
-
-  .data-table th {
-    @apply px-3 py-2.5 text-left text-2xs font-semibold uppercase tracking-wider;
-    color: var(--probex-text-muted);
-    border-bottom: 1px solid var(--probex-border);
-    background-color: rgba(255, 255, 255, 0.015);
-  }
-
-  .data-table td {
-    @apply px-3 py-2.5;
-    border-bottom: 1px solid var(--probex-border);
-  }
-
-  .data-table tr:last-child td {
-    border-bottom: none;
-  }
-
-  .data-table tr:hover td {
-    background-color: rgba(255, 255, 255, 0.02);
-    cursor: pointer;
-  }
-
-  .data-table tr.row-selected td {
-    background-color: var(--probex-primary-dim);
-  }
+  /* Table styling lives in the DataTable primitives (src/components/shared/
+     DataTable.tsx) — the single canonical table system. A former parallel
+     table-CSS block (a second, near-dead system) was removed in Phase 1 · T3. */
 
   /* ── Section header ─────────────────────────────────────── */
   .section-header {
@@ -450,6 +429,21 @@
 /* ─────────────────────────────────────────────────────────────────────────
    DASHBOARD PAGE CONTAINER
 ───────────────────────────────────────────────────────────────────────── */
+/* ── Widget sizing vocabulary (Phase 1 · T8) ─────────────────────────────────
+   Canonical min-height tiers for dashboard widgets, co-varying with the surface
+   tiers. VOCABULARY ONLY — pages adopt these during the later Application-pass
+   phase; no page is refactored in Phase 1. Width stays expressed with Tailwind
+   grid `col-span-*`; these standardize height so a widget's priority is declared,
+   not hand-tuned with arbitrary min-h-[…]. Defined OUTSIDE @layer deliberately so
+   Tailwind does not purge them while they are still unused.
+     .widget-compact    — stat tiles / KPI cells (matches current StatCard 88px)
+     .widget-instrument — standard data cards
+     .widget-focal      — the one focal instrument per page
+──────────────────────────────────────────────────────────────────────────────── */
+.widget-compact    { min-height: 88px; }
+.widget-instrument { min-height: 160px; }
+.widget-focal      { min-height: 260px; }
+
 @layer utilities {
   .page-container {
     @apply px-5 py-5 max-w-[1920px] mx-auto w-full;
@@ -535,11 +529,6 @@
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes probex-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(2); opacity: 0; }
 }
 
 @keyframes hero-progress {

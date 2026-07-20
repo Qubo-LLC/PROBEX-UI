@@ -75,7 +75,13 @@ export function TableRowSkeleton({ columns = 6, rows = 5 }: TableRowSkeletonProp
       {Array.from({ length: rows }).map((_, rowIndex) => (
         <tr key={rowIndex}>
           {Array.from({ length: columns }).map((_, colIndex) => (
-            <td key={colIndex} className="px-3 py-2.5">
+            <td
+              key={colIndex}
+              className="px-3 py-2.5"
+              // Row separator (bottom border on every row except the last),
+              // preserving the look of the former table-CSS row rules.
+              style={rowIndex < rows - 1 ? { borderBottom: '1px solid var(--probex-border)' } : undefined}
+            >
               <Skeleton
                 height={16}
                 width={colIndex === 0 ? 160 : 80}
@@ -201,7 +207,7 @@ export function TableSkeleton({
         <Skeleton height={14} width={160} />
         <div className="ml-auto"><Skeleton height={32} width={200} /></div>
       </div>
-      <table className="data-table w-full">
+      <table className="w-full" style={{ borderCollapse: 'collapse' }}>
         <tbody>
           <TableRowSkeleton columns={columns} rows={rows} />
         </tbody>

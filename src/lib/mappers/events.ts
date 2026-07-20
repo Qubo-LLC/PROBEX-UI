@@ -95,6 +95,10 @@ export interface EventRow {
   id:          string
   type:        string
   description: string
+  /** V3 Phase 2: join key so Market Detail can filter the global event log
+   *  down to one market — an extension of the existing row, not a new
+   *  mechanism (mirrors EdgeRow.marketId from Phase 1). */
+  marketId:    string | null
   marketTitle: string | null
   amount:      number | null   // USD, when the event is financial
   probability: number | null   // 0–1, when the event carries one
@@ -110,6 +114,7 @@ export function parseEventRows(e: EngineEvents): ParseResult<EventRow> {
     id:          dto.id as string,
     type:        dto.type as string,
     description: str(dto.description) ? dto.description : (dto.type as string),
+    marketId:    str(dto.market_id) ? dto.market_id : null,
     marketTitle: str(dto.market_title) ? dto.market_title : null,
     amount:      num(dto.amount) ? dto.amount : null,
     probability: num(dto.probability) ? dto.probability : null,

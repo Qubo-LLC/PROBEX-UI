@@ -1,6 +1,6 @@
 'use client'
 
-// SurvivalConsole — the capital-protection console (/dashboard/survival).
+// SurvivalConsole — the capital-protection console (/survival).
 //
 // Operator questions, in order (PROBEX_PRODUCT_SPEC.md §4):
 //   1. What state is the survival brain in?      → state machine strip
