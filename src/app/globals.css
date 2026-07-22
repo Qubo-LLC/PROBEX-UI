@@ -149,18 +149,26 @@
   }
 
   .card-interactive {
-    @apply rounded-md border transition-all duration-150 cursor-pointer;
+    @apply rounded-md border cursor-pointer;
     background-color: color-mix(in srgb, var(--probex-surface) 88%, transparent);
     border-color: var(--probex-border);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
+    transition: transform var(--motion-fast) var(--motion-ease),
+                border-color var(--motion-fast) var(--motion-ease),
+                background-color var(--motion-fast) var(--motion-ease),
+                box-shadow var(--motion-med) var(--motion-ease);
   }
 
+  /* Premium hover: subtle lift + tiny scale + border illumination + soft
+     theme-tinted light — responsiveness communicated by lighting, not by a
+     heavier black shadow. GPU-friendly (transform + shadow only). */
   .card-interactive:hover {
-    border-color: var(--probex-border-strong);
+    border-color: color-mix(in srgb, var(--probex-primary) 28%, var(--probex-border-strong));
     background-color: var(--probex-surface-2);
-    transform: translateY(-1px);
-    box-shadow: var(--probex-shadow-lift);
+    transform: translateY(-1px) scale(1.008);
+    box-shadow: var(--probex-shadow-lift),
+                0 0 20px -8px color-mix(in srgb, var(--probex-primary) 22%, transparent);
   }
 
   /* Recessed tier — pending / awaiting surfaces. More opaque and less blurred
@@ -173,6 +181,80 @@
     border-style: dashed;
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
+  }
+
+  /* ── Accent lighting system (UX polish) ─────────────────────────────────────
+     Subtle, expensive-feeling light — never gaming glow. Every color derives
+     from the ACTIVE theme's tokens via color-mix (never hardcoded), so lighting
+     re-tints automatically with the theme. Use sparingly: lighting encodes
+     HIERARCHY (live > interactive > informational), not decoration.
+       .card-glow        — quiet theme-tinted ring for cards that deserve focus
+       .card-glow-hover  — the same light, only while hovered
+       .card-glow-active — selected/engaged state (strongest static light)
+       .card-glow-live   — reserved for LIVE engine surfaces (glow = alive)
+       .panel-glow       — inset top-edge highlight for large panels
+       .hero-glow        — the hero centerpiece: ambient radial + slow breathing
+  ──────────────────────────────────────────────────────────────────────────── */
+  .card-glow {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--probex-primary) 12%, transparent),
+                0 4px 28px -10px color-mix(in srgb, var(--probex-primary) 14%, transparent);
+  }
+
+  .card-glow-hover { transition: box-shadow var(--motion-med) var(--motion-ease); }
+  .card-glow-hover:hover {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--probex-primary) 18%, transparent),
+                0 6px 32px -10px color-mix(in srgb, var(--probex-primary) 20%, transparent);
+  }
+
+  .card-glow-active {
+    border-color: color-mix(in srgb, var(--probex-primary) 40%, var(--probex-border-strong));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--probex-primary) 24%, transparent),
+                0 6px 36px -10px color-mix(in srgb, var(--probex-primary) 26%, transparent);
+  }
+
+  .card-glow-live {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--probex-positive) 14%, transparent),
+                0 4px 30px -10px color-mix(in srgb, var(--probex-positive) 16%, transparent);
+  }
+
+  .panel-glow {
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--probex-text-primary) 6%, transparent);
+  }
+
+  .hero-glow {
+    position: relative;
+    box-shadow: var(--probex-shadow-sm),
+                inset 0 1px 0 color-mix(in srgb, var(--probex-text-primary) 7%, transparent),
+                0 0 48px -14px color-mix(in srgb, var(--probex-primary) 20%, transparent);
+  }
+  /* Ambient interior light — two theme-hue radials, breathing very slowly.
+     Opacity-only animation (GPU-cheap); neutralised by reduced-motion. */
+  .hero-glow::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background:
+      radial-gradient(55% 85% at 88% 10%, color-mix(in srgb, var(--probex-primary) 9%, transparent), transparent 62%),
+      radial-gradient(45% 70% at 6% 95%, color-mix(in srgb, var(--probex-secondary) 6%, transparent), transparent 65%);
+    animation: hero-breathe 9s var(--motion-ease) infinite alternate;
+  }
+
+  /* ── Live-update pulse (UX polish) ──────────────────────────────────────────
+     A one-shot, very low-opacity light ring around a card whose live value just
+     changed. Mount with a fresh React `key` to retrigger. 620ms, no flash, no
+     bounce; theme-derived color; opacity-only animation on a pre-composed
+     shadow (no shadow interpolation = no paint storm). */
+  .pulse-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--probex-primary) 30%, transparent),
+                0 0 22px -4px color-mix(in srgb, var(--probex-primary) 24%, transparent);
+    animation: pulse-ring 620ms var(--motion-ease);
   }
 
   /* ── Input base ─────────────────────────────────────────── */
@@ -275,24 +357,6 @@
     color: var(--probex-warning);
   }
 
-  .badge-pro {
-    @apply badge text-2xs;
-    background-color: var(--probex-secondary-dim);
-    color: var(--probex-secondary);
-    border: 1px solid var(--probex-no-border);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .badge-retail {
-    @apply badge text-2xs;
-    background-color: var(--probex-primary-dim);
-    color: var(--probex-primary);
-    border: 1px solid var(--probex-yes-border);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
   /* ── Probability bar ────────────────────────────────────── */
   .prob-bar {
     @apply h-1 w-full rounded-full overflow-hidden;
@@ -360,6 +424,24 @@
     background-color: var(--probex-sidebar-item-active-bg);
     color: var(--probex-primary);
     border: 1px solid var(--probex-sidebar-item-active-border);
+    font-weight: 600;
+  }
+
+  /* Active-item accent bar — communicates "you are here" by position, not just
+     fill (Design Language: location certainty). Hidden in the collapsed rail. */
+  .nav-item-active::before {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 16px;
+    border-radius: 3px;
+    background: var(--probex-primary);
+  }
+  .nav-item-active.justify-center::before {
+    display: none;
   }
 
   /* ── Shared keyboard focus ring (shell interactive elements) ── */
@@ -424,6 +506,34 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ACCESSIBILITY PREFERENCES (Settings)
+   Applied via data-attributes on <html> by SettingsEffects, so every
+   Accessibility toggle has a real effect — none is a no-op.
+───────────────────────────────────────────────────────────────────────── */
+:root[data-reduce-motion] *,
+:root[data-reduce-motion] *::before,
+:root[data-reduce-motion] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+:root[data-text-size="sm"] { font-size: 93.75%; }
+:root[data-text-size="md"] { font-size: 100%; }
+:root[data-text-size="lg"] { font-size: 112.5%; }
+
+:root[data-high-contrast] {
+  --probex-text-secondary: var(--probex-text-primary);
+  --probex-border:         var(--probex-border-strong);
+  --probex-border-default: var(--probex-border-strong);
+}
+
+:root[data-underline-links] a {
+  text-decoration: underline;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -534,4 +644,17 @@
 @keyframes hero-progress {
   from { width: 0%; }
   to   { width: 100%; }
+}
+
+/* Live-update pulse ring (one-shot; see .pulse-ring). */
+@keyframes pulse-ring {
+  0%   { opacity: 0; }
+  22%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Hero ambient breathing (slow, opacity-only; see .hero-glow::before). */
+@keyframes hero-breathe {
+  from { opacity: 0.55; }
+  to   { opacity: 1; }
 }

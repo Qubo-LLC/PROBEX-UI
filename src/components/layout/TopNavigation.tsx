@@ -1,10 +1,13 @@
 'use client'
 
+import { useState, useEffect, useCallback } from 'react'
 import Link                   from 'next/link'
 import { cn }                 from '@/lib/utils'
 import { ProbexMark }         from '@/components/ui/ProbexMark'
 import { EngineStatusStrip }  from './EngineStatusStrip'
+import { CommandPalette }     from './CommandPalette'
 import { useSidebarStore, useSidebarCollapsed } from '@/store/sidebarStore'
+import { useSettingsStore }   from '@/store/settingsStore'
 import { ROUTES, TOPNAV_HEIGHT } from '@/config/constants'
 
 /**
@@ -19,14 +22,35 @@ import { ROUTES, TOPNAV_HEIGHT } from '@/config/constants'
  * the P1 alerts API; profile returns with P3 auth.
  */
 export function TopNavigation() {
-  const toggleMobile = useSidebarStore((s) => s.toggleMobile)
-  const toggleRail   = useSidebarStore((s) => s.toggle)
-  const isCollapsed  = useSidebarCollapsed()
+  const toggleMobile      = useSidebarStore((s) => s.toggleMobile)
+  const toggleRail        = useSidebarStore((s) => s.toggle)
+  const isCollapsed       = useSidebarCollapsed()
+  const shortcutsEnabled  = useSettingsStore((s) => s.accessibility.keyboardShortcuts)
+
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const closePalette = useCallback(() => setPaletteOpen(false), [])
+
+  // Global ⌘K / Ctrl+K opens the command palette — honours the accessibility
+  // "keyboard shortcuts" preference, so that toggle has a real effect.
+  useEffect(() => {
+    if (!shortcutsEnabled) return undefined
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen((v) => !v)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [shortcutsEnabled])
 
   return (
     <header
       className={cn(
-        'flex items-center gap-3 px-4 flex-shrink-0',
+        // 3-column grid: the 1fr side columns absorb the brand/status width
+        // difference so the centre column (search) is centred on the HEADER,
+        // not on the leftover space. Brand anchors left, engine status right.
+        'grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4 px-4 flex-shrink-0',
         'border-b z-topnav',
       )}
       style={{
@@ -36,8 +60,8 @@ export function TopNavigation() {
       }}
       role="banner"
     >
-      {/* ── Left region: collapse/menu + brand ──────────────────────── */}
-      <div className="flex items-center gap-2.5 flex-shrink-0">
+      {/* ── Left region (col 1): collapse/menu + brand ──────────────── */}
+      <div className="flex items-center gap-2.5 min-w-0">
         {/* Mobile: open the navigation drawer */}
         <button
           onClick={toggleMobile}
@@ -82,11 +106,31 @@ export function TopNavigation() {
         </Link>
       </div>
 
-      {/* ── Spacer ───────────────────────────────────────────────────── */}
-      <div className="flex-1" />
+      {/* ── Centre region (col 2): command palette trigger (⌘K) ──────── */}
+      <div className="w-9 sm:w-[340px] md:w-[460px] max-w-full justify-self-center">
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          aria-label="Open command palette"
+          className="focus-ring flex items-center gap-2 h-8 w-full rounded-md px-2.5 sm:px-3 transition-colors duration-150 cursor-pointer justify-center sm:justify-start"
+          style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border-default)', color: 'var(--probex-text-muted)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--probex-border-active)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--probex-border-default)' }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+          </svg>
+          <span className="hidden sm:inline text-xs flex-1 text-left">Jump to page…</span>
+          <kbd className="hidden sm:inline text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5" style={{ border: '1px solid var(--probex-border)' }}>⌘K</kbd>
+        </button>
+      </div>
 
-      {/* ── Right region: engine vitals ──────────────────────────────── */}
-      <EngineStatusStrip />
+      {/* ── Right region (col 3): engine vitals ──────────────────────── */}
+      <div className="flex items-center justify-end min-w-0">
+        <EngineStatusStrip />
+      </div>
+
+      <CommandPalette open={paletteOpen} onClose={closePalette} />
     </header>
   )
 }

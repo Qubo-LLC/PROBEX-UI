@@ -1,62 +1,89 @@
 'use client'
 
-// ResearchLibrary — restored V1 visual (git 0e3833a4: ResearchReportCard +
-// ResearchSidebar), gated behind AwaitingBackend since no research-content
-// endpoint exists yet (research.list/get/categories). Category list is
-// trimmed to BTC-relevant topics only — V1's ETF Monitor / Institutional
-// Activity / Macro Signals / On-Chain Signals categories are dropped per the
-// Phase 5 classification ("No Longer Appropriate For PROBEX"), so even this
-// preview doesn't imply content PROBEX will never produce.
-//
-// Prose-shaped placeholders (title/summary lines) use Skeleton, not
-// AwaitingValue — AwaitingValue is for short numeric/label values; long-form
-// text placeholders read more honestly as a loading skeleton.
+// ResearchLibrary — restored V1 visual concept, gated behind AwaitingBackend
+// since no research-content endpoint existed. 2026-07-22: /api/research/reports
+// is live with real, structured reports (types observed: market_conditions,
+// edge_analysis, risk_assessment — auto-generated from the engine's own live
+// state, not long-form authored articles). The category-sidebar browsing
+// concept is dropped: it implied a searchable multi-topic library, which
+// isn't what this endpoint provides — 3 fixed report types, regenerated each
+// poll. Real cards replace the 6 skeleton ghosts.
 
-import { Skeleton } from '@/components/ui/LoadingState'
+import { useApplicationStore } from '@/store/applicationStore'
 import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import type { ResearchReportItem } from '@/types/engine'
 
-const CATEGORIES = ['BTC Outlook', 'Weekly Brief', 'Volatility Analysis', 'Market Structure', 'Segment Deep Dive']
-const GHOST_CARDS = 6
+const TYPE_META: Record<string, { icon: string; color: string }> = {
+  market_conditions: { icon: '◈', color: 'var(--probex-primary)' },
+  edge_analysis:     { icon: '⚡', color: 'var(--probex-yes)' },
+  risk_assessment:   { icon: '⚠', color: 'var(--probex-warning)' },
+}
 
 export function ResearchLibrary() {
+  const slice = useApplicationStore((s) => s.engine.researchReports)
+  const reports = slice.status === 'success' && slice.data ? slice.data.reports : []
+
   return (
     <div className="rounded-xl overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <div>
-          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Research Library</h2>
-          <p className="text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>In-depth reports, weekly briefs, and market structure analysis</p>
+          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Research Reports</h2>
+          <p className="text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>Auto-generated from the engine's current market, edge, and risk state</p>
         </div>
-        <ProvenanceBadge provenance="awaiting" detail="research.list" />
+        <ProvenanceBadge provenance="live" detail="/api/research/reports" />
       </div>
 
-      <div className="flex gap-4 p-4">
-        <aside className="hidden lg:flex flex-col gap-1.5 w-[180px] flex-shrink-0 opacity-40 pointer-events-none select-none" aria-hidden="true">
-          {CATEGORIES.map((c) => (
-            <span key={c} className="text-xs px-2.5 py-1.5 rounded-md" style={{ background: 'var(--probex-surface-2)', color: 'var(--probex-text-muted)' }}>{c}</span>
-          ))}
-        </aside>
+      {slice.status === 'error' && (
+        <div className="p-4">
+          <ErrorState
+            title="Research reports unavailable"
+            description={slice.error?.message ?? 'The /api/research/reports endpoint did not respond in time.'}
+            fullPage={false}
+          />
+        </div>
+      )}
 
-        <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {Array.from({ length: GHOST_CARDS }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-2.5 p-4 rounded-xl" style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}>
-              <div className="flex items-center gap-2">
-                <Skeleton height={16} width={80} />
-                <Skeleton height={16} width={50} />
-              </div>
-              <Skeleton height={14} width="90%" />
-              <Skeleton height={14} width="70%" />
-              <div className="flex flex-col gap-1.5 pt-1">
-                <Skeleton height={10} width="100%" />
-                <Skeleton height={10} width="80%" />
-              </div>
+      {slice.status !== 'error' && reports.length === 0 ? (
+        <div className="p-4">
+          <EmptyState size="sm" title="No reports yet" description="Reports regenerate each cycle from the engine's current state." />
+        </div>
+      ) : slice.status !== 'error' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+          {reports.map((r, i) => <ReportCard key={`${r.type}-${i}`} report={r} />)}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function ReportCard({ report }: { report: ResearchReportItem }) {
+  const meta = TYPE_META[report.type] ?? { icon: '·', color: 'var(--probex-text-muted)' }
+  const details = Object.entries(report.details).slice(0, 4)
+
+  return (
+    <div className="flex flex-col gap-2.5 p-4 rounded-xl" style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}>
+      <div className="flex items-center gap-2">
+        <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: `color-mix(in srgb, ${meta.color} 14%, transparent)`, color: meta.color }} aria-hidden="true">
+          {meta.icon}
+        </span>
+        <h3 className="text-xs font-semibold" style={{ color: 'var(--probex-text-primary)' }}>{report.title}</h3>
+      </div>
+      <p className="text-xs leading-relaxed" style={{ color: 'var(--probex-text-secondary)' }}>{report.summary}</p>
+      {details.length > 0 && (
+        <div className="flex flex-col gap-1 pt-1" style={{ borderTop: '1px solid var(--probex-border)' }}>
+          {details.map(([key, value]) => (
+            <div key={key} className="flex items-center justify-between text-2xs">
+              <span style={{ color: 'var(--probex-text-disabled)' }}>{key.replace(/_/g, ' ')}</span>
+              <span className="tabular-nums font-medium" style={{ color: 'var(--probex-text-secondary)' }}>{String(value)}</span>
             </div>
           ))}
         </div>
-      </div>
-
-      <p className="text-2xs leading-relaxed px-4 pb-4" style={{ color: 'var(--probex-text-disabled)' }}>
-        Long-form research and weekly briefs activate once a research-content endpoint ships — this becomes the full searchable, filterable library when it lands.
-      </p>
+      )}
+      <span className="text-2xs mt-auto pt-1" style={{ color: 'var(--probex-text-disabled)' }}>
+        {new Date(report.generatedAt).toLocaleTimeString()}
+      </span>
     </div>
   )
 }

@@ -13,9 +13,9 @@
 // three focal sections; GlobalConsensusBar trimmed to just the Consensus
 // segment — see both files for the full reasoning).
 
-import { LiveBtcHero, EngineHealthBanner, CapitalPerformanceRow } from './EngineVitals'
+import { EngineFocusHero }                       from './EngineFocusHero'
+import { EngineHealthBanner, CapitalPerformanceRow } from './EngineVitals'
 import { GlobalConsensusBar } from './GlobalConsensusBar'
-import { HeroCarousel }       from './HeroCarousel'
 import { FeaturedMarkets }    from './FeaturedMarkets'
 import { TrendingMarkets }    from './TrendingMarkets'
 import { ActivityFeed }       from './ActivityFeed'
@@ -27,8 +27,9 @@ export function OverviewPage() {
       <h1 className="sr-only">PROBEX Overview</h1>
 
       <div className="flex flex-col gap-4">
-        {/* 1 · Live BTC — the page's hero number, proof-first */}
-        <LiveBtcHero />
+        {/* 1 · Engine Focus hero — live BTC market (trader) + rotating engine
+               state (AI). Proof-first: real price/edge/posture/record only. */}
+        <EngineFocusHero />
 
         {/* 2 · Engine Health — is it alive, is anything wrong */}
         <EngineHealthBanner />
@@ -37,19 +38,29 @@ export function OverviewPage() {
         <CapitalPerformanceRow />
       </div>
 
-      {/* 5 · Engine Intelligence: what the engine is watching + doing, live activity alongside */}
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6 items-start mt-7">
-        <div className="min-w-0 flex flex-col gap-7">
-          <section>
-            <HeroCarousel />
-          </section>
-          <FeaturedMarkets />
-          <TrendingMarkets />
+      {/* 5 · Markets & Engine Intelligence — the hybrid thesis, stated once:
+             the market is the trader's field to watch; the engine marks where it
+             sees an edge and acts in the feed alongside. */}
+      <div className="mt-8">
+        <div className="mb-4">
+          <h2 className="text-base font-bold" style={{ color: 'var(--probex-text-primary)' }}>
+            Markets &amp; Engine Intelligence
+          </h2>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>
+            The market is yours to watch — the engine marks where it sees an edge, and acts in the feed alongside.
+          </p>
         </div>
 
-        <aside className="flex flex-col gap-4 xl:sticky xl:top-5">
-          <ActivityFeed className="max-h-[420px]" />
-        </aside>
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6 items-start">
+          <div className="min-w-0 flex flex-col gap-7">
+            <FeaturedMarkets />
+            <TrendingMarkets />
+          </div>
+
+          <aside className="flex flex-col gap-4 xl:sticky xl:top-5">
+            <ActivityFeed className="max-h-[420px]" />
+          </aside>
+        </div>
       </div>
 
       {/* 6 · Consensus — the one awaiting-backend promise, closes the page rather than opening it */}

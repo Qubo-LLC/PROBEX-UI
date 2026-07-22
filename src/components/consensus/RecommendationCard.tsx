@@ -6,6 +6,14 @@
 // score. V3 keeps the premium headline treatment but both supporting metrics
 // are now genuinely real: Edge Magnitude (from /api/edges) and Engine
 // Confidence (the same field), with no invented "gap" calculation.
+//
+// 2026-07-22: confirmed the live backend never sends `recommendation` (the
+// 5-tier enum this card was built against was speculative). Gating the whole
+// card on `edge.recommendation` meant a genuinely active edge always read as
+// "no active edge" — a false negative. Fixed: the gate is `!edge` only; when
+// `recommendation` is absent, the headline derives from the one real field
+// that carries the same meaning (direction), reusing the existing Buy Yes /
+// Buy No labels rather than inventing new copy.
 
 import type { EdgeRow } from '@/lib/mappers/edges'
 
@@ -17,8 +25,16 @@ const REC_META: Record<string, { color: string; label: string; sub: string }> = 
   strong_buy_no:  { color: 'var(--probex-no)', label: 'Strong Buy No', sub: 'High-conviction NO' },
 }
 
+function deriveMeta(edge: EdgeRow): { color: string; label: string; sub: string } {
+  const known = edge.recommendation ? REC_META[edge.recommendation] : undefined
+  if (known) return known
+  return edge.direction === 'yes'
+    ? { color: 'var(--probex-yes)', label: 'Buy Yes', sub: 'Directional edge detected' }
+    : { color: 'var(--probex-no)', label: 'Buy No', sub: 'Directional edge detected' }
+}
+
 export function RecommendationCard({ edge }: { edge: EdgeRow | undefined }) {
-  const meta = edge?.recommendation ? REC_META[edge.recommendation] : undefined
+  const meta = edge ? deriveMeta(edge) : undefined
 
   return (
     <div className="rounded-xl overflow-hidden h-full flex flex-col" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>

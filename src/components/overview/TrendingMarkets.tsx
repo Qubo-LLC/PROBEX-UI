@@ -10,6 +10,7 @@ import { parseMarketRows } from '@/lib/mappers/markets'
 import { formatCompact, formatPercent } from '@/lib/utils'
 import { SectionHeader } from './SectionHeader'
 import { TableShell, Thead, Th, Tr, Td } from '@/components/shared/DataTable'
+import { TableSkeleton } from '@/components/ui/LoadingState'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Card } from '@/components/ui/Card'
@@ -33,7 +34,9 @@ export function TrendingMarkets() {
 
   return (
     <section>
-      <SectionHeader title="Trending Now" subtitle="Sorted by 24h volume" />
+      <SectionHeader title="Trending Now" subtitle="The busiest markets by 24h volume" />
+
+      {marketsSlice.status === 'loading' && <TableSkeleton columns={4} rows={5} />}
 
       {marketsSlice.status === 'error' && (
         <ErrorState
@@ -69,17 +72,17 @@ export function TrendingMarkets() {
               <Tr key={m.id}>
                 <Td align="left"><span className="font-medium" style={{ color: 'var(--probex-text-primary)' }}>{m.title}</span></Td>
                 <Td align="right">
-                  <span className="tabular-nums font-bold" style={{ color: 'var(--probex-primary)' }}>
+                  <span className="font-mono tabular-nums font-bold" style={{ color: 'var(--probex-primary)' }}>
                     {m.probability !== null ? formatPercent(m.probability) : '—'}
                   </span>
                 </Td>
                 <Td align="right">
-                  <span className="tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>
+                  <span className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>
                     {m.volume24h !== null ? `$${formatCompact(m.volume24h)}` : '—'}
                   </span>
                 </Td>
                 <Td align="right">
-                  <span className="tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+                  <span className="font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
                     {m.closesAt !== null ? new Date(m.closesAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
                   </span>
                 </Td>

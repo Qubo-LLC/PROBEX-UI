@@ -7,6 +7,12 @@ import type {
   SurvivalStatus, PriceHistory,
   EngineMarkets, EnginePositions, EngineEvents, EngineEdges,
   EngineIdentity, ExecutionStatus, RateLimitBucket,
+  ExecutionPolicy, ExecutionTrades, PaperStats,
+  PositionsHistory, SurvivalPatterns,
+  Consensus, ConsensusBias, ConsensusHistory,
+  ResearchReports, Portfolio, Balance, PortfolioHistory, PortfolioSummary, PortfolioPerformance,
+  AnalyticsSegments, AnalyticsSignals, AnalyticsSummary, AnalyticsTopSegments, AnalyticsHourly,
+  PaperStatus, SystemMetrics, TradesLedger, ExecutionOrders,
 } from '@/types/engine'
 
 const NOW = Date.now()
@@ -23,6 +29,10 @@ const MOCK_COMPONENTS = {
   healthMonitor:     true,
   survivalBrain:     true,
   paperTrader:       true,
+  consensusEngine:   true,
+  marketHistory:     true,
+  portfolioTracker:  true,
+  analyticsEngine:   true,
 } as const
 
 export const MOCK_ENGINE_HEALTH: EngineHealth = {
@@ -167,3 +177,187 @@ export const MOCK_ENGINE_MARKETS: EngineMarkets   = { markets: [],   count: 0, t
 export const MOCK_ENGINE_POSITIONS: EnginePositions = { positions: [], count: 0, totalUnrealizedPnl: 0, timestamp: NOW }
 export const MOCK_ENGINE_EVENTS: EngineEvents     = { events: [],    count: 0, limit: 100, types: null, timestamp: NOW }
 export const MOCK_ENGINE_EDGES: EngineEdges       = { edges: [],     count: 0, limit: 50,  timestamp: NOW }
+
+// Mirrors the exported Execution Policy.json — read-only paper-mode order flow.
+export const MOCK_EXECUTION_POLICY: ExecutionPolicy = {
+  mode:               'paper',
+  liveTradingEnabled: false,
+  orderFlow: [
+    'survival_brain_approval',
+    'max_concurrent_position_check',
+    'balance_fetch_or_cache',
+    'kelly_position_sizing',
+    'max_bet_percent_cap',
+    'survival_position_modifier',
+    'minimum_order_size_check',
+    'order_creation',
+    'rate_limited_submit_with_retry',
+    'position_tracking',
+  ],
+  riskLimits: {
+    maxConcurrentPositions: 10,
+    maxBetPercent:          20,
+    kellyFraction:          0.5,
+    maxLatencyMs:           100,
+    minimumOrderSizeUsd:    10,
+  },
+  orderTemplate: {
+    side:           'BUY',
+    orderType:      'GTC',
+    priceBuffer:    0.01,
+    tokenSelection: 'YES uses edge.yes_token_id; NO uses edge.no_token_id',
+    yesPrice:       'min(edge.market_yes_price + 0.01, 0.99)',
+    noPrice:        'min(edge.market_no_price + 0.01, 0.99)',
+  },
+  knownLimitations: [
+    'YES/NO token ids now flow from market_fetcher to edge_detector to execution_engine.',
+    'Verify Polymarket token ordering and order signing with tiny paper/live tests before scaling.',
+    'This endpoint is read-only and never places orders.',
+  ],
+  timestamp: NOW,
+}
+
+// Mirrors Execution Trades.json — fresh session, no active or closed trades.
+export const MOCK_EXECUTION_TRADES: ExecutionTrades = {
+  activePositions: [],
+  closedPositions: [],
+  timestamp:       NOW,
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 3 (2026-07-22 redeploy) — mock fixtures for the 20 newly-live
+// endpoints, values drawn directly from real captured payloads (paper mode,
+// live session mid-run — capital drawn down to $46.27, state CRITICAL).
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const MOCK_POSITIONS_HISTORY: PositionsHistory = { available: true, history: [], count: 0, limit: 50, timestamp: NOW }
+
+export const MOCK_SURVIVAL_PATTERNS: SurvivalPatterns = {
+  available: true,
+  patterns: [
+    { key: '11|btc_5min|10%+', hour: 11, marketType: 'btc_5min', edgeBucket: '10%+', wins: 4, losses: 11, totalTrades: 15, winRate: 0.267, avgPnl: -3.32, isFiltered: false },
+    { key: '12|btc_5min|10%+', hour: 12, marketType: 'btc_5min', edgeBucket: '10%+', wins: 4, losses: 8, totalTrades: 12, winRate: 0.333, avgPnl: 0.0, isFiltered: false },
+    { key: '12|btc_5min|5-10%', hour: 12, marketType: 'btc_5min', edgeBucket: '5-10%', wins: 1, losses: 3, totalTrades: 4, winRate: 0.25, avgPnl: -0.56, isFiltered: false },
+    { key: '13|btc_5min|10%+', hour: 13, marketType: 'btc_5min', edgeBucket: '10%+', wins: 0, losses: 1, totalTrades: 1, winRate: 0.0, avgPnl: -1.73, isFiltered: false },
+  ],
+  count: 4, filteredCount: 0, timestamp: NOW,
+}
+
+export const MOCK_CONSENSUS: Consensus = {
+  available: true, scoreTimestamp: NOW, score: -0.125, confidence: 0.333, signalCount: 5,
+  signals: { edgeDirection: -0.306, edgeConfidence: 0.36, rsiMomentum: -0.5, macdTrend: 0.0, priceMomentum: 0.0 },
+  btcPrice: 65590.2, interpretation: 'NEUTRAL', timestamp: NOW,
+}
+
+export const MOCK_CONSENSUS_BIAS: ConsensusBias = {
+  available: true, totalEdges: 2,
+  bias: { yesCount: 1, noCount: 1, yesPercent: 50.0, noPercent: 50.0 },
+  confidence: { average: 0.36, p50: 0.47, p75: 0.47, p90: 0.47, min: 0.25, max: 0.47 },
+  recentTrend: { last10Edges: 2, yesCount: 1, noCount: 1, bias: 'NEUTRAL' },
+  timestamp: NOW,
+}
+
+export const MOCK_CONSENSUS_HISTORY: ConsensusHistory = (() => {
+  const history = Array.from({ length: 20 }, (_, i) => ({ ts: NOW - (20 - i) * 5_000, score: -0.125, confidence: 0.333, btcPrice: 65590.2 }))
+  return { available: true, history, timestamp: NOW }
+})()
+
+export const MOCK_RESEARCH_REPORTS: ResearchReports = {
+  available: true,
+  reports: [
+    { type: 'market_conditions', title: 'Current Market Conditions', summary: 'Monitoring 2 active BTC market(s)', details: { active_markets: 2, current_btc_price: 65590.2, feed_latency_ms: 210.64 }, generatedAt: NOW },
+    { type: 'edge_analysis', title: 'Edge Detection Analysis', summary: 'Average edge: 4.00%, confidence: 0.36', details: { total_edges: 2, avg_edge_pct: 4.0, avg_confidence: 0.36, yes_edges: 1, no_edges: 1 }, generatedAt: NOW },
+    { type: 'risk_assessment', title: 'Risk Assessment', summary: 'State: CRITICAL, Capital: 46.3%', details: { survival_state: 'CRITICAL', capital_pct: 46.3, kelly_modifier: 0.25, min_edge_threshold: 10.0, days_of_runway: 0.9 }, generatedAt: NOW },
+  ],
+  count: 3, timestamp: NOW,
+}
+
+export const MOCK_PORTFOLIO: Portfolio = {
+  available: true, mode: 'paper',
+  balance: { current: 100.0, cacheAgeSec: null },
+  positions: { active: [], activeCount: 0, totalUnrealizedPnl: 0.0 },
+  pnl: { realized: 0.0, unrealized: 0.0, total: 0.0 },
+  performance: { totalTrades: 0, wins: 0, losses: 0, winRate: 0.0, avgExecutionMs: 0 },
+  survival: { state: 'CRITICAL', capital: 46.27, capitalPct: 46.3, kellyModifier: 0.25, minEdgeThreshold: 10.0 },
+  btcPrice: 65590.2, timestamp: NOW,
+}
+
+export const MOCK_BALANCE: Balance = { available: true, balanceUsd: 100.0, cacheAgeSec: null, cacheFresh: false, timestamp: NOW }
+
+export const MOCK_PORTFOLIO_HISTORY: PortfolioHistory = (() => {
+  const history = Array.from({ length: 30 }, (_, i) => ({
+    ts: NOW - (30 - i) * 60_000, totalValue: 46.27 + Math.sin(i / 4) * 2, cashBalance: 46.27,
+    unrealizedPnl: 0.0, realizedPnl: -18.54, positionCount: 3, btcPrice: 65590 + i * 2, winRate: 0.286, totalTrades: 21,
+  }))
+  return { available: true, history, timestamp: NOW }
+})()
+
+export const MOCK_PORTFOLIO_SUMMARY: PortfolioSummary = {
+  available: true,
+  summary: {
+    currentValue: 46.27, initialValue: 100.0, peakValue: 100.0, totalReturnPct: -53.73, currentDrawdownPct: 53.73,
+    snapshotCount: 107, timeRangeSeconds: 7994.1, firstSnapshot: NOW - 7_994_100, lastSnapshot: NOW,
+    currentPositions: 4, currentWinRate: 0.286, totalTrades: 21,
+  },
+  timestamp: NOW,
+}
+
+export const MOCK_PORTFOLIO_PERFORMANCE: PortfolioPerformance = {
+  available: true,
+  performance: {
+    available: true, periodHours: 24, startValue: 100.0, endValue: 46.27, valueChange: -53.73,
+    returnPct: -53.73, maxDrawdownPct: 54.54, tradesInPeriod: 21, snapshotCount: 107,
+  },
+  lookbackHours: 24, timestamp: NOW,
+}
+
+export const MOCK_ANALYTICS_SEGMENTS: AnalyticsSegments = { available: true, segments: [], count: 0, segmentType: null, timestamp: NOW }
+export const MOCK_ANALYTICS_SIGNALS: AnalyticsSignals = { available: true, signals: [], count: 0, timestamp: NOW }
+export const MOCK_ANALYTICS_SUMMARY: AnalyticsSummary = {
+  available: true,
+  summary: { totalTradesAnalyzed: 0, overallWinRate: 0, totalPnl: 0, segmentCount: 0, signalCount: 0, historySize: 0 },
+  timestamp: NOW,
+}
+export const MOCK_ANALYTICS_TOP_SEGMENTS: AnalyticsTopSegments = { available: true, topSegments: [], segmentType: 'edge_bucket', metric: 'win_rate', limit: 5, timestamp: NOW }
+export const MOCK_ANALYTICS_HOURLY: AnalyticsHourly = { available: true, hourly: [], count: 0, timestamp: NOW }
+
+export const MOCK_PAPER_STATUS: PaperStatus = { available: true, enabled: true, pendingTrades: 4, completedTrades: 28, timestamp: NOW }
+
+export const MOCK_SYSTEM_METRICS: SystemMetrics = {
+  available: true,
+  uptime: { seconds: 4737.5, formatted: '1h 18m 57s' },
+  memoryMb: { rssMb: 91.48, vmsMb: 296.63 },
+  cpuPercent: 0.0,
+  components: MOCK_COMPONENTS,
+  eventLogSize: 200,
+  timestamp: NOW,
+}
+
+export const MOCK_TRADES_LEDGER: TradesLedger = { available: true, ledger: [], count: 0, summary: { totalPnl: 0, wins: 0, losses: 0, winRate: 0 }, timestamp: NOW }
+
+export const MOCK_EXECUTION_ORDERS: ExecutionOrders = { available: true, activeOrders: [], closedOrders: [], activeCount: 0, closedCount: 0, totalCount: 0, timestamp: NOW }
+
+// Mirrors Paper Trading Stats.json — $100 session start, nothing traded yet.
+export const MOCK_PAPER_STATS: PaperStats = {
+  available: true,
+  paperTrading: {
+    sessionStart:      NOW - UPTIME_MS,
+    initialCapital:    100,
+    currentCapital:    100,
+    totalTrades:       0,
+    wins:              0,
+    losses:            0,
+    pushes:            0,
+    pending:           0,
+    totalPnl:          0,
+    winRate:           0,
+    avgWin:            0,
+    avgLoss:           0,
+    largestWin:        0,
+    largestLoss:       0,
+    survivalStates:    [],
+    edgeBuckets:       {},
+    hourlyPerformance: {},
+  },
+  timestamp: NOW,
+}

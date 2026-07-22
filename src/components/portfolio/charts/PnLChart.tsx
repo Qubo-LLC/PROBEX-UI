@@ -1,10 +1,30 @@
 'use client'
 
-// PnLChart — restored V1 chart shell (git 0e3833a4). Daily/cumulative P&L
-// over time has no history endpoint yet (P2-01) — shared PendingChart shell.
+// PnLChart — originally P2-01 (no backend). 2026-07-22: /api/portfolio/history
+// carries realized_pnl per snapshot — rendered via the shared LiveChart
+// primitive.
 
-import { PendingChart } from '@/components/shared/PendingChart'
+import { useApplicationStore } from '@/store/applicationStore'
+import { LiveChart, type LiveChartPoint } from '@/components/shared/LiveChart'
+import { formatCurrency, formatSignedCurrency } from '@/lib/utils'
 
 export function PnLChart({ height = 200 }: { height?: number }) {
-  return <PendingChart title="Daily & Cumulative P&L" endpoint="P2-01" variant="line" height={height} bare />
+  const slice = useApplicationStore((s) => s.engine.portfolioHistory)
+  const data: LiveChartPoint[] = slice.status === 'success' && slice.data
+    ? slice.data.history.map((p) => ({ tick: new Date(p.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), value: p.realizedPnl }))
+    : []
+
+  return (
+    <LiveChart
+      title="Daily & Cumulative P&L"
+      source="/api/portfolio/history"
+      data={data}
+      variant="line"
+      height={height}
+      bare
+      color="var(--probex-positive)"
+      yTickFormatter={(v) => formatCurrency(v, true)}
+      valueFormatter={(v) => formatSignedCurrency(v)}
+    />
+  )
 }

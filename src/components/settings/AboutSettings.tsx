@@ -51,6 +51,13 @@ export function AboutSettings() {
       <p className="text-2xs text-center" style={{ color: 'var(--probex-text-disabled)' }}>
         © 2026 Probex · QUBO Consensus Engine. All rights reserved.
       </p>
+      <p className="text-2xs text-center" style={{ color: 'var(--probex-text-disabled)' }}>
+        Market charts powered by{' '}
+        <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener noreferrer" className="underline">
+          TradingView Lightweight Charts™
+        </a>
+        .
+      </p>
     </div>
   )
 }

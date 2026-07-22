@@ -16,7 +16,10 @@ export interface HealthComponentDTO {
   checked_at: string         // ISO 8601
 }
 
-/** Runtime component flags from /api/runtime components{} and /api/stats runtime_components{} */
+/** Runtime component flags from /api/runtime components{} and /api/stats runtime_components{}.
+ *  2026-07-22 redeploy added 4 new flags (consensus_engine, market_history,
+ *  portfolio_tracker, analytics_engine) — confirmed live in root identity,
+ *  /api/stats, /api/runtime, and /api/system/metrics. */
 export interface RuntimeComponentsDTO {
   bot:                boolean
   clob_client:        boolean
@@ -28,6 +31,10 @@ export interface RuntimeComponentsDTO {
   health_monitor:     boolean
   survival_brain:     boolean
   paper_trader:       boolean
+  consensus_engine:   boolean
+  market_history:     boolean
+  portfolio_tracker:  boolean
+  analytics_engine:   boolean
 }
 
 // ─── /health ──────────────────────────────────────────────────────────────────
@@ -192,6 +199,10 @@ export interface RuntimeComponents {
   healthMonitor:     boolean
   survivalBrain:     boolean
   paperTrader:       boolean
+  consensusEngine:   boolean
+  marketHistory:     boolean
+  portfolioTracker:  boolean
+  analyticsEngine:   boolean
 }
 
 export interface RuntimeStats {
@@ -504,4 +515,862 @@ export interface EngineEdges {
   count:     number
   limit:     number
   timestamp: number  // epoch ms
+}
+
+// ─── /api/execution/policy ──────────────────────────────────────────────────────
+// Read-only description of the order-execution flow. Fully observed in the
+// exported sample (Execution Policy.json). Never places orders.
+
+export interface ExecutionRiskLimitsDTO {
+  max_concurrent_positions: number
+  max_bet_percent:          number
+  kelly_fraction:           number
+  max_latency_ms:           number
+  minimum_order_size_usd:   number
+}
+
+export interface ExecutionOrderTemplateDTO {
+  side:            string   // 'BUY'
+  order_type:      string   // 'GTC'
+  price_buffer:    number
+  token_selection: string
+  yes_price:       string
+  no_price:        string
+}
+
+export interface ExecutionPolicyDTO {
+  mode:                 string    // 'paper' | 'live'
+  live_trading_enabled: boolean
+  order_flow:           string[]
+  risk_limits:          ExecutionRiskLimitsDTO
+  order_template:       ExecutionOrderTemplateDTO
+  known_limitations:    string[]
+  timestamp:            string    // ISO 8601
+}
+
+export interface ExecutionRiskLimits {
+  maxConcurrentPositions: number
+  maxBetPercent:          number
+  kellyFraction:          number
+  maxLatencyMs:           number
+  minimumOrderSizeUsd:    number
+}
+
+export interface ExecutionOrderTemplate {
+  side:           string
+  orderType:      string
+  priceBuffer:    number
+  tokenSelection: string
+  yesPrice:       string
+  noPrice:        string
+}
+
+export interface ExecutionPolicy {
+  mode:               EngineMode
+  liveTradingEnabled: boolean
+  orderFlow:          string[]
+  riskLimits:         ExecutionRiskLimits
+  orderTemplate:      ExecutionOrderTemplate
+  knownLimitations:   string[]
+  timestamp:          number    // epoch ms
+}
+
+// ─── /api/execution/trades ──────────────────────────────────────────────────────
+// Active + closed trade lists. Both arrays were empty in the exported sample
+// (Execution Trades.json), so item shapes are not yet observed — kept unknown[]
+// per the no-invented-fields rule; a mapper is added when a non-empty sample lands.
+
+export interface ExecutionTradesDTO {
+  active_positions: unknown[]
+  closed_positions: unknown[]
+  timestamp:        string    // ISO 8601
+}
+
+export interface ExecutionTrades {
+  activePositions: unknown[]
+  closedPositions: unknown[]
+  timestamp:       number     // epoch ms
+}
+
+// ─── /api/paper-stats ───────────────────────────────────────────────────────────
+// Paper-trading session performance. survival_states / edge_buckets /
+// hourly_performance were empty in the exported sample (Paper Trading Stats.json)
+// → item/value shapes left loose (unknown[] / Record<string, unknown>).
+
+/** Aggregate performance stat for one bucket (edge-size bucket or hour-of-day).
+ *  Confirmed shape from a real 2026-07-22 paper-stats capture — same shape
+ *  reused for both edge_buckets values and hourly_performance values. */
+export interface BucketPerformanceStatDTO {
+  wins:      number
+  losses:    number
+  total_pnl: number
+  win_rate:  number  // 0–100 (percentage, not a 0–1 fraction — confirmed from live sample)
+}
+
+export interface PaperTradingInnerDTO {
+  session_start:       string    // ISO 8601
+  initial_capital:     number
+  current_capital:     number
+  total_trades:        number
+  wins:                number
+  losses:              number
+  pushes:              number
+  pending:             number
+  total_pnl:           number
+  win_rate:            number    // 0–100 (percentage — confirmed 28.6 in live sample, not 0.286)
+  avg_win:             number
+  avg_loss:            number
+  largest_win:         number
+  largest_loss:        number
+  /** [ISO timestamp, survival state] tuples — confirmed shape from live sample,
+   *  e.g. ["2026-07-22T11:47:31Z", "WOUNDED"]. */
+  survival_states:     [string, string][]
+  /** Keyed by edge-size bucket label, e.g. "10%+", "5-10%". */
+  edge_buckets:        Record<string, BucketPerformanceStatDTO>
+  /** Keyed by hour-of-day as a string, e.g. "11", "12". */
+  hourly_performance:  Record<string, BucketPerformanceStatDTO>
+}
+
+export interface PaperStatsDTO {
+  available:     boolean
+  paper_trading: PaperTradingInnerDTO
+  timestamp:     string    // ISO 8601
+}
+
+export interface PaperTrading {
+  sessionStart:      number    // epoch ms
+  initialCapital:    number
+  currentCapital:    number
+  totalTrades:       number
+  wins:              number
+  losses:            number
+  pushes:            number
+  pending:           number
+  totalPnl:          number
+  winRate:           number    // 0–1 (normalized from the wire's 0–100 percentage)
+  avgWin:            number
+  avgLoss:           number
+  largestWin:        number
+  largestLoss:       number
+  /** [epoch ms, survival state] pairs. */
+  survivalStates:    [number, string][]
+  edgeBuckets:       Record<string, BucketPerformanceStat>
+  hourlyPerformance: Record<string, BucketPerformanceStat>
+}
+
+export interface BucketPerformanceStat {
+  wins:     number
+  losses:   number
+  totalPnl: number
+  winRate:  number  // 0–1 (normalized from the wire's 0–100 percentage)
+}
+
+export interface PaperStats {
+  available:     boolean
+  paperTrading:  PaperTrading
+  timestamp:     number    // epoch ms
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 3 (2026-07-22 redeploy) — 20 newly-live endpoints, all types derived
+// directly from real captured payloads. Never invented. Item arrays with
+// zero observed elements stay `unknown[]` per the existing parse-or-report
+// convention (markets/positions/events/edges precedent) — a mapper is added
+// only once a real, non-empty sample exists.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── /api/positions/history ──────────────────────────────────────────────────
+// Envelope confirmed live; `history[]` empty in every capture so far — item
+// shape unconfirmed, kept unknown[].
+
+export interface PositionsHistoryDTO {
+  available: boolean
+  history:   unknown[]
+  count:     number
+  limit:     number
+  timestamp: string  // ISO 8601
+}
+
+export interface PositionsHistory {
+  available: boolean
+  history:   unknown[]
+  count:     number
+  limit:     number
+  timestamp: number  // epoch ms
+}
+
+// ─── /api/survival/patterns ──────────────────────────────────────────────────
+// Item shape fully confirmed from a real, non-empty 2026-07-22 capture.
+
+export interface SurvivalPatternItemDTO {
+  key:          string   // e.g. "11|btc_5min|10%+"
+  hour:         number   // 0–23
+  market_type:  string   // e.g. "btc_5min"
+  edge_bucket:  string   // e.g. "10%+", "5-10%"
+  wins:         number
+  losses:       number
+  total_trades: number
+  win_rate:     number   // 0–100 (percentage, confirmed)
+  avg_pnl:      number
+  is_filtered:  boolean
+}
+
+export interface SurvivalPatternsDTO {
+  available:      boolean
+  patterns:       SurvivalPatternItemDTO[]
+  count:          number
+  filtered_count: number
+  timestamp:      string  // ISO 8601
+}
+
+export interface SurvivalPatternItem {
+  key:          string
+  hour:         number
+  marketType:   string
+  edgeBucket:   string
+  wins:         number
+  losses:       number
+  totalTrades:  number
+  winRate:      number   // 0–1 (normalized)
+  avgPnl:       number
+  isFiltered:   boolean
+}
+
+export interface SurvivalPatterns {
+  available:     boolean
+  patterns:      SurvivalPatternItem[]
+  count:         number
+  filteredCount: number
+  timestamp:     number  // epoch ms
+}
+
+// ─── /api/consensus ───────────────────────────────────────────────────────────
+// Global platform-wide consensus score. Fully confirmed from a real capture.
+
+export interface ConsensusSignalsDTO {
+  edge_direction:  number  // signed
+  edge_confidence: number  // 0–1
+  rsi_momentum:    number  // signed
+  macd_trend:      number  // signed
+  price_momentum:  number  // signed
+}
+
+export interface ConsensusInnerDTO {
+  timestamp:     string   // ISO 8601
+  score:         number   // signed, roughly -1..1
+  confidence:    number   // 0–1
+  signal_count:  number
+  signals:       ConsensusSignalsDTO
+  btc_price:     number
+  interpretation: string  // e.g. "NEUTRAL" — only value observed so far
+}
+
+export interface ConsensusDTO {
+  available: boolean
+  consensus: ConsensusInnerDTO
+  timestamp: string  // ISO 8601
+}
+
+export interface ConsensusSignals {
+  edgeDirection:  number
+  edgeConfidence: number
+  rsiMomentum:    number
+  macdTrend:      number
+  priceMomentum:  number
+}
+
+export interface Consensus {
+  available:      boolean
+  scoreTimestamp: number  // epoch ms
+  score:          number
+  confidence:     number
+  signalCount:    number
+  signals:        ConsensusSignals
+  btcPrice:       number
+  interpretation: string
+  timestamp:      number  // epoch ms
+}
+
+// ─── /api/consensus/bias ──────────────────────────────────────────────────────
+
+export interface ConsensusBiasSplitDTO {
+  yes_count:   number
+  no_count:    number
+  yes_percent: number  // 0–100
+  no_percent:  number  // 0–100
+}
+
+export interface ConsensusConfidenceStatsDTO {
+  average: number
+  p50:     number
+  p75:     number
+  p90:     number
+  min:     number
+  max:     number
+}
+
+export interface ConsensusRecentTrendDTO {
+  last_10_edges: number
+  yes_count:     number
+  no_count:      number
+  bias:          string  // e.g. "NEUTRAL"
+}
+
+export interface ConsensusBiasDTO {
+  available:    boolean
+  total_edges:  number
+  bias:         ConsensusBiasSplitDTO
+  confidence:   ConsensusConfidenceStatsDTO
+  recent_trend: ConsensusRecentTrendDTO
+  timestamp:    string  // ISO 8601
+}
+
+export interface ConsensusBiasSplit {
+  yesCount:   number
+  noCount:    number
+  yesPercent: number
+  noPercent:  number
+}
+
+export interface ConsensusConfidenceStats {
+  average: number
+  p50:     number
+  p75:     number
+  p90:     number
+  min:     number
+  max:     number
+}
+
+export interface ConsensusRecentTrend {
+  last10Edges: number
+  yesCount:    number
+  noCount:     number
+  bias:        string
+}
+
+export interface ConsensusBias {
+  available:   boolean
+  totalEdges:  number
+  bias:        ConsensusBiasSplit
+  confidence:  ConsensusConfidenceStats
+  recentTrend: ConsensusRecentTrend
+  timestamp:   number  // epoch ms
+}
+
+// ─── /api/consensus/history ──────────────────────────────────────────────────
+// Item shape fully confirmed from a real, non-empty capture.
+
+export interface ConsensusHistoryPointDTO {
+  timestamp:  string  // ISO 8601
+  score:      number
+  confidence: number
+  btc_price:  number
+}
+
+export interface ConsensusHistoryDTO {
+  available: boolean
+  history:   ConsensusHistoryPointDTO[]
+  timestamp: string  // ISO 8601
+}
+
+export interface ConsensusHistoryPoint {
+  ts:         number  // epoch ms
+  score:      number
+  confidence: number
+  btcPrice:   number
+}
+
+export interface ConsensusHistory {
+  available: boolean
+  history:   ConsensusHistoryPoint[]
+  timestamp: number  // epoch ms
+}
+
+// ─── /api/research/reports ────────────────────────────────────────────────────
+// Item shape fully confirmed from a real, non-empty capture. `details` varies
+// by report `type` (market_conditions | edge_analysis | risk_assessment
+// observed so far) — kept as an untyped record rather than inventing a
+// discriminated union from 3 samples.
+
+export interface ResearchReportItemDTO {
+  type:          string
+  title:         string
+  summary:       string
+  details:       Record<string, unknown>
+  generated_at:  string  // ISO 8601
+}
+
+export interface ResearchReportsDTO {
+  available: boolean
+  reports:   ResearchReportItemDTO[]
+  count:     number
+  timestamp: string  // ISO 8601
+}
+
+export interface ResearchReportItem {
+  type:        string
+  title:       string
+  summary:     string
+  details:     Record<string, unknown>
+  generatedAt: number  // epoch ms
+}
+
+export interface ResearchReports {
+  available: boolean
+  reports:   ResearchReportItem[]
+  count:     number
+  timestamp: number  // epoch ms
+}
+
+// ─── /api/portfolio (live snapshot) ───────────────────────────────────────────
+
+export interface PortfolioBalanceDTO {
+  current:        number
+  cache_age_sec:  number | null
+}
+
+export interface PortfolioPositionsSummaryDTO {
+  active:               unknown[]
+  active_count:         number
+  total_unrealized_pnl: number
+}
+
+export interface PortfolioPnlDTO {
+  realized:   number
+  unrealized: number
+  total:      number
+}
+
+export interface PortfolioPerformanceInnerDTO {
+  total_trades:      number
+  wins:              number
+  losses:            number
+  win_rate:          number  // 0–100 (percentage, confirmed)
+  avg_execution_ms:  number
+}
+
+export interface PortfolioSurvivalDTO {
+  state:              string
+  capital:            number
+  capital_pct:        number
+  kelly_modifier:     number
+  min_edge_threshold: number
+}
+
+export interface PortfolioDTO {
+  available:   boolean
+  mode:        string
+  balance:     PortfolioBalanceDTO
+  positions:   PortfolioPositionsSummaryDTO
+  pnl:         PortfolioPnlDTO
+  performance: PortfolioPerformanceInnerDTO
+  survival:    PortfolioSurvivalDTO
+  btc_price:   number
+  timestamp:   string  // ISO 8601
+}
+
+export interface PortfolioBalance {
+  current:      number
+  cacheAgeSec:  number | null
+}
+
+export interface PortfolioPositionsSummary {
+  active:             unknown[]
+  activeCount:        number
+  totalUnrealizedPnl: number
+}
+
+export interface PortfolioPnl {
+  realized:   number
+  unrealized: number
+  total:      number
+}
+
+export interface PortfolioPerformanceInner {
+  totalTrades:    number
+  wins:           number
+  losses:         number
+  winRate:        number  // 0–1 (normalized)
+  avgExecutionMs: number
+}
+
+export interface PortfolioSurvival {
+  state:            SurvivalState
+  capital:          number
+  capitalPct:       number
+  kellyModifier:    number
+  minEdgeThreshold: number
+}
+
+export interface Portfolio {
+  available:   boolean
+  mode:        EngineMode
+  balance:     PortfolioBalance
+  positions:   PortfolioPositionsSummary
+  pnl:         PortfolioPnl
+  performance: PortfolioPerformanceInner
+  survival:    PortfolioSurvival
+  btcPrice:    number
+  timestamp:   number  // epoch ms
+}
+
+// ─── /api/balance ─────────────────────────────────────────────────────────────
+
+export interface BalanceDTO {
+  available:      boolean
+  balance_usd:    number
+  cache_age_sec:  number | null
+  cache_fresh:    boolean
+  timestamp:      string  // ISO 8601
+}
+
+export interface Balance {
+  available:   boolean
+  balanceUsd:  number
+  cacheAgeSec: number | null
+  cacheFresh:  boolean
+  timestamp:   number  // epoch ms
+}
+
+// ─── /api/portfolio/history ───────────────────────────────────────────────────
+// Item shape fully confirmed from a real, non-empty capture (107 snapshots observed).
+
+export interface PortfolioHistoryPointDTO {
+  timestamp:      string  // ISO 8601
+  total_value:    number
+  cash_balance:   number
+  unrealized_pnl: number
+  realized_pnl:   number
+  position_count: number
+  btc_price:      number
+  win_rate:       number  // 0–100 (percentage, confirmed)
+  total_trades:   number
+}
+
+export interface PortfolioHistoryDTO {
+  available: boolean
+  history:   PortfolioHistoryPointDTO[]
+  timestamp: string  // ISO 8601
+}
+
+export interface PortfolioHistoryPoint {
+  ts:             number  // epoch ms
+  totalValue:     number
+  cashBalance:    number
+  unrealizedPnl:  number
+  realizedPnl:    number
+  positionCount:  number
+  btcPrice:       number
+  winRate:        number  // 0–1 (normalized)
+  totalTrades:    number
+}
+
+export interface PortfolioHistory {
+  available: boolean
+  history:   PortfolioHistoryPoint[]
+  timestamp: number  // epoch ms
+}
+
+// ─── /api/portfolio/summary ───────────────────────────────────────────────────
+
+export interface PortfolioSummaryInnerDTO {
+  current_value:        number
+  initial_value:        number
+  peak_value:           number
+  total_return_pct:     number
+  current_drawdown_pct: number
+  snapshot_count:       number
+  time_range_seconds:   number
+  first_snapshot:       string  // ISO 8601
+  last_snapshot:        string  // ISO 8601
+  current_positions:    number
+  current_win_rate:     number  // 0–100 (percentage, confirmed — matches paper-stats)
+  total_trades:         number
+}
+
+export interface PortfolioSummaryDTO {
+  available: boolean
+  summary:   PortfolioSummaryInnerDTO
+  timestamp: string  // ISO 8601
+}
+
+export interface PortfolioSummaryInner {
+  currentValue:       number
+  initialValue:       number
+  peakValue:          number
+  totalReturnPct:     number
+  currentDrawdownPct: number
+  snapshotCount:      number
+  timeRangeSeconds:   number
+  firstSnapshot:      number  // epoch ms
+  lastSnapshot:       number  // epoch ms
+  currentPositions:   number
+  currentWinRate:     number  // 0–1 (normalized)
+  totalTrades:        number
+}
+
+export interface PortfolioSummary {
+  available: boolean
+  summary:   PortfolioSummaryInner
+  timestamp: number  // epoch ms
+}
+
+// ─── /api/portfolio/performance ───────────────────────────────────────────────
+
+export interface PortfolioPerformancePeriodDTO {
+  available:          boolean
+  period_hours:       number
+  start_value:        number
+  end_value:          number
+  value_change:       number
+  return_pct:         number
+  max_drawdown_pct:   number
+  trades_in_period:   number
+  snapshot_count:     number
+}
+
+export interface PortfolioPerformanceDTO {
+  available:      boolean
+  performance:    PortfolioPerformancePeriodDTO
+  lookback_hours: number
+  timestamp:      string  // ISO 8601
+}
+
+export interface PortfolioPerformancePeriod {
+  available:       boolean
+  periodHours:     number
+  startValue:      number
+  endValue:        number
+  valueChange:     number
+  returnPct:       number
+  maxDrawdownPct:  number
+  tradesInPeriod:  number
+  snapshotCount:   number
+}
+
+export interface PortfolioPerformance {
+  available:     boolean
+  performance:   PortfolioPerformancePeriod
+  lookbackHours: number
+  timestamp:     number  // epoch ms
+}
+
+// ─── /api/analytics/segments, /signals, /top-segments, /hourly ───────────────
+// All four confirmed live but empty in every capture so far (zero trade
+// history to segment yet) — item shapes unconfirmed, kept unknown[].
+
+export interface AnalyticsSegmentsDTO {
+  available:    boolean
+  segments:     unknown[]
+  count:        number
+  segment_type: string | null
+  timestamp:    string  // ISO 8601
+}
+
+export interface AnalyticsSegments {
+  available:   boolean
+  segments:    unknown[]
+  count:       number
+  segmentType: string | null
+  timestamp:   number  // epoch ms
+}
+
+export interface AnalyticsSignalsDTO {
+  available: boolean
+  signals:   unknown[]
+  count:     number
+  timestamp: string  // ISO 8601
+}
+
+export interface AnalyticsSignals {
+  available: boolean
+  signals:   unknown[]
+  count:     number
+  timestamp: number  // epoch ms
+}
+
+export interface AnalyticsTopSegmentsDTO {
+  available:    boolean
+  top_segments: unknown[]
+  segment_type: string
+  metric:       string
+  limit:        number
+  timestamp:    string  // ISO 8601
+}
+
+export interface AnalyticsTopSegments {
+  available:   boolean
+  topSegments: unknown[]
+  segmentType: string
+  metric:      string
+  limit:       number
+  timestamp:   number  // epoch ms
+}
+
+export interface AnalyticsHourlyDTO {
+  available: boolean
+  hourly:    unknown[]
+  count:     number
+  timestamp: string  // ISO 8601
+}
+
+export interface AnalyticsHourly {
+  available: boolean
+  hourly:    unknown[]
+  count:     number
+  timestamp: number  // epoch ms
+}
+
+// ─── /api/analytics/summary ───────────────────────────────────────────────────
+
+export interface AnalyticsSummaryInnerDTO {
+  total_trades_analyzed: number
+  overall_win_rate:      number  // 0–100 (percentage, by convention with the rest of this backend)
+  total_pnl:             number
+  segment_count:         number
+  signal_count:          number
+  history_size:          number
+}
+
+export interface AnalyticsSummaryDTO {
+  available: boolean
+  summary:   AnalyticsSummaryInnerDTO
+  timestamp: string  // ISO 8601
+}
+
+export interface AnalyticsSummaryInner {
+  totalTradesAnalyzed: number
+  overallWinRate:      number  // 0–1 (normalized)
+  totalPnl:            number
+  segmentCount:        number
+  signalCount:         number
+  historySize:         number
+}
+
+export interface AnalyticsSummary {
+  available: boolean
+  summary:   AnalyticsSummaryInner
+  timestamp: number  // epoch ms
+}
+
+// ─── /api/paper/status ────────────────────────────────────────────────────────
+
+export interface PaperStatusDTO {
+  available:        boolean
+  enabled:          boolean
+  pending_trades:   number
+  completed_trades: number
+  timestamp:        string  // ISO 8601
+}
+
+export interface PaperStatus {
+  available:       boolean
+  enabled:         boolean
+  pendingTrades:   number
+  completedTrades: number
+  timestamp:       number  // epoch ms
+}
+
+// ─── /api/system/metrics ──────────────────────────────────────────────────────
+
+export interface SystemMetricsUptimeDTO {
+  seconds:   number
+  formatted: string  // e.g. "1h 18m 57s"
+}
+
+export interface SystemMetricsMemoryDTO {
+  rss_mb: number
+  vms_mb: number
+}
+
+export interface SystemMetricsCpuDTO {
+  percent: number
+}
+
+export interface SystemMetricsDTO {
+  available:      boolean
+  uptime:         SystemMetricsUptimeDTO
+  memory:         SystemMetricsMemoryDTO
+  cpu:            SystemMetricsCpuDTO
+  components:     RuntimeComponentsDTO
+  event_log_size: number
+  timestamp:      string  // ISO 8601
+}
+
+export interface SystemMetricsUptime {
+  seconds:   number
+  formatted: string
+}
+
+export interface SystemMetricsMemory {
+  rssMb: number
+  vmsMb: number
+}
+
+export interface SystemMetrics {
+  available:    boolean
+  uptime:       SystemMetricsUptime
+  memoryMb:     SystemMetricsMemory
+  cpuPercent:   number
+  components:   RuntimeComponents
+  eventLogSize: number
+  timestamp:    number  // epoch ms
+}
+
+// ─── /api/trades/ledger ───────────────────────────────────────────────────────
+// Envelope confirmed live; `ledger[]` empty in every capture so far — item
+// shape unconfirmed, kept unknown[].
+
+export interface TradesLedgerSummaryDTO {
+  total_pnl: number
+  wins:      number
+  losses:    number
+  win_rate:  number  // 0–100 (percentage, by convention)
+}
+
+export interface TradesLedgerDTO {
+  available: boolean
+  ledger:    unknown[]
+  count:     number
+  summary:   TradesLedgerSummaryDTO
+  timestamp: string  // ISO 8601
+}
+
+export interface TradesLedgerSummary {
+  totalPnl: number
+  wins:     number
+  losses:   number
+  winRate:  number  // 0–1 (normalized)
+}
+
+export interface TradesLedger {
+  available: boolean
+  ledger:    unknown[]
+  count:     number
+  summary:   TradesLedgerSummary
+  timestamp: number  // epoch ms
+}
+
+// ─── /api/execution/orders ────────────────────────────────────────────────────
+// Envelope confirmed live; both arrays empty in every capture so far — item
+// shape unconfirmed, kept unknown[].
+
+export interface ExecutionOrdersDTO {
+  available:     boolean
+  active_orders: unknown[]
+  closed_orders: unknown[]
+  active_count:  number
+  closed_count:  number
+  total_count:   number
+  timestamp:     string  // ISO 8601
+}
+
+export interface ExecutionOrders {
+  available:    boolean
+  activeOrders: unknown[]
+  closedOrders: unknown[]
+  activeCount:  number
+  closedCount:  number
+  totalCount:   number
+  timestamp:    number  // epoch ms
 }

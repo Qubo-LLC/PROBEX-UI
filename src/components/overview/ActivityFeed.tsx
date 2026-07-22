@@ -1,12 +1,17 @@
 'use client'
 
-// ActivityFeed — restored from V1 (git 0e3833a4), live from /api/events via
-// parseEventRows. Event `type` arrives as an unconfirmed backend string
-// (parse-or-report), so the icon/colour/importance lookup is lenient: any
-// type outside the documented EngineEventItemDTO vocabulary still renders,
-// just without special styling — never hidden, never guessed at.
+// ActivityFeed — the Overview's Live Activity rail, live from /api/events via
+// parseEventRows. The event `type` vocabulary (new-position-*, market-resolved,
+// consensus-shift, probability-spike, large-position, edge-detected) is the
+// documented EngineEventItemDTO CONTRACT — not fabricated — so the icon/colour
+// routing is honest; any type outside it still renders via DEFAULT_CONFIG.
+//
+// Craft (Product Experience Restoration · Phase E): tokenised colours, mono
+// timestamps, canonical 8px surface, and a felt-recency cue — newly-arrived
+// rows animate in (Design Language "recency" motion), so the feed feels awake
+// the moment the engine acts. Reduced-motion neutralises the animation.
 
-import { useMemo } from 'react'
+import { useMemo, useRef, useEffect } from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
 import { parseEventRows, type EventRow } from '@/lib/mappers/events'
 import { formatCompact } from '@/lib/utils'
@@ -15,13 +20,13 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 
 interface EventConfig {
-  icon:       string
-  color:      string
-  important:  boolean
+  icon:      string
+  color:     string
+  important: boolean
 }
 
-// Documented EngineEventItemDTO type vocabulary (lib/mappers/events.ts).
-// Anything outside this map renders with the DEFAULT_CONFIG fallback.
+// Documented EngineEventItemDTO type vocabulary (the frozen contract). Anything
+// outside this map renders with DEFAULT_CONFIG — never hidden, never guessed at.
 const EVENT_CONFIG: Record<string, EventConfig> = {
   'new-position-yes':  { icon: '↑', color: 'var(--probex-yes)',      important: false },
   'new-position-no':   { icon: '↓', color: 'var(--probex-no)',       important: false },
@@ -41,13 +46,13 @@ function formatAge(ts: number): string {
   return `${Math.floor(s / 86400)}d`
 }
 
-function ActivityRow({ item }: { item: EventRow }) {
+function ActivityRow({ item, isNew }: { item: EventRow; isNew: boolean }) {
   const cfg = EVENT_CONFIG[item.type] ?? DEFAULT_CONFIG
   const age = item.timestamp !== null ? formatAge(item.timestamp) : null
 
   return (
     <div
-      className="flex items-start gap-2.5 px-3.5 py-2"
+      className={`flex items-start gap-2.5 px-3.5 py-2${isNew ? ' animate-fade-in-up' : ''}`}
       style={{
         borderBottom: '1px solid var(--probex-border)',
         borderLeft:   cfg.important ? `2.5px solid ${cfg.color}` : '2.5px solid transparent',
@@ -70,15 +75,15 @@ function ActivityRow({ item }: { item: EventRow }) {
           >
             {item.marketTitle ?? item.type}
           </span>
-          {age && <span className="text-[9px] flex-shrink-0" style={{ color: 'var(--probex-text-muted)' }}>{age}</span>}
+          {age && <span className="text-[9px] font-mono tabular-nums flex-shrink-0" style={{ color: 'var(--probex-text-muted)' }}>{age}</span>}
         </div>
         <p className="text-[10px] leading-snug m-0" style={{ color: 'var(--probex-text-muted)' }}>
           {item.description}
           {item.amount !== null && (
-            <span className="font-semibold ml-1" style={{ color: cfg.color }}>${formatCompact(item.amount)}</span>
+            <span className="font-semibold font-mono ml-1" style={{ color: cfg.color }}>${formatCompact(item.amount)}</span>
           )}
           {item.probability !== null && (
-            <span className="font-bold ml-1" style={{ color: cfg.color }}>→ {Math.round(item.probability * 100)}%</span>
+            <span className="font-bold font-mono ml-1" style={{ color: cfg.color }}>→ {Math.round(item.probability * 100)}%</span>
           )}
         </p>
       </div>
@@ -96,12 +101,12 @@ function FeedHeader({ count, rows }: { count: number; rows: EventRow[] }) {
           <span className="live-dot w-1.5 h-1.5" aria-hidden="true" />
           <h3 className="text-sm font-semibold m-0" style={{ color: 'var(--probex-text-primary)' }}>Live Activity</h3>
         </div>
-        <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{count} events</span>
+        <span className="text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{count} events</span>
       </div>
       {(whales > 0 || shifts > 0) && (
         <div className="flex gap-1.5">
           {whales > 0 && (
-            <span className="text-[9px] font-bold rounded-full px-1.5 py-0.5" style={{ color: '#F97316', background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)' }}>
+            <span className="text-[9px] font-bold rounded-full px-1.5 py-0.5" style={{ color: 'var(--probex-warning)', background: 'var(--probex-warning-dim)', border: '1px solid var(--probex-warning-border)' }}>
               {whales} large position{whales === 1 ? '' : 's'}
             </span>
           )}
@@ -138,6 +143,19 @@ export function ActivityFeed({ className = '' }: ActivityFeedProps) {
     })
   }, [parsed])
 
+  // Recency: rows whose id wasn't present on the previous render animate in.
+  // The ref is updated after render, so the next poll only animates genuinely
+  // new events (Design Language "motion = information", never decorative).
+  const seenRef = useRef<Set<string>>(new Set())
+  const newIds = useMemo(() => {
+    const s = new Set<string>()
+    for (const r of sorted) if (!seenRef.current.has(r.id)) s.add(r.id)
+    return s
+  }, [sorted])
+  useEffect(() => {
+    for (const r of sorted) seenRef.current.add(r.id)
+  }, [sorted])
+
   if (eventsSlice.status === 'error') {
     return (
       <Card className={className}>
@@ -152,7 +170,7 @@ export function ActivityFeed({ className = '' }: ActivityFeedProps) {
 
   return (
     <div
-      className={`flex flex-col overflow-hidden rounded-xl ${className}`}
+      className={`flex flex-col overflow-hidden rounded-md ${className}`}
       style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}
     >
       <FeedHeader count={sorted.length} rows={sorted} />
@@ -160,8 +178,8 @@ export function ActivityFeed({ className = '' }: ActivityFeedProps) {
         {parsed?.kind === 'empty' && (
           <EmptyState
             size="sm"
-            title="No activity yet"
-            description="Trades, edge detections, and resolutions appear here as the engine acts."
+            title="Standing by for engine activity"
+            description="Edge detections, trades, and resolutions stream in here the moment the engine acts."
           />
         )}
         {parsed?.kind === 'unrecognized' && (
@@ -172,7 +190,7 @@ export function ActivityFeed({ className = '' }: ActivityFeedProps) {
             </p>
           </div>
         )}
-        {sorted.map((item) => <ActivityRow key={item.id} item={item} />)}
+        {sorted.map((item) => <ActivityRow key={item.id} item={item} isNew={newIds.has(item.id)} />)}
       </div>
     </div>
   )

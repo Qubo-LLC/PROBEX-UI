@@ -1,11 +1,14 @@
 'use client'
 
-// SettledPositions — restored V1 visual (git 0e3833a4). The engine keeps no
-// persistent trade ledger yet (P2-02), so individual settled rows can't be
-// shown truthfully — but the AGGREGATE win/loss count IS real today, from
-// /api/execution/status's resolutionStats. Per the Phase 4 "never collapse
-// premium layouts" directive: the full table shell (header, columns, 4 ghost
-// rows) renders at full weight; only the per-row figures are marked pending.
+// SettledPositions — restored V1 visual (git 0e3833a4). Settled history now has a
+// live source: /api/execution/trades exposes closed_positions (Phase 2, 2026-07-21).
+// In the current paper session that list is empty and its per-row item schema is not
+// yet observed, so individual rows still can't be shown truthfully — but the section
+// is no longer "waiting for an endpoint that doesn't exist": the endpoint is live and
+// simply has nothing settled this session. The AGGREGATE win/loss count remains real
+// today, from /api/execution/status's resolutionStats. Per the Phase 4 "never collapse
+// premium layouts" directive the full table shell renders at full weight; only the
+// per-row figures are marked pending until a non-empty closed_positions sample lands.
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { AwaitingValue } from '@/components/shared/AwaitingValue'
@@ -16,8 +19,11 @@ const GHOST_ROWS = 4
 
 export function SettledPositions() {
   const executionSlice = useApplicationStore((s) => s.engine.executionStatus)
+  const tradesSlice    = useApplicationStore((s) => s.engine.executionTrades)
   const ex = executionSlice.status === 'success' ? executionSlice.data : null
   const rs = ex?.resolutionStats
+  const trades = tradesSlice.status === 'success' ? tradesSlice.data : null
+  const closedCount = trades ? trades.closedPositions.length : 0
 
   return (
     <div className="flex flex-col gap-3">
@@ -30,7 +36,7 @@ export function SettledPositions() {
               <span className="font-semibold px-2 py-0.5 rounded" style={{ background: 'var(--probex-negative-dim)', color: 'var(--probex-negative)' }}>{rs.losses}L</span>
             </div>
           )}
-          <ProvenanceBadge provenance="awaiting" detail="P2-02" />
+          <ProvenanceBadge provenance="awaiting" detail="closed_positions schema" />
         </div>
       </div>
 
@@ -60,9 +66,11 @@ export function SettledPositions() {
       </TableShell>
 
       <p className="text-2xs leading-relaxed" style={{ color: 'var(--probex-text-disabled)' }}>
-        {rs && rs.totalResolved > 0
-          ? `The engine has resolved ${rs.totalResolved} position${rs.totalResolved === 1 ? '' : 's'} this session (${rs.wins}W / ${rs.losses}L), but keeps no persistent trade ledger yet — individual settled rows activate once a history endpoint ships (P2-02).`
-          : 'Settled-position history is not available: the engine keeps no trade ledger yet, and in-memory state resets on restart. A persistent trade history endpoint is on the backend roadmap (P2-02) — this section becomes the full blotter when it lands.'}
+        {closedCount > 0
+          ? `The engine reports ${closedCount} closed trade${closedCount === 1 ? '' : 's'} via /api/execution/trades, but their row schema isn't confirmed yet — individual settled rows activate once a closed-position sample is captured.`
+          : rs && rs.totalResolved > 0
+            ? `The engine has resolved ${rs.totalResolved} position${rs.totalResolved === 1 ? '' : 's'} this session (${rs.wins}W / ${rs.losses}L). /api/execution/trades is live but its closed list is empty right now — individual settled rows populate as trades close.`
+            : 'No positions have settled this session. /api/execution/trades is live and will populate this blotter as the engine opens and closes paper positions.'}
       </p>
     </div>
   )

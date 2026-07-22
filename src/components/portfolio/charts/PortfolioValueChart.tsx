@@ -1,11 +1,30 @@
 'use client'
 
-// PortfolioValueChart — restored V1 chart shell (git 0e3833a4). No portfolio
-// value history endpoint exists yet (P2-01) — renders via the shared
-// PendingChart shell inside the caller's own ChartCard framing.
+// PortfolioValueChart — originally P2-01 (no backend). 2026-07-22:
+// /api/portfolio/history is live (107 snapshots observed) — rendered via the
+// shared LiveChart primitive.
 
-import { PendingChart } from '@/components/shared/PendingChart'
+import { useApplicationStore } from '@/store/applicationStore'
+import { LiveChart, type LiveChartPoint } from '@/components/shared/LiveChart'
+import { formatCurrency } from '@/lib/utils'
 
 export function PortfolioValueChart({ height = 200 }: { height?: number }) {
-  return <PendingChart title="Portfolio Value" endpoint="P2-01" variant="area" height={height} bare />
+  const slice = useApplicationStore((s) => s.engine.portfolioHistory)
+  const data: LiveChartPoint[] = slice.status === 'success' && slice.data
+    ? slice.data.history.map((p) => ({ tick: new Date(p.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), value: p.totalValue }))
+    : []
+
+  return (
+    <LiveChart
+      title="Portfolio Value"
+      source="/api/portfolio/history"
+      data={data}
+      variant="area"
+      height={height}
+      bare
+      color="var(--probex-primary)"
+      yTickFormatter={(v) => formatCurrency(v, true)}
+      valueFormatter={(v) => formatCurrency(v)}
+    />
+  )
 }

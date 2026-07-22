@@ -1,12 +1,29 @@
 'use client'
 
-// WinRateChart — restored V1 chart shell (git 0e3833a4). Rolling win rate
-// over time has no history endpoint yet (P2-01) — shared PendingChart shell.
-// (The current, single-point win rate IS live — see PortfolioMetrics —
-// this chart is specifically the trend over time, which requires history.)
+// WinRateChart — originally P2-01 (no backend). 2026-07-22:
+// /api/portfolio/history carries win_rate per snapshot — rendered via the
+// shared LiveChart primitive.
 
-import { PendingChart } from '@/components/shared/PendingChart'
+import { useApplicationStore } from '@/store/applicationStore'
+import { LiveChart, type LiveChartPoint } from '@/components/shared/LiveChart'
 
 export function WinRateChart({ height = 160 }: { height?: number }) {
-  return <PendingChart title="Rolling Win Rate" endpoint="P2-01" variant="area" height={height} bare />
+  const slice = useApplicationStore((s) => s.engine.portfolioHistory)
+  const data: LiveChartPoint[] = slice.status === 'success' && slice.data
+    ? slice.data.history.map((p) => ({ tick: new Date(p.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), value: p.winRate }))
+    : []
+
+  return (
+    <LiveChart
+      title="Rolling Win Rate"
+      source="/api/portfolio/history"
+      data={data}
+      variant="area"
+      height={height}
+      bare
+      color="var(--probex-yes)"
+      yTickFormatter={(v) => `${Math.round(v * 100)}%`}
+      valueFormatter={(v) => `${(v * 100).toFixed(1)}%`}
+    />
+  )
 }

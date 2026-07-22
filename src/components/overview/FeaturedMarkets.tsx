@@ -14,7 +14,7 @@ import { parseMarketRows } from '@/lib/mappers/markets'
 import { parseEdgeRows, toEdgeRowMap, type EdgeRow } from '@/lib/mappers/edges'
 import { MARKET_DETAIL_PATH } from '@/config/constants'
 import { SectionHeader } from './SectionHeader'
-import { MarketCard } from '@/components/markets/MarketCard'
+import { MarketCard, MarketCardSkeleton } from '@/components/markets/MarketCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Card } from '@/components/ui/Card'
@@ -44,7 +44,13 @@ export function FeaturedMarkets() {
 
   return (
     <section>
-      <SectionHeader title="Featured Markets" subtitle="Highest liquidity opportunities the engine is watching" />
+      <SectionHeader title="Featured Markets" subtitle="Highest-liquidity markets — accented where the engine sees an edge" />
+
+      {marketsSlice.status === 'loading' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {Array.from({ length: 3 }).map((_, i) => <MarketCardSkeleton key={i} />)}
+        </div>
+      )}
 
       {marketsSlice.status === 'error' && (
         <ErrorState
@@ -66,8 +72,8 @@ export function FeaturedMarkets() {
       {marketRows?.kind === 'empty' && (
         <EmptyState
           size="sm"
-          title="No featured markets this cycle"
-          description="The engine's market scanner returned zero candidates this cycle."
+          title="The engine is scanning"
+          description="Featured markets appear here the moment the scanner returns qualifying candidates — the engine prefers patience over noise."
         />
       )}
 

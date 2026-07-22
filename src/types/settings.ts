@@ -1,31 +1,3 @@
-export interface DeviceSession {
-  id:         string
-  device:     string
-  browser:    string
-  location:   string
-  ipMasked:   string
-  lastActive: string
-  current:    boolean
-}
-
-export interface WalletPrefs {
-  displayCurrency:    'USD' | 'EUR' | 'GBP' | 'BTC'
-  gasPreference:      'standard' | 'fast' | 'instant'
-  autoRefreshBalance: boolean
-  hideSmallBalances:  boolean
-  txNotifications:    boolean
-}
-
-export interface TradingPrefs {
-  defaultStake:         string
-  confirmBeforeSubmit:  boolean
-  defaultOutcome:       'yes' | 'no'
-  slippage:             '0.5' | '1' | '2' | '5'
-  oneClickTrading:      boolean
-  showConsensusOnCards: boolean
-  defaultMarketView:    'grid' | 'table'
-}
-
 export interface AccessibilityPrefs {
   reduceMotion:      boolean
   highContrast:      boolean
@@ -34,9 +6,35 @@ export interface AccessibilityPrefs {
   underlineLinks:    boolean
 }
 
-export interface SecurityPrefs {
-  twoFactor:              boolean
-  loginAlerts:            boolean
-  withdrawalConfirmation: boolean
-  sessionTimeout:         '15' | '30' | '60' | 'never'
+// ─── Locally-persisted preference groups (Settings Restoration) ───────────────
+// These are REAL user preferences saved to localStorage via settingsStore — no
+// backend. Delivery/enforcement that needs a server (notification push, auth)
+// is surfaced honestly in the UI as "Available in a future release".
+
+export interface NotificationPrefs {
+  /** Master switch — off silences everything. */
+  master:          boolean
+  priceAlerts:     boolean
+  edgeAlerts:      boolean
+  survivalAlerts:  boolean
+  executionAlerts: boolean
+}
+
+export interface ProfilePrefs {
+  /** Local display name shown in the shell. */
+  displayName: string
+  /** Short self-description. */
+  headline:    string
+}
+
+/** How the dashboard should emphasise the two trading modes (Autonomous AI +
+ *  Manual). A real, saved workspace preference — it does not enable manual
+ *  order placement (no such endpoint exists). */
+export type TradingModeEmphasis = 'autonomous' | 'manual' | 'hybrid'
+
+export interface WorkspacePrefs {
+  tradingMode:        TradingModeEmphasis
+  defaultMarketView:  'grid' | 'table'
+  confirmManualTrade: boolean
+  compactNumbers:     boolean
 }

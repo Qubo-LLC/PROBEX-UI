@@ -11,12 +11,33 @@ import type {
   EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
   EngineMarketsDTO, EnginePositionsDTO, EngineEventsDTO, EngineEdgesDTO,
   EngineIdentityDTO, ExecutionStatusDTO, RateLimitBucketDTO,
+  ExecutionPolicyDTO, ExecutionTradesDTO, PaperStatsDTO, BucketPerformanceStatDTO,
   EngineHealth, HealthComponent, RuntimeComponents, EngineRuntime, EngineStats,
   EngineConfig, SurvivalStatus, PriceHistory,
   EngineMarkets, EnginePositions, EngineEvents, EngineEdges,
   EngineIdentity, ExecutionStatus, RateLimitBucket,
+  ExecutionPolicy, ExecutionTrades, PaperStats, BucketPerformanceStat,
   EngineHealthStatus, SurvivalState, EngineMode,
+  PositionsHistoryDTO, PositionsHistory,
+  SurvivalPatternsDTO, SurvivalPatterns, SurvivalPatternItemDTO, SurvivalPatternItem,
+  ConsensusDTO, Consensus, ConsensusBiasDTO, ConsensusBias,
+  ConsensusHistoryDTO, ConsensusHistory,
+  ResearchReportsDTO, ResearchReports,
+  PortfolioDTO, Portfolio, BalanceDTO, Balance,
+  PortfolioHistoryDTO, PortfolioHistory, PortfolioSummaryDTO, PortfolioSummary,
+  PortfolioPerformanceDTO, PortfolioPerformance,
+  AnalyticsSegmentsDTO, AnalyticsSegments, AnalyticsSignalsDTO, AnalyticsSignals,
+  AnalyticsSummaryDTO, AnalyticsSummary, AnalyticsTopSegmentsDTO, AnalyticsTopSegments,
+  AnalyticsHourlyDTO, AnalyticsHourly,
+  PaperStatusDTO, PaperStatus, SystemMetricsDTO, SystemMetrics,
+  TradesLedgerDTO, TradesLedger, ExecutionOrdersDTO, ExecutionOrders,
 } from '@/types/engine'
+
+/** Every `win_rate` field on this backend is 0–100 (percentage) — confirmed
+ *  from real 2026-07-22 samples (paper-stats: 28.6, survival/patterns: 33.3,
+ *  portfolio/summary: 28.6). Normalize to 0–1 here so every domain winRate in
+ *  the app shares one convention (matches the existing ExecutionStatus.winRate). */
+const pctToFraction = (pct: number): number => pct / 100
 
 // ─── Time normalization ─────────────────────────────────────────────────────────
 
@@ -47,6 +68,10 @@ function toRuntimeComponents(dto: RuntimeComponentsDTO): RuntimeComponents {
     healthMonitor:     dto.health_monitor,
     survivalBrain:     dto.survival_brain,
     paperTrader:       dto.paper_trader,
+    consensusEngine:   dto.consensus_engine,
+    marketHistory:     dto.market_history,
+    portfolioTracker:  dto.portfolio_tracker,
+    analyticsEngine:   dto.analytics_engine,
   }
 }
 
@@ -268,4 +293,307 @@ export function toEngineEvents(dto: EngineEventsDTO): EngineEvents {
 
 export function toEngineEdges(dto: EngineEdgesDTO): EngineEdges {
   return { edges: dto.edges, count: dto.count, limit: dto.limit, timestamp: isoToMs(dto.timestamp) }
+}
+
+// ─── /api/execution/policy ──────────────────────────────────────────────────────
+
+export function toExecutionPolicy(dto: ExecutionPolicyDTO): ExecutionPolicy {
+  return {
+    mode:               dto.mode as EngineMode,
+    liveTradingEnabled: dto.live_trading_enabled,
+    orderFlow:          dto.order_flow,
+    riskLimits: {
+      maxConcurrentPositions: dto.risk_limits.max_concurrent_positions,
+      maxBetPercent:          dto.risk_limits.max_bet_percent,
+      kellyFraction:          dto.risk_limits.kelly_fraction,
+      maxLatencyMs:           dto.risk_limits.max_latency_ms,
+      minimumOrderSizeUsd:    dto.risk_limits.minimum_order_size_usd,
+    },
+    orderTemplate: {
+      side:           dto.order_template.side,
+      orderType:      dto.order_template.order_type,
+      priceBuffer:    dto.order_template.price_buffer,
+      tokenSelection: dto.order_template.token_selection,
+      yesPrice:       dto.order_template.yes_price,
+      noPrice:        dto.order_template.no_price,
+    },
+    knownLimitations: dto.known_limitations,
+    timestamp:        isoToMs(dto.timestamp),
+  }
+}
+
+// ─── /api/execution/trades (items unknown[] until a non-empty sample lands) ─────
+
+export function toExecutionTrades(dto: ExecutionTradesDTO): ExecutionTrades {
+  return {
+    activePositions: dto.active_positions,
+    closedPositions: dto.closed_positions,
+    timestamp:       isoToMs(dto.timestamp),
+  }
+}
+
+// ─── /api/paper-stats ───────────────────────────────────────────────────────────
+
+function toBucketPerformanceStat(dto: BucketPerformanceStatDTO): BucketPerformanceStat {
+  return { wins: dto.wins, losses: dto.losses, totalPnl: dto.total_pnl, winRate: pctToFraction(dto.win_rate) }
+}
+
+function toBucketPerformanceRecord(dto: Record<string, BucketPerformanceStatDTO>): Record<string, BucketPerformanceStat> {
+  const out: Record<string, BucketPerformanceStat> = {}
+  for (const [key, value] of Object.entries(dto)) out[key] = toBucketPerformanceStat(value)
+  return out
+}
+
+export function toPaperStats(dto: PaperStatsDTO): PaperStats {
+  const p = dto.paper_trading
+  return {
+    available: dto.available,
+    paperTrading: {
+      sessionStart:      isoToMs(p.session_start),
+      initialCapital:    p.initial_capital,
+      currentCapital:    p.current_capital,
+      totalTrades:       p.total_trades,
+      wins:              p.wins,
+      losses:            p.losses,
+      pushes:            p.pushes,
+      pending:           p.pending,
+      totalPnl:          p.total_pnl,
+      winRate:           pctToFraction(p.win_rate),
+      avgWin:            p.avg_win,
+      avgLoss:           p.avg_loss,
+      largestWin:        p.largest_win,
+      largestLoss:       p.largest_loss,
+      survivalStates:    p.survival_states.map(([iso, state]) => [isoToMs(iso), state] as [number, string]),
+      edgeBuckets:       toBucketPerformanceRecord(p.edge_buckets),
+      hourlyPerformance: toBucketPerformanceRecord(p.hourly_performance),
+    },
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 3 (2026-07-22 redeploy) — adapters for the 20 newly-live endpoints.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export function toPositionsHistory(dto: PositionsHistoryDTO): PositionsHistory {
+  return { available: dto.available, history: dto.history, count: dto.count, limit: dto.limit, timestamp: isoToMs(dto.timestamp) }
+}
+
+function toSurvivalPatternItem(dto: SurvivalPatternItemDTO): SurvivalPatternItem {
+  return {
+    key: dto.key, hour: dto.hour, marketType: dto.market_type, edgeBucket: dto.edge_bucket,
+    wins: dto.wins, losses: dto.losses, totalTrades: dto.total_trades,
+    winRate: pctToFraction(dto.win_rate), avgPnl: dto.avg_pnl, isFiltered: dto.is_filtered,
+  }
+}
+
+export function toSurvivalPatterns(dto: SurvivalPatternsDTO): SurvivalPatterns {
+  return {
+    available: dto.available,
+    patterns: dto.patterns.map(toSurvivalPatternItem),
+    count: dto.count,
+    filteredCount: dto.filtered_count,
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toConsensus(dto: ConsensusDTO): Consensus {
+  const c = dto.consensus
+  return {
+    available: dto.available,
+    scoreTimestamp: isoToMs(c.timestamp),
+    score: c.score,
+    confidence: c.confidence,
+    signalCount: c.signal_count,
+    signals: {
+      edgeDirection: c.signals.edge_direction,
+      edgeConfidence: c.signals.edge_confidence,
+      rsiMomentum: c.signals.rsi_momentum,
+      macdTrend: c.signals.macd_trend,
+      priceMomentum: c.signals.price_momentum,
+    },
+    btcPrice: c.btc_price,
+    interpretation: c.interpretation,
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toConsensusBias(dto: ConsensusBiasDTO): ConsensusBias {
+  return {
+    available: dto.available,
+    totalEdges: dto.total_edges,
+    bias: {
+      yesCount: dto.bias.yes_count, noCount: dto.bias.no_count,
+      yesPercent: dto.bias.yes_percent, noPercent: dto.bias.no_percent,
+    },
+    confidence: {
+      average: dto.confidence.average, p50: dto.confidence.p50, p75: dto.confidence.p75,
+      p90: dto.confidence.p90, min: dto.confidence.min, max: dto.confidence.max,
+    },
+    recentTrend: {
+      last10Edges: dto.recent_trend.last_10_edges,
+      yesCount: dto.recent_trend.yes_count, noCount: dto.recent_trend.no_count,
+      bias: dto.recent_trend.bias,
+    },
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toConsensusHistory(dto: ConsensusHistoryDTO): ConsensusHistory {
+  return {
+    available: dto.available,
+    history: dto.history.map((p) => ({ ts: isoToMs(p.timestamp), score: p.score, confidence: p.confidence, btcPrice: p.btc_price })),
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toResearchReports(dto: ResearchReportsDTO): ResearchReports {
+  return {
+    available: dto.available,
+    reports: dto.reports.map((r) => ({ type: r.type, title: r.title, summary: r.summary, details: r.details, generatedAt: isoToMs(r.generated_at) })),
+    count: dto.count,
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toPortfolio(dto: PortfolioDTO): Portfolio {
+  return {
+    available: dto.available,
+    mode: dto.mode as EngineMode,
+    balance: { current: dto.balance.current, cacheAgeSec: dto.balance.cache_age_sec },
+    positions: {
+      active: dto.positions.active,
+      activeCount: dto.positions.active_count,
+      totalUnrealizedPnl: dto.positions.total_unrealized_pnl,
+    },
+    pnl: { realized: dto.pnl.realized, unrealized: dto.pnl.unrealized, total: dto.pnl.total },
+    performance: {
+      totalTrades: dto.performance.total_trades, wins: dto.performance.wins, losses: dto.performance.losses,
+      winRate: pctToFraction(dto.performance.win_rate), avgExecutionMs: dto.performance.avg_execution_ms,
+    },
+    survival: {
+      state: dto.survival.state as SurvivalState, capital: dto.survival.capital, capitalPct: dto.survival.capital_pct,
+      kellyModifier: dto.survival.kelly_modifier, minEdgeThreshold: dto.survival.min_edge_threshold,
+    },
+    btcPrice: dto.btc_price,
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toBalance(dto: BalanceDTO): Balance {
+  return {
+    available: dto.available, balanceUsd: dto.balance_usd, cacheAgeSec: dto.cache_age_sec,
+    cacheFresh: dto.cache_fresh, timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toPortfolioHistory(dto: PortfolioHistoryDTO): PortfolioHistory {
+  return {
+    available: dto.available,
+    history: dto.history.map((p) => ({
+      ts: isoToMs(p.timestamp), totalValue: p.total_value, cashBalance: p.cash_balance,
+      unrealizedPnl: p.unrealized_pnl, realizedPnl: p.realized_pnl, positionCount: p.position_count,
+      btcPrice: p.btc_price, winRate: pctToFraction(p.win_rate), totalTrades: p.total_trades,
+    })),
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toPortfolioSummary(dto: PortfolioSummaryDTO): PortfolioSummary {
+  const s = dto.summary
+  return {
+    available: dto.available,
+    summary: {
+      currentValue: s.current_value, initialValue: s.initial_value, peakValue: s.peak_value,
+      totalReturnPct: s.total_return_pct, currentDrawdownPct: s.current_drawdown_pct,
+      snapshotCount: s.snapshot_count, timeRangeSeconds: s.time_range_seconds,
+      firstSnapshot: isoToMs(s.first_snapshot), lastSnapshot: isoToMs(s.last_snapshot),
+      currentPositions: s.current_positions, currentWinRate: pctToFraction(s.current_win_rate),
+      totalTrades: s.total_trades,
+    },
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toPortfolioPerformance(dto: PortfolioPerformanceDTO): PortfolioPerformance {
+  const p = dto.performance
+  return {
+    available: dto.available,
+    performance: {
+      available: p.available, periodHours: p.period_hours, startValue: p.start_value, endValue: p.end_value,
+      valueChange: p.value_change, returnPct: p.return_pct, maxDrawdownPct: p.max_drawdown_pct,
+      tradesInPeriod: p.trades_in_period, snapshotCount: p.snapshot_count,
+    },
+    lookbackHours: dto.lookback_hours,
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toAnalyticsSegments(dto: AnalyticsSegmentsDTO): AnalyticsSegments {
+  return { available: dto.available, segments: dto.segments, count: dto.count, segmentType: dto.segment_type, timestamp: isoToMs(dto.timestamp) }
+}
+
+export function toAnalyticsSignals(dto: AnalyticsSignalsDTO): AnalyticsSignals {
+  return { available: dto.available, signals: dto.signals, count: dto.count, timestamp: isoToMs(dto.timestamp) }
+}
+
+export function toAnalyticsSummary(dto: AnalyticsSummaryDTO): AnalyticsSummary {
+  const s = dto.summary
+  return {
+    available: dto.available,
+    summary: {
+      totalTradesAnalyzed: s.total_trades_analyzed, overallWinRate: pctToFraction(s.overall_win_rate),
+      totalPnl: s.total_pnl, segmentCount: s.segment_count, signalCount: s.signal_count, historySize: s.history_size,
+    },
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toAnalyticsTopSegments(dto: AnalyticsTopSegmentsDTO): AnalyticsTopSegments {
+  return {
+    available: dto.available, topSegments: dto.top_segments, segmentType: dto.segment_type,
+    metric: dto.metric, limit: dto.limit, timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toAnalyticsHourly(dto: AnalyticsHourlyDTO): AnalyticsHourly {
+  return { available: dto.available, hourly: dto.hourly, count: dto.count, timestamp: isoToMs(dto.timestamp) }
+}
+
+export function toPaperStatus(dto: PaperStatusDTO): PaperStatus {
+  return {
+    available: dto.available, enabled: dto.enabled, pendingTrades: dto.pending_trades,
+    completedTrades: dto.completed_trades, timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toSystemMetrics(dto: SystemMetricsDTO): SystemMetrics {
+  return {
+    available: dto.available,
+    uptime: { seconds: dto.uptime.seconds, formatted: dto.uptime.formatted },
+    memoryMb: { rssMb: dto.memory.rss_mb, vmsMb: dto.memory.vms_mb },
+    cpuPercent: dto.cpu.percent,
+    components: toRuntimeComponents(dto.components),
+    eventLogSize: dto.event_log_size,
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toTradesLedger(dto: TradesLedgerDTO): TradesLedger {
+  return {
+    available: dto.available, ledger: dto.ledger, count: dto.count,
+    summary: {
+      totalPnl: dto.summary.total_pnl, wins: dto.summary.wins, losses: dto.summary.losses,
+      winRate: pctToFraction(dto.summary.win_rate),
+    },
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+export function toExecutionOrders(dto: ExecutionOrdersDTO): ExecutionOrders {
+  return {
+    available: dto.available, activeOrders: dto.active_orders, closedOrders: dto.closed_orders,
+    activeCount: dto.active_count, closedCount: dto.closed_count, totalCount: dto.total_count,
+    timestamp: isoToMs(dto.timestamp),
+  }
 }

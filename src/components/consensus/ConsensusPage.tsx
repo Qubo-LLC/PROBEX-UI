@@ -18,7 +18,6 @@ import { parseMarketRows } from '@/lib/mappers/markets'
 import { parseEdgeRows, toEdgeRowMap, type EdgeRow } from '@/lib/mappers/edges'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { DecisionPipeline } from '@/components/shared/DecisionPipeline'
-import { IntelligenceModule } from '@/components/shared/IntelligenceModule'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 
@@ -123,13 +122,13 @@ export function ConsensusPage() {
         />
       </Card>
 
-      {/* ── Consensus Intelligence — one framed bay, five instruments (awaiting, platform-wide) ── */}
-      <IntelligenceModule
-        title="Consensus Intelligence"
-        description="Platform-wide aggregation across all signal sources — activates automatically as CE-3/CE-4 ship"
-        endpoint="CE-3 / CE-4"
-        className="mt-2"
-      >
+      {/* ── Consensus Intelligence — platform-wide, live since 2026-07-22 ── */}
+      <div className="flex flex-col gap-3 mt-2">
+        <div>
+          <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Consensus Intelligence</h2>
+          <p className="text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>Platform-wide aggregation across all signal sources</p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ConsensusScoreCard />
           <BiasBreakdown />
@@ -141,7 +140,7 @@ export function ConsensusPage() {
         </div>
 
         <HistoricalSnapshots />
-      </IntelligenceModule>
+      </div>
     </div>
   )
 }

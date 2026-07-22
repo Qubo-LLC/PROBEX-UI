@@ -1,4 +1,6 @@
-import type { ReactNode, HTMLAttributes } from 'react'
+'use client'
+
+import { useEffect, useRef, useState, type ReactNode, type HTMLAttributes } from 'react'
 import { cn, formatDelta } from '@/lib/utils'
 import { Card } from './Card'
 import { ProvenanceBadge, type Provenance } from '@/components/shared/ProvenanceBadge'
@@ -64,6 +66,18 @@ export function StatCard({
   const deltaDisplay = deltaLabel ?? (hasDelta ? formatDelta(delta) : undefined)
   const isPositive   = delta !== undefined && delta >= 0
 
+  // Live-update pulse (UX polish): when the driving value (flashKey) changes,
+  // remount a one-shot .pulse-ring overlay — a very subtle theme-tinted light
+  // around the card, complementing the existing in-text ValueFlash.
+  const [pulseN, setPulseN] = useState(0)
+  const prevFlash = useRef(flashKey)
+  useEffect(() => {
+    if (flashKey !== undefined && prevFlash.current !== undefined && flashKey !== prevFlash.current) {
+      setPulseN((n) => n + 1)
+    }
+    prevFlash.current = flashKey
+  }, [flashKey])
+
   const valueNode = (
     <div
       className={`${valueSize === 'lg' ? 'text-3xl' : 'text-2xl'} font-bold leading-none tabular-nums`}
@@ -75,9 +89,10 @@ export function StatCard({
 
   return (
     <Card
-      className={cn('flex flex-col gap-1.5 min-h-[88px]', className)}
+      className={cn('relative flex flex-col gap-1.5 min-h-[88px]', className)}
       {...props}
     >
+      {pulseN > 0 && <span key={pulseN} className="pulse-ring" aria-hidden="true" />}
       {/* Label row */}
       <div className="flex items-center justify-between gap-2">
         <span className="text-2xs font-semibold uppercase tracking-wider text-text-muted">

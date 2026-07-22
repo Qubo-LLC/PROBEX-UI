@@ -5,6 +5,7 @@ import { Sidebar }       from './Sidebar'
 import { TopNavigation } from './TopNavigation'
 import { AuthGate }               from '@/components/providers/AuthGate'
 import { ApplicationStateLoader } from '@/components/providers/ApplicationStateLoader'
+import { SettingsEffects }        from '@/components/providers/SettingsEffects'
 import { cn }            from '@/lib/utils'
 import { useMobileOpen, useSidebarStore } from '@/store/sidebarStore'
 
@@ -113,6 +114,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* ApplicationStateLoader fetches all engine endpoints once and writes
           to the ApplicationStore — no rendering, no HTTP duplication. */}
       <ApplicationStateLoader />
+
+      {/* Applies persisted accessibility preferences to <html> (Settings). */}
+      <SettingsEffects />
 
       {/* ── Reserved overlay host (Phase 1 · T9) ─────────────────────────────
           Canonical mount point for future modal / toast / tooltip layers.

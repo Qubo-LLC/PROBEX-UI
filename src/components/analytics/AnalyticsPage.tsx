@@ -4,15 +4,19 @@
 // fabricated area of the original product (ETF flows, institutional flow,
 // on-chain intelligence, consensus accuracy — all decorative, none backed by
 // a plan PROBEX's own backend will ever implement for a Bitcoin 5-minute
-// binary-market bot). Per explicit Phase 5 direction, every widget below was
-// classified before being built:
+// binary-market bot).
 //
-//   Fully Live               → EdgeQualityAnalytics, KellyUtilization
-//   Awaiting Backend         → PerformanceAnalytics (P2-01), SegmentPerformance,
-//                               ConsensusAccuracyAnalytics
-//   No Longer Appropriate    → ETF flows / institutional flow / on-chain
-//                               intelligence / macro indicators — NOT rebuilt;
-//                               see the Phase 5 report for the full reasoning.
+// 2026-07-22 redeploy status:
+//   Fully Live    → EdgeQualityAnalytics, KellyUtilization (unchanged),
+//                   PerformanceAnalytics (/api/portfolio/history),
+//                   SegmentPerformance (repointed to /api/survival/patterns —
+//                   the fictional Bitcoin-category taxonomy it originally
+//                   assumed never existed on the backend)
+//   Still Awaiting → ConsensusAccuracyAnalytics: no endpoint anywhere joins
+//                   edge direction to eventual market resolution outcomes —
+//                   genuinely no backend concept for this yet.
+//   No Longer Appropriate → ETF flows / institutional flow / on-chain
+//                   intelligence / macro indicators — not rebuilt.
 
 import { EdgeQualityAnalytics } from './EdgeQualityAnalytics'
 import { KellyUtilization } from './KellyUtilization'
@@ -37,23 +41,22 @@ export function AnalyticsPage() {
         </div>
       </section>
 
-      <IntelligenceModule
-        title="Performance History"
-        description="Drawdown and capital growth over time — activates automatically as P2-01 ships"
-        endpoint="P2-01"
-      >
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Performance History</h2>
         <PerformanceAnalytics />
-      </IntelligenceModule>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Attribution</h2>
+        <SegmentPerformance />
+      </section>
 
       <IntelligenceModule
-        title="Attribution"
-        description="Which segments and signals are driving results — activates automatically as trade-level history ships"
-        endpoint="segmentPerformance / consensusAccuracy"
+        title="Signal Accuracy"
+        description="How often the engine's edge direction has matched the eventual market resolution — activates once resolution outcomes are joined to signal history"
+        endpoint="consensusAccuracy"
       >
-        <div className="flex flex-col gap-3">
-          <SegmentPerformance />
-          <ConsensusAccuracyAnalytics />
-        </div>
+        <ConsensusAccuracyAnalytics />
       </IntelligenceModule>
     </div>
   )

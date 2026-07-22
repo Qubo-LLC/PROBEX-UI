@@ -18,11 +18,18 @@ import { StatCard }   from '@/components/ui/StatCard'
 import { Card }       from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { ErrorState } from '@/components/ui/ErrorState'
-import type { RateLimitBucket } from '@/types/engine'
+import type { RateLimitBucket, ExecutionPolicy, PaperStats, PaperStatus } from '@/types/engine'
 
 export function ExecutionConsole() {
   const slice = useApplicationStore((s) => s.engine.executionStatus)
   const ex    = slice.data
+
+  const policySlice = useApplicationStore((s) => s.engine.executionPolicy)
+  const policy      = policySlice.status === 'success' ? policySlice.data : null
+  const paperSlice  = useApplicationStore((s) => s.engine.paperStats)
+  const paper       = paperSlice.status === 'success' ? paperSlice.data : null
+  const paperStatusSlice = useApplicationStore((s) => s.engine.paperStatus)
+  const paperStatus      = paperStatusSlice.status === 'success' ? paperStatusSlice.data : null
 
   return (
     <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
@@ -198,6 +205,12 @@ export function ExecutionConsole() {
               </p>
             )}
           </Card>
+
+          {/* 5 · Paper session (from /api/paper-stats + /api/paper/status) */}
+          {paper && <PaperSessionCard paper={paper} paperStatus={paperStatus} />}
+
+          {/* 6 · Execution policy (from /api/execution/policy, read-only) */}
+          {policy && <ExecutionPolicyCard policy={policy} />}
         </>
       )}
     </div>
@@ -266,6 +279,157 @@ function BucketGauge({ bucket }: { bucket: RateLimitBucket }) {
         <span>{bucket.totalRequests.toLocaleString()} requests · {bucket.ratePerSec.toFixed(2)}/s cap</span>
         <span>avg wait {Math.round(bucket.avgWaitMs).toLocaleString()}ms</span>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Paper-trading session summary (/api/paper-stats). Shown only in paper mode;
+ * a fresh session with zero trades reads as "no trades resolved yet", never as
+ * a wall of zeroes pretending to be performance.
+ */
+function PaperSessionCard({ paper, paperStatus }: { paper: PaperStats; paperStatus: PaperStatus | null }) {
+  const p = paper.paperTrading
+  const net = p.currentCapital - p.initialCapital
+  return (
+    <Card className="flex flex-col gap-3">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+          Paper Session
+        </h3>
+        <span className="text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+          started {new Date(p.sessionStart).toLocaleString()}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard
+          label="Capital"
+          value={formatCurrency(p.currentCapital)}
+          deltaLabel={`${formatSignedCurrency(net)} vs start`}
+          valueColor={net > 0 ? 'var(--probex-positive)' : net < 0 ? 'var(--probex-negative)' : undefined}
+        />
+        <StatCard
+          label="Session P&L"
+          value={formatSignedCurrency(p.totalPnl)}
+          valueColor={p.totalPnl > 0 ? 'var(--probex-positive)' : p.totalPnl < 0 ? 'var(--probex-negative)' : undefined}
+        />
+        <StatCard
+          label="Trades"
+          value={String(p.totalTrades)}
+          deltaLabel={p.totalTrades > 0 ? `${p.wins}W / ${p.losses}L` : 'none yet'}
+        />
+        <StatCard
+          label="Win Rate"
+          value={p.totalTrades > 0 ? formatPercent(p.winRate) : '—'}
+          valueColor={p.totalTrades > 0 ? (p.winRate >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-warning)') : undefined}
+          {...(p.pending > 0
+            ? { deltaLabel: `${p.pending} pending` }
+            : p.pushes > 0
+              ? { deltaLabel: `${p.pushes} pushes` }
+              : {})}
+        />
+      </div>
+      {p.totalTrades === 0 && (
+        <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
+          No paper trades have resolved yet this session — figures populate as the engine
+          opens and settles positions.
+        </p>
+      )}
+      {paperStatus && (
+        <div className="flex items-center gap-4 text-2xs pt-1" style={{ borderTop: '1px solid var(--probex-border)', color: 'var(--probex-text-muted)' }}>
+          <span>Paper trading {paperStatus.enabled ? 'enabled' : 'disabled'}</span>
+          <span>{paperStatus.pendingTrades} pending</span>
+          <span>{paperStatus.completedTrades} completed (/api/paper/status)</span>
+          {paperStatus.completedTrades !== p.totalTrades && (
+            <span style={{ color: 'var(--probex-warning)' }} title="This session's paper-stats total_trades reports a different count than /api/paper/status — two distinct backend counters, not an error.">
+              ≠ {p.totalTrades} from paper-stats
+            </span>
+          )}
+        </div>
+      )}
+    </Card>
+  )
+}
+
+/**
+ * Execution policy (/api/execution/policy) — the engine's read-only order-flow
+ * pipeline, risk limits, and self-reported limitations. This never places
+ * orders; it explains HOW an order would be built if an edge cleared the filter.
+ */
+function ExecutionPolicyCard({ policy }: { policy: ExecutionPolicy }) {
+  const r = policy.riskLimits
+  return (
+    <Card className="flex flex-col gap-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+          Execution Policy
+        </h3>
+        <span
+          className="text-2xs font-semibold px-2 py-0.5 rounded"
+          style={{
+            background: policy.liveTradingEnabled ? 'var(--probex-negative-dim)' : 'var(--probex-surface-2)',
+            color:      policy.liveTradingEnabled ? 'var(--probex-negative)' : 'var(--probex-text-secondary)',
+          }}
+        >
+          {policy.mode.toUpperCase()} · LIVE TRADING {policy.liveTradingEnabled ? 'ON' : 'OFF'}
+        </span>
+      </div>
+
+      {/* Risk limits */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <PolicyStat label="Max positions"  value={String(r.maxConcurrentPositions)} />
+        <PolicyStat label="Max bet"         value={`${r.maxBetPercent}%`} />
+        <PolicyStat label="Kelly fraction"  value={r.kellyFraction.toFixed(2)} />
+        <PolicyStat label="Min order"       value={formatCurrency(r.minimumOrderSizeUsd)} />
+        <PolicyStat label="Max latency"     value={`${r.maxLatencyMs}ms`} />
+      </div>
+
+      {/* Order flow pipeline */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+          Order Flow
+        </span>
+        <ol className="flex flex-wrap items-center gap-1.5">
+          {policy.orderFlow.map((step, i) => (
+            <li key={step} className="flex items-center gap-1.5">
+              <span
+                className="text-2xs font-medium px-2 py-1 rounded tabular-nums"
+                style={{ background: 'var(--probex-surface-2)', color: 'var(--probex-text-secondary)' }}
+              >
+                <span style={{ color: 'var(--probex-text-disabled)' }}>{i + 1}.</span> {step.replace(/_/g, ' ')}
+              </span>
+              {i < policy.orderFlow.length - 1 && (
+                <span aria-hidden="true" style={{ color: 'var(--probex-text-disabled)' }}>→</span>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {/* Known limitations */}
+      {policy.knownLimitations.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+            Known Limitations
+          </span>
+          <ul className="flex flex-col gap-1">
+            {policy.knownLimitations.map((note) => (
+              <li key={note} className="text-2xs leading-relaxed pl-3 relative" style={{ color: 'var(--probex-text-disabled)' }}>
+                <span className="absolute left-0" aria-hidden="true">·</span>{note}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </Card>
+  )
+}
+
+function PolicyStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{label}</span>
+      <span className="text-base font-bold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{value}</span>
     </div>
   )
 }

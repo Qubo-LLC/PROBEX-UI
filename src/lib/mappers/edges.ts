@@ -1,79 +1,50 @@
 // ─── Engine edges mapper ──────────────────────────────────────────────────────
 //
-// 🟡 COVERAGE: /api/edges envelope works; items[] are currently unknown[].
-//
-// Edges are the engine's primary trading signal output — each edge represents
-// a market where the bot has detected a probability mispricing worth trading.
-//
-// The frontend LiveMarketsView displays:
-//   - edge magnitude (sortable column)
-//   - recommendation level ('strong_buy_yes' → 'strong_buy_no')
-//   - consensus score (from global consensus, not from this endpoint)
-//
-// The MergedMarketView type (src/lib/realtime/) merges REST market data with
-// live WebSocket updates. Edge items slot into that merge layer.
-//
-// When items arrive, wire into:
-//   LiveEngineService.getEdges() → adapt with toEdgeMap()
-//   useMarketStream() merges edge data into MergedMarketView per market
+// ✅ COVERAGE (2026-07-22): /api/edges now returns real, non-empty items —
+// schema corrected below from a real capture. It differs from the speculative
+// contract this file previously documented in several load-bearing ways:
+//   • no `id` field at all               → id derives from market_id
+//   • `market_title` doesn't exist        → real field is `market_question`
+//   • `direction` arrives as "YES"/"NO"   → normalized to lowercase here, once,
+//                                           so every existing `=== 'yes'` /
+//                                           `.toLowerCase() === 'yes'` check
+//                                           across the app keeps working
+//   • `edge` (0–1 fraction) doesn't exist → real field is `edge_pct`, already
+//                                           a percentage (5.48, not 0.0548)
+//   • `kelly_size`, `signal`, `recommendation`, `expires_at` don't exist on
+//     the wire → these stay null forever (never fabricated); components
+//     already degrade gracefully wherever they're read
+//   • real payload adds `indicators` (rsi, rsi_signal, macd_trend,
+//     alignment_score) — exposed as new EdgeRow fields, additive only
 
 import type { EngineEdges } from '@/types/engine'
 import { parseItems, isRecord, str, num, type ParseResult } from './parse'
 
-// ─── Required wire schema (DTO) ───────────────────────────────────────────────
-// THIS IS THE BACKEND CONTRACT.
-// Jake must return this exact shape inside the edges[] array.
+// ─── Confirmed wire schema (DTO) ──────────────────────────────────────────────
+// Matches a real GET /api/edges capture, 2026-07-22.
 
-/**
- * Single edge signal as returned by GET /api/edges items[].
- *
- * @required Jake — the backend must produce this shape.
- */
-export interface EngineEdgeItemDTO {
-  /** Unique edge identifier. */
-  id:             string
-
-  /** Market this edge applies to. Matches EngineMarketItemDTO.id. */
-  market_id:      string
-
-  /** Market title for display (denormalised). */
-  market_title:   string
-
-  /** Bitcoin market segment. */
-  segment:        string
-
-  /** Directional edge: 'yes' = bet YES, 'no' = bet NO. */
-  direction:      string
-
-  /** Raw edge magnitude [0.0, 1.0]. e.g. 0.08 = 8% edge over market price. */
-  edge:           number
-
-  /** Kelly-criterion-adjusted recommended position size [0.0, 1.0].
-   *  Fraction of bankroll to deploy. */
-  kelly_size:     number
-
-  /** Engine confidence in this edge [0.0, 1.0]. */
-  confidence:     number
-
-  /** Source signal that generated this edge (e.g. 'consensus_divergence',
-   *  'price_momentum', 'on_chain_signal'). */
-  signal:         string
-
-  /** Composite recommendation for display in LiveMarketRow signal column.
-   *  Must be one of:
-   *   'strong_buy_yes' | 'buy_yes' | 'hold' | 'buy_no' | 'strong_buy_no' */
-  recommendation: string
-
-  /** ISO 8601 or null — when this signal expires (null = persists until resolved). */
-  expires_at:     string | null
-
-  /** ISO 8601 — when the edge was detected. */
-  detected_at:    string
+export interface EngineEdgeIndicatorsDTO {
+  rsi:             number
+  rsi_signal:      string   // e.g. "overbought" — only value observed so far
+  macd_trend:      string   // e.g. "bearish" — only value observed so far
+  alignment_score: number   // signed
 }
 
-/**
- * Full envelope returned by GET /api/edges.
- */
+export interface EngineEdgeItemDTO {
+  market_id:        string
+  market_question:  string
+  direction:        string  // "YES" | "NO" observed
+  edge_pct:         number  // already a percentage, e.g. 5.48
+  confidence:       number  // 0–1
+  current_price:    number
+  market_yes_price: number
+  market_no_price:  number
+  yes_token_id:     string
+  no_token_id:      string
+  detected_at:      string  // ISO 8601
+  indicators:       EngineEdgeIndicatorsDTO
+}
+
 export interface EngineEdgesResponseDTO {
   edges:     EngineEdgeItemDTO[]
   count:     number
@@ -92,44 +63,53 @@ export function toEdgesSummary(e: EngineEdges): EdgesSummary {
   return { count: e.count, limit: e.limit }
 }
 
-// ─── Cockpit row parsing (M4) ─────────────────────────────────────────────────
-// Guards the minimal fields the Strategy / Live Feed edge tables render.
-// Optional fields degrade gracefully; a non-matching shape yields
-// { kind: 'unrecognized' } and the console says so (never guesses).
+// ─── Cockpit row parsing ──────────────────────────────────────────────────────
+// Guards the fields that are actually present on the wire. Optional fields
+// (kellySize/signal/recommendation) degrade to null — components already
+// handle that gracefully; a non-matching shape yields { kind: 'unrecognized' }.
 
 export interface EdgeRow {
-  id:              string
-  /** V3 Phase 1: join key so product pages can attach an edge to its market
-   *  (e.g. an "edge chip" on a market card). Extends the existing row shape —
-   *  the parse-or-report mechanism itself is unchanged. */
+  id:              string  // = marketId (edges have no id of their own)
   marketId:        string | null
   marketTitle:     string | null
-  direction:       string
-  edgePct:         number          // edge as % (0.08 → 8.0)
-  kellySize:       number | null   // fraction of bankroll
+  direction:       string  // normalized lowercase: 'yes' | 'no'
+  edgePct:         number          // already a % (5.48 = 5.48%)
+  kellySize:       number | null   // fraction of bankroll — not sent by backend today
   confidence:      number | null   // 0–1
-  signal:          string | null
-  recommendation:  string | null
+  signal:          string | null   // not sent by backend today
+  recommendation:  string | null   // not sent by backend today
   detectedAt:      number | null   // epoch ms
+  // 2026-07-22: real technical indicators the backend sends per edge.
+  rsi:             number | null
+  rsiSignal:       string | null
+  macdTrend:       string | null
+  alignmentScore:  number | null
 }
 
 function isEdgeItem(x: unknown): x is Record<string, unknown> {
-  return isRecord(x) && str(x.id) && str(x.direction) && num(x.edge)
+  return isRecord(x) && str(x.market_id) && str(x.direction) && num(x.edge_pct)
 }
 
 export function parseEdgeRows(e: EngineEdges): ParseResult<EdgeRow> {
-  return parseItems(e.edges, isEdgeItem, (dto) => ({
-    id:             dto.id as string,
-    marketId:       str(dto.market_id) ? dto.market_id : null,
-    marketTitle:    str(dto.market_title) ? dto.market_title : null,
-    direction:      dto.direction as string,
-    edgePct:        (dto.edge as number) * 100,
-    kellySize:      num(dto.kelly_size) ? dto.kelly_size : null,
-    confidence:     num(dto.confidence) ? dto.confidence : null,
-    signal:         str(dto.signal) ? dto.signal : null,
-    recommendation: str(dto.recommendation) ? dto.recommendation : null,
-    detectedAt:     str(dto.detected_at) ? new Date(dto.detected_at).getTime() : null,
-  }))
+  return parseItems(e.edges, isEdgeItem, (dto) => {
+    const indicators = isRecord(dto.indicators) ? dto.indicators : null
+    return {
+      id:             dto.market_id as string,
+      marketId:       dto.market_id as string,
+      marketTitle:    str(dto.market_title) ? dto.market_title : (str(dto.market_question) ? dto.market_question : null),
+      direction:      (dto.direction as string).toLowerCase(),
+      edgePct:        dto.edge_pct as number,
+      kellySize:      num(dto.kelly_size) ? dto.kelly_size : null,
+      confidence:     num(dto.confidence) ? dto.confidence : null,
+      signal:         str(dto.signal) ? dto.signal : null,
+      recommendation: str(dto.recommendation) ? dto.recommendation : null,
+      detectedAt:     str(dto.detected_at) ? new Date(dto.detected_at).getTime() : null,
+      rsi:            indicators && num(indicators.rsi) ? indicators.rsi : null,
+      rsiSignal:      indicators && str(indicators.rsi_signal) ? indicators.rsi_signal : null,
+      macdTrend:      indicators && str(indicators.macd_trend) ? indicators.macd_trend : null,
+      alignmentScore: indicators && num(indicators.alignment_score) ? indicators.alignment_score : null,
+    }
+  })
 }
 
 /** Build a marketId → EdgeRow lookup for O(1) joins (cards, tables). Markets

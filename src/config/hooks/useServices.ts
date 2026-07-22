@@ -9,6 +9,14 @@
 // ApplicationStateLoader passes it, which owns the polling tiers (spec §5).
 // Every other consumer reads the resulting slices from the ApplicationStore, so
 // there is exactly one fetch per endpoint regardless of how many components mount.
+//
+// Initial-fetch jitter (added 2026-07-22, Phase 3): ApplicationStateLoader grew
+// from 15 to 35 hooks in one redeploy. All 35 previously fired their first
+// fetch in the same tick on mount — verified via runtime testing against the
+// live backend, this produced a real timeout on /api/research/reports (15s,
+// ECONNABORTED) that did not reproduce on any of the other 34 endpoints. A
+// small random stagger on the INITIAL fetch only (polling intervals are
+// unaffected) spreads the mount-time burst without changing cadence.
 
 import { useEffect, useMemo, useState, type DependencyList } from 'react'
 import { services } from '@/lib/services'
@@ -48,15 +56,17 @@ function useServiceQuery<T>(
 
     const s = seed()
     setState(s !== null ? toServiceState(ok(s)) : loadingState<T>())
-    run()
+    // Stagger only the first fetch — spreads a large mount-time hook count
+    // (e.g. ApplicationStateLoader's 35) across ~1.5s instead of one tick.
+    const initialTimer = setTimeout(run, Math.random() * 1_500)
 
-    if (refreshMs === undefined) return () => { active = false }
+    if (refreshMs === undefined) return () => { active = false; clearTimeout(initialTimer) }
 
     const id = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return
       run()
     }, refreshMs)
-    return () => { active = false; clearInterval(id) }
+    return () => { active = false; clearTimeout(initialTimer); clearInterval(id) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, refreshMs])
 
@@ -116,6 +126,123 @@ export function useEngineIdentity(refreshMs?: number) {
 /** /api/execution/status — the SOURCE OF TRADING TRUTH (spec §6.2). */
 export function useEngineExecutionStatus(refreshMs?: number) {
   return useServiceQuery(() => services.engine.getExecutionStatus(), () => services.engine.peekExecutionStatus?.() ?? null, [], refreshMs)
+}
+
+/** /api/execution/policy — read-only order-flow policy, risk limits, order template. */
+export function useEngineExecutionPolicy(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getExecutionPolicy(), () => services.engine.peekExecutionPolicy?.() ?? null, [], refreshMs)
+}
+
+/** /api/execution/trades — active + closed trade lists (item schema TBD). */
+export function useEngineExecutionTrades(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getExecutionTrades(), () => services.engine.peekExecutionTrades?.() ?? null, [], refreshMs)
+}
+
+/** /api/paper-stats — paper-trading session performance. */
+export function useEnginePaperStats(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getPaperStats(), () => services.engine.peekPaperStats?.() ?? null, [], refreshMs)
+}
+
+// ─── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoint hooks ──────────────
+
+/** /api/positions/history — historical closed positions (envelope only; items empty so far). */
+export function useEnginePositionsHistory(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getPositionsHistory(), () => services.engine.peekPositionsHistory?.() ?? null, [], refreshMs)
+}
+
+/** /api/survival/patterns — detailed pattern analysis from the survival brain. */
+export function useEngineSurvivalPatterns(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getSurvivalPatterns(), () => services.engine.peekSurvivalPatterns?.() ?? null, [], refreshMs)
+}
+
+/** /api/consensus — global platform-wide consensus score. */
+export function useEngineConsensus(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getConsensus(), () => services.engine.peekConsensus?.() ?? null, [], refreshMs)
+}
+
+/** /api/consensus/bias — YES/NO bias split and confidence distribution. */
+export function useEngineConsensusBias(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getConsensusBias(), () => services.engine.peekConsensusBias?.() ?? null, [], refreshMs)
+}
+
+/** /api/consensus/history — consensus score trajectory over the session. */
+export function useEngineConsensusHistory(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getConsensusHistory(), () => services.engine.peekConsensusHistory?.() ?? null, [], refreshMs)
+}
+
+/** /api/research/reports — generated market analysis and insights. */
+export function useEngineResearchReports(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getResearchReports(), () => services.engine.peekResearchReports?.() ?? null, [], refreshMs)
+}
+
+/** /api/portfolio — full live portfolio snapshot. */
+export function useEnginePortfolio(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getPortfolio(), () => services.engine.peekPortfolio?.() ?? null, [], refreshMs)
+}
+
+/** /api/balance — quick capital balance check. */
+export function useEngineBalance(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getBalance(), () => services.engine.peekBalance?.() ?? null, [], refreshMs)
+}
+
+/** /api/portfolio/history — portfolio value history for charting. */
+export function useEnginePortfolioHistory(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getPortfolioHistory(), () => services.engine.peekPortfolioHistory?.() ?? null, [], refreshMs)
+}
+
+/** /api/portfolio/summary — portfolio summary statistics. */
+export function useEnginePortfolioSummary(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getPortfolioSummary(), () => services.engine.peekPortfolioSummary?.() ?? null, [], refreshMs)
+}
+
+/** /api/portfolio/performance — performance metrics over a 24h lookback. */
+export function useEnginePortfolioPerformance(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getPortfolioPerformance(), () => services.engine.peekPortfolioPerformance?.() ?? null, [], refreshMs)
+}
+
+/** /api/analytics/segments — performance metrics by segment. */
+export function useEngineAnalyticsSegments(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getAnalyticsSegments(), () => services.engine.peekAnalyticsSegments?.() ?? null, [], refreshMs)
+}
+
+/** /api/analytics/signals — signal effectiveness metrics. */
+export function useEngineAnalyticsSignals(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getAnalyticsSignals(), () => services.engine.peekAnalyticsSignals?.() ?? null, [], refreshMs)
+}
+
+/** /api/analytics/summary — overall analytics summary. */
+export function useEngineAnalyticsSummary(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getAnalyticsSummary(), () => services.engine.peekAnalyticsSummary?.() ?? null, [], refreshMs)
+}
+
+/** /api/analytics/top-segments — top-performing segments by metric. */
+export function useEngineAnalyticsTopSegments(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getAnalyticsTopSegments(), () => services.engine.peekAnalyticsTopSegments?.() ?? null, [], refreshMs)
+}
+
+/** /api/analytics/hourly — hourly performance breakdown (0–23). */
+export function useEngineAnalyticsHourly(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getAnalyticsHourly(), () => services.engine.peekAnalyticsHourly?.() ?? null, [], refreshMs)
+}
+
+/** /api/paper/status — current paper trading enable/pending/completed status. */
+export function useEnginePaperStatus(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getPaperStatus(), () => services.engine.peekPaperStatus?.() ?? null, [], refreshMs)
+}
+
+/** /api/system/metrics — process-level uptime/memory/CPU diagnostics. */
+export function useEngineSystemMetrics(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getSystemMetrics(), () => services.engine.peekSystemMetrics?.() ?? null, [], refreshMs)
+}
+
+/** /api/trades/ledger — settled trade ledger with aggregate summary. */
+export function useEngineTradesLedger(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getTradesLedger(), () => services.engine.peekTradesLedger?.() ?? null, [], refreshMs)
+}
+
+/** /api/execution/orders — all orders (active + closed) envelope. */
+export function useEngineExecutionOrders(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getExecutionOrders(), () => services.engine.peekExecutionOrders?.() ?? null, [], refreshMs)
 }
 
 // ─── Composite view-model hooks (read from ApplicationStore, zero extra HTTP) ───

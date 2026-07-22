@@ -114,6 +114,10 @@ const RUNTIME_LABELS: Record<keyof RuntimeComponents, string> = {
   healthMonitor:     'Health Monitor',
   survivalBrain:     'Survival Brain',
   paperTrader:       'Paper Trader',
+  consensusEngine:   'Consensus Engine',
+  marketHistory:     'Market History',
+  portfolioTracker:  'Portfolio Tracker',
+  analyticsEngine:   'Analytics Engine',
 }
 
 function toRuntimeChips(components: RuntimeComponents): RuntimeComponentChip[] {

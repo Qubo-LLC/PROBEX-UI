@@ -1,15 +1,14 @@
 'use client'
 
-// MarketCard — restored from V1's MarketCard "featured"/"list" variants
-// (git 0e3833a4), promoted from Phase 1's Overview-scoped FeaturedMarketCard
-// into the one shared card used by BOTH the Overview Featured grid and the
-// Markets catalog (never duplicate components — one card, every consumer).
+// MarketCard — the one shared market card (Overview Featured grid + Markets
+// catalog). V1's fabricated consensus trio is replaced by the live EdgeBadge
+// (real /api/edges). Never duplicated — one card, every consumer.
 //
-// V1's ConsensusBadge + SentimentIndicator + ConfidenceMeter trio (fabricated
-// consensus) is replaced by the live EdgeBadge (real /api/edges signal) —
-// the central V3 reframe. WatchlistButton now persists to preferencesStore
-// (localStorage) instead of V1's sessionStorage. Click-through navigates to
-// Market Detail (restored in this phase).
+// Craft (Overview Experience Refinement): the card is the trader's market; the
+// ENGINE'S EDGE is the AI's mark on it. Markets the engine has flagged carry a
+// top accent in the edge-direction colour, so AI-selected opportunities stand
+// out from the field — the hybrid identity, expressed with real data only.
+// Numbers are mono (technical identity); a skeleton covers the loading state.
 
 import { formatCompact, probabilityColorVar } from '@/lib/utils'
 import { segmentLabel } from '@/lib/display/market'
@@ -27,12 +26,19 @@ interface MarketCardProps {
   className?: string
 }
 
+/** The engine's edge direction → accent colour (its mark on the market). */
+function edgeAccent(edge: EdgeRow | undefined): string | null {
+  if (!edge) return null
+  return edge.direction.toLowerCase() === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)'
+}
+
 export function MarketCard({ market, edge, variant = 'grid', onClick, className = '' }: MarketCardProps) {
   if (variant === 'list') return <ListRow market={market} edge={edge} onClick={onClick} className={className} />
 
   const category = segmentLabel(market.segment)
-  const yesColor  = market.probability !== null ? probabilityColorVar(market.probability) : 'var(--probex-text-muted)'
-  const closes    = market.closesAt !== null
+  const yesColor = market.probability !== null ? probabilityColorVar(market.probability) : 'var(--probex-text-muted)'
+  const accent   = edgeAccent(edge)
+  const closes   = market.closesAt !== null
     ? new Date(market.closesAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : null
 
@@ -43,6 +49,9 @@ export function MarketCard({ market, edge, variant = 'grid', onClick, className 
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(market.id) } : undefined}
       className={`flex flex-col gap-2.5 p-3.5 focus-ring ${onClick ? 'card-interactive' : 'card'} ${className}`}
+      // Engine-edge accent: a top border in the edge colour when the AI is
+      // acting on this market. Inline so it survives the hover border change.
+      style={accent ? { borderTop: `2px solid ${accent}` } : undefined}
     >
       {/* Top: category tag + watchlist */}
       <div className="flex items-center justify-between gap-2">
@@ -72,18 +81,38 @@ export function MarketCard({ market, edge, variant = 'grid', onClick, className 
         <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>Awaiting price data</p>
       )}
 
-      {/* Live edge badge — the V3 signature */}
+      {/* Live edge badge — the engine's signal (the AI's mark) */}
       <EdgeBadge edge={edge} showEmpty={false} className="self-start" />
 
       {/* Footer: volume + closes */}
       {(market.volume24h !== null || closes) && (
         <div className="flex items-center justify-between text-2xs pt-2" style={{ borderTop: '1px solid var(--probex-border)', color: 'var(--probex-text-muted)' }}>
           {market.volume24h !== null ? (
-            <span>Vol <strong style={{ color: 'var(--probex-text-secondary)' }}>${formatCompact(market.volume24h)}</strong></span>
+            <span>Vol <strong className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>${formatCompact(market.volume24h)}</strong></span>
           ) : <span />}
-          {closes && <span>Closes <strong style={{ color: 'var(--probex-text-secondary)' }}>{closes}</strong></span>}
+          {closes && <span>Closes <strong className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>{closes}</strong></span>}
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Loading skeleton (grid variant) ───────────────────────────────────────
+
+export function MarketCardSkeleton({ className = '' }: { className?: string }) {
+  return (
+    <div className={`card flex flex-col gap-2.5 p-3.5 ${className}`}>
+      <div className="flex items-center justify-between">
+        <div className="skeleton h-4 w-16 rounded-full" />
+        <div className="skeleton h-4 w-4 rounded" />
+      </div>
+      <div className="skeleton h-4 w-full rounded" />
+      <div className="skeleton h-3 w-3/4 rounded" />
+      <div className="flex flex-col gap-1.5 mt-0.5">
+        <div className="skeleton h-1.5 w-full rounded-full" />
+        <div className="skeleton h-1.5 w-4/5 rounded-full" />
+      </div>
+      <div className="skeleton h-4 w-24 rounded-full" />
     </div>
   )
 }
@@ -92,13 +121,14 @@ export function MarketCard({ market, edge, variant = 'grid', onClick, className 
 
 function ListRow({ market, edge, onClick, className }: { market: MarketRow; edge: EdgeRow | undefined; onClick: ((id: string) => void) | undefined; className: string }) {
   const category = segmentLabel(market.segment)
+  const accent   = edgeAccent(edge)
   return (
     <div
       onClick={onClick ? () => onClick(market.id) : undefined}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       className={`flex items-center gap-3 px-4 py-2.5 transition-colors duration-100 ${onClick ? 'cursor-pointer hover:bg-[var(--probex-surface-2)]' : ''} ${className}`}
-      style={{ borderBottom: '1px solid var(--probex-border)', background: 'var(--probex-surface)' }}
+      style={{ borderBottom: '1px solid var(--probex-border)', borderLeft: accent ? `2px solid ${accent}` : '2px solid transparent', background: 'var(--probex-surface)' }}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
@@ -113,7 +143,7 @@ function ListRow({ market, edge, onClick, className }: { market: MarketRow; edge
       </div>
       <div className="flex items-center gap-4 flex-shrink-0">
         {market.probability !== null && (
-          <span className="text-base font-bold tabular-nums" style={{ color: probabilityColorVar(market.probability) }}>
+          <span className="text-base font-bold font-mono tabular-nums" style={{ color: probabilityColorVar(market.probability) }}>
             {Math.round(market.probability * 100)}¢
           </span>
         )}
@@ -130,16 +160,16 @@ function ProbBars({ prob, color }: { prob: number; color: string }) {
       <div className="flex items-center gap-1.5">
         <span className="text-2xs font-bold tracking-wider w-6" style={{ color }}>YES</span>
         <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }}>
-          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+          <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color }} />
         </div>
-        <span className="text-2xs font-bold w-8 text-right tabular-nums" style={{ color }}>{pct}¢</span>
+        <span className="text-2xs font-bold font-mono w-8 text-right tabular-nums" style={{ color }}>{pct}¢</span>
       </div>
       <div className="flex items-center gap-1.5">
         <span className="text-2xs font-bold tracking-wider w-6" style={{ color: 'var(--probex-text-muted)' }}>NO</span>
         <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }}>
-          <div className="h-full rounded-full" style={{ width: `${100 - pct}%`, background: 'var(--probex-text-disabled)' }} />
+          <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${100 - pct}%`, background: 'var(--probex-text-disabled)' }} />
         </div>
-        <span className="text-2xs font-bold w-8 text-right tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{100 - pct}¢</span>
+        <span className="text-2xs font-bold font-mono w-8 text-right tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{100 - pct}¢</span>
       </div>
     </div>
   )

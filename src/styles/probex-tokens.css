@@ -116,6 +116,13 @@
   --probex-shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.10);
   --probex-shadow-lift: 0 8px 24px rgba(0, 0, 0, 0.16);
 
+  /* Motion language (UX polish) — one easing voice for the whole product.
+     A soft "settle" curve (fast start, long gentle landing): intentional and
+     refined, never bouncy, never linear-mechanical. */
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-fast: 150ms;
+  --motion-med:  320ms;
+
   /* Environmental light field (Phase 1 · T6) — a fixed atmospheric glow painted
      behind the content plane so glass surfaces have something to refract. Built
      from the ACTIVE theme's own brand hues via var(), so it adapts per theme

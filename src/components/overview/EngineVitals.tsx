@@ -7,30 +7,15 @@
 // so the page's own reading order proves the engine is alive before it says
 // anything about future capabilities (Overview hierarchy directive).
 
-import { useCommandCenter, useEnginePriceChart } from '@/config/hooks/useServices'
+import { useCommandCenter } from '@/config/hooks/useServices'
 import { formatCurrency, formatSignedCurrency } from '@/lib/utils'
 import { StatCard } from '@/components/ui/StatCard'
-import { PriceCard } from '@/components/shared/PriceCard'
 import { TargetProgress } from '@/components/shared/TargetProgress'
 
-// ─── 1. Live BTC (hero) ─────────────────────────────────────────────────────
+// NB: the former LiveBtcHero was replaced by EngineFocusHero (Product Experience
+// Restoration, Phase A/B) — the live BTC market now lives inside that hybrid hero.
 
-export function LiveBtcHero() {
-  const vm    = useCommandCenter()
-  const chart = useEnginePriceChart()
-
-  if (!chart.data) return null
-
-  return (
-    <PriceCard
-      chart={chart.data}
-      feed={vm.vitals ? { connected: vm.vitals.feedConnected, latencyMs: vm.vitals.feedLatencyMs } : null}
-      size="hero"
-    />
-  )
-}
-
-// ─── 2. Engine Health (merges the former attention line + health status) ──
+// ─── Engine Health (merges the former attention line + health status) ──
 
 export function EngineHealthBanner() {
   const vm = useCommandCenter()

@@ -12,11 +12,12 @@
 // All panels render natively from ApplicationStore slices; the legacy
 // admin SystemHealth mapping and dev-only EngineChainProbe are retired.
 
-import { PageHeader }       from '@/components/ui/PageHeader'
-import { HealthPanel }      from './HealthPanel'
-import { RuntimePanel }     from './RuntimePanel'
-import { ConfigPanel }      from './ConfigPanel'
-import { DiagnosticsPanel } from './DiagnosticsPanel'
+import { PageHeader }        from '@/components/ui/PageHeader'
+import { HealthPanel }       from './HealthPanel'
+import { RuntimePanel }      from './RuntimePanel'
+import { ConfigPanel }       from './ConfigPanel'
+import { DiagnosticsPanel }  from './DiagnosticsPanel'
+import { SystemMetricsPanel } from './SystemMetricsPanel'
 
 export function SystemConsole() {
   return (
@@ -28,6 +29,7 @@ export function SystemConsole() {
 
       <HealthPanel />
       <RuntimePanel />
+      <SystemMetricsPanel />
       <DiagnosticsPanel />
       <ConfigPanel />
     </div>

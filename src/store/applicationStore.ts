@@ -22,6 +22,29 @@ import type {
   EngineEdges,
   EngineIdentity,
   ExecutionStatus,
+  ExecutionPolicy,
+  ExecutionTrades,
+  PaperStats,
+  PositionsHistory,
+  SurvivalPatterns,
+  Consensus,
+  ConsensusBias,
+  ConsensusHistory,
+  ResearchReports,
+  Portfolio,
+  Balance,
+  PortfolioHistory,
+  PortfolioSummary,
+  PortfolioPerformance,
+  AnalyticsSegments,
+  AnalyticsSignals,
+  AnalyticsSummary,
+  AnalyticsTopSegments,
+  AnalyticsHourly,
+  PaperStatus,
+  SystemMetrics,
+  TradesLedger,
+  ExecutionOrders,
 } from '@/types/engine'
 
 // ─── Per-endpoint state map ───────────────────────────────────────────────────
@@ -39,6 +62,31 @@ export interface EngineEndpoints {
   edges:        ServiceState<EngineEdges>
   identity:        ServiceState<EngineIdentity>
   executionStatus: ServiceState<ExecutionStatus>
+  executionPolicy: ServiceState<ExecutionPolicy>
+  executionTrades: ServiceState<ExecutionTrades>
+  paperStats:      ServiceState<PaperStats>
+
+  // Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints
+  positionsHistory:     ServiceState<PositionsHistory>
+  survivalPatterns:     ServiceState<SurvivalPatterns>
+  consensus:            ServiceState<Consensus>
+  consensusBias:        ServiceState<ConsensusBias>
+  consensusHistory:     ServiceState<ConsensusHistory>
+  researchReports:      ServiceState<ResearchReports>
+  portfolio:            ServiceState<Portfolio>
+  balance:              ServiceState<Balance>
+  portfolioHistory:     ServiceState<PortfolioHistory>
+  portfolioSummary:     ServiceState<PortfolioSummary>
+  portfolioPerformance: ServiceState<PortfolioPerformance>
+  analyticsSegments:    ServiceState<AnalyticsSegments>
+  analyticsSignals:     ServiceState<AnalyticsSignals>
+  analyticsSummary:     ServiceState<AnalyticsSummary>
+  analyticsTopSegments: ServiceState<AnalyticsTopSegments>
+  analyticsHourly:      ServiceState<AnalyticsHourly>
+  paperStatus:          ServiceState<PaperStatus>
+  systemMetrics:        ServiceState<SystemMetrics>
+  tradesLedger:         ServiceState<TradesLedger>
+  executionOrders:      ServiceState<ExecutionOrders>
 }
 
 // ─── Store shape ─────────────────────────────────────────────────────────────
@@ -67,6 +115,30 @@ const initialEndpoints: EngineEndpoints = {
   edges:        loadingState<EngineEdges>(),
   identity:        loadingState<EngineIdentity>(),
   executionStatus: loadingState<ExecutionStatus>(),
+  executionPolicy: loadingState<ExecutionPolicy>(),
+  executionTrades: loadingState<ExecutionTrades>(),
+  paperStats:      loadingState<PaperStats>(),
+
+  positionsHistory:     loadingState<PositionsHistory>(),
+  survivalPatterns:     loadingState<SurvivalPatterns>(),
+  consensus:            loadingState<Consensus>(),
+  consensusBias:        loadingState<ConsensusBias>(),
+  consensusHistory:     loadingState<ConsensusHistory>(),
+  researchReports:      loadingState<ResearchReports>(),
+  portfolio:            loadingState<Portfolio>(),
+  balance:              loadingState<Balance>(),
+  portfolioHistory:     loadingState<PortfolioHistory>(),
+  portfolioSummary:     loadingState<PortfolioSummary>(),
+  portfolioPerformance: loadingState<PortfolioPerformance>(),
+  analyticsSegments:    loadingState<AnalyticsSegments>(),
+  analyticsSignals:     loadingState<AnalyticsSignals>(),
+  analyticsSummary:     loadingState<AnalyticsSummary>(),
+  analyticsTopSegments: loadingState<AnalyticsTopSegments>(),
+  analyticsHourly:      loadingState<AnalyticsHourly>(),
+  paperStatus:          loadingState<PaperStatus>(),
+  systemMetrics:        loadingState<SystemMetrics>(),
+  tradesLedger:         loadingState<TradesLedger>(),
+  executionOrders:      loadingState<ExecutionOrders>(),
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────

@@ -15,13 +15,13 @@
 
 import type { ReactNode } from 'react'
 import { PortfolioOverview } from './PortfolioOverview'
+import { PortfolioSummaryCard } from './PortfolioSummaryCard'
 import { PortfolioAllocation } from './PortfolioAllocation'
 import { PortfolioInsights } from './PortfolioInsights'
 import { PortfolioActivity } from './PortfolioActivity'
 import { PortfolioValueChart } from './charts/PortfolioValueChart'
 import { PnLChart } from './charts/PnLChart'
 import { WinRateChart } from './charts/WinRateChart'
-import { IntelligenceModule } from '@/components/shared/IntelligenceModule'
 
 function ChartCard({ title, children, className = '' }: { title: string; children: ReactNode; className?: string }) {
   return (
@@ -42,17 +42,16 @@ export function PortfolioPage() {
 
       <PortfolioOverview />
 
-      <IntelligenceModule
-        title="Performance History"
-        description="Portfolio value, P&L, and win-rate trends over time — activates automatically as P2-01 ships"
-        endpoint="P2-01"
-      >
+      <PortfolioSummaryCard />
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Performance History</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <ChartCard title="Portfolio Value"><PortfolioValueChart height={200} /></ChartCard>
           <ChartCard title="Daily & Cumulative P&L"><PnLChart height={200} /></ChartCard>
           <ChartCard title="Rolling Win Rate" className="lg:col-span-2"><WinRateChart height={160} /></ChartCard>
         </div>
-      </IntelligenceModule>
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Allocation</h2>

@@ -104,17 +104,14 @@ const config: Config = {
       // is duplicated here. Dead animations (gauge-fill, bar-fill, slide-in-*,
       // count-up, ticker-scroll, fade-in) were removed as unused tokens.
       animation: {
-        "fade-in-up": "fade-in-up 0.3s ease-out",
+        // Motion-language easing (--motion-ease): soft settle, never mechanical.
+        "fade-in-up": "fade-in-up 0.35s cubic-bezier(0.22, 1, 0.36, 1)",
       },
 
       // ─── Box Shadow ──────────────────────────────────────────────────────
       boxShadow: {
         "surface": "0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px var(--probex-border)",
         "surface-lg": "0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--probex-border)",
-        "cyan-glow": "0 0 20px rgba(0,212,255,0.15)",
-        "cyan-glow-sm": "0 0 10px rgba(0,212,255,0.1)",
-        "purple-glow": "0 0 20px rgba(109,94,247,0.15)",
-        "trading-panel": "0 0 40px rgba(0,0,0,0.6)",
       },
 
       // ─── Backdrop Blur ───────────────────────────────────────────────────
