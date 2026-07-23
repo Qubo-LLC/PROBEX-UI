@@ -1,15 +1,8 @@
 'use client'
 
-// CapitalLedger — V3 redesign of V1's TransactionHistory (git 0e3833a4). No
-// persistent transaction/trade ledger existed (P2-02) — deposits/withdrawals/
-// tx-hash columns were crypto-wallet concepts that don't apply here anyway.
-//
-// 2026-07-22: /api/trades/ledger is live — the endpoint P2-02 referred to now
-// exists. Its `ledger[]` is empty this session and its item schema is not yet
-// observed, so individual rows still can't be shown truthfully, but this is
-// no longer "waiting for an endpoint that doesn't exist": it's live and has
-// nothing settled yet. The aggregate summary (total P&L, win/loss, win rate)
-// IS real and shown above the table shell.
+// CapitalLedger — settled-trade ledger from /api/trades/ledger. The aggregate
+// summary (P&L, W/L, win rate) is real; individual rows await a non-empty
+// sample to confirm the item schema.
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'

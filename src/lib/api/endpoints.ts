@@ -1,40 +1,14 @@
-// Central endpoint registry — the single source of truth for every backend path
-// the frontend may call. Paths are RELATIVE to NEXT_PUBLIC_API_BASE_URL, which
-// already includes the `/api` prefix (e.g. `https://<host>:<port>/api`), so a
-// path of '/execution/status' resolves to …/api/execution/status.
+// Central endpoint registry. Paths are relative to NEXT_PUBLIC_API_BASE_URL
+// (which includes the `/api` prefix). Only 'confirmed' entries are callable —
+// every other status throws ENDPOINT_NOT_CONFIGURED via endpointPath(), so a
+// broken or undeployed route can never reach the client.
 //
 // status:
-//   'confirmed'        — path verified LIVE against the deployed backend (returns data).
-//   'backend-error'    — path is deployed and reachable, but the live server returns a
-//                        5xx or hangs/times out. Distinct from 404: the route EXISTS,
-//                        it is broken. Never wire UI to one of these — track as a Jake bug.
-//   'contract-pending' — path is defined in the Postman collection (the target
-//                        contract) BUT the deployed server currently returns 404 for
-//                        it. The path is recorded for documentation/roadmap, but the
-//                        endpoint is NOT callable — it becomes 'confirmed' only once the
-//                        route is actually deployed (verified via a live probe).
-//   'placeholder'      — endpoint exists in the backend's Postman collection, but its
-//                        exact path is not confirmed yet → path is `null`.
-//   'awaiting-backend' — no backend endpoint exists for this frontend feature yet.
-//
-// SOURCE-OF-TRUTH HISTORY:
-//   2026-07-21 audit — collection (50 endpoints) vs live server diverged sharply:
-//     only 15 GET endpoints served data; the entire portfolio/analytics/consensus/
-//     research/paper-control cluster returned 404 (not deployed).
-//   2026-07-22 redeploy — a live re-probe found the backend redeployed in paper mode.
-//     20 of those previously-404 GET endpoints now return 200 with real data. The
-//     8 POST mutation endpoints (execution create/close/cancel/emergency-stop, paper
-//     start/stop/reset/resolve) now all return 405 on GET (were 404) — proving the
-//     routes are deployed and method-gated, not missing. Two GENUINE backend failures
-//     surfaced for the first time: GET /api/markets/history/summary (500) and
-//     GET /api/markets/:id/history (500, plain-text "Internal Server Error" body, not
-//     JSON) — plus GET /api/markets/:id itself hangs (connection timeout after 12s,
-//     3 attempts). All three are 'backend-error', not 'contract-pending'.
-//
-// No routes are invented here. Only 'confirmed' entries are callable — everything else
-// (backend-error, contract-pending, placeholder, awaiting-backend) throws
-// ENDPOINT_NOT_CONFIGURED via endpointPath(), so a broken or undeployed entry can
-// never reach the client.
+//   'confirmed'        — verified live, returns data.
+//   'backend-error'    — deployed but returns 5xx / hangs (route exists, broken).
+//   'contract-pending' — in the collection but 404 on the live server (not deployed).
+//   'placeholder'      — in the collection, exact path unconfirmed → path null.
+//   'awaiting-backend' — no backend endpoint exists for this feature.
 
 import { env } from '@/config/env'
 import { ServiceException } from '@/lib/services/response'
@@ -89,8 +63,7 @@ export const ENDPOINTS = {
   markets: {
     list:     def('GET', '/markets',       'confirmed', 'Markets page / MarketsView',    'Active Markets'),
     history:  def('GET', '/price-history', 'confirmed', 'BTC price feed (global)',       'Price History'),
-    // 2026-07-22: deployed and reachable, but genuinely broken — see header note.
-    // Do NOT wire UI to these; they are Jake bugs, not missing routes.
+    // Deployed but broken (5xx / hang) — do not wire UI; backend bugs.
     detail:        def('GET', '/markets/:market_id',         'backend-error', 'Market detail page', 'Specific Market Details'),
     volume:        def('GET', '/markets/:market_id/history', 'backend-error', 'Market detail volume chart', 'Market Price History'),
     historySummary: def('GET', '/markets/history/summary',   'backend-error', 'Markets history summary', 'Market History Summary'),
@@ -105,12 +78,8 @@ export const ENDPOINTS = {
   },
 
   // ── Paper-trading control ────────────────────────────────────────────────────
-  // status is a GET read (deployed, confirmed 200 2026-07-22). start/stop/reset/
-  // resolve are POST mutations — a 2026-07-22 GET probe returns 405 (not 404),
-  // proving all four are now DEPLOYED and method-gated. They stay un-integrated
-  // in this phase: no mutation layer exists yet in the frontend (apiPost is
-  // defined but unused), and wiring live trading controls was explicitly scoped
-  // out pending a dedicated mutation-layer + confirm-dialog UX decision.
+  // status is a confirmed GET. start/stop/reset/resolve are deployed POST
+  // mutations (405 on GET), left contract-pending until a mutation layer exists.
   paper: {
     status:  def('GET',  '/paper/status',  'confirmed',       'Paper trading status',  'Paper Status'),
     start:   def('POST', '/paper/start',   'contract-pending', 'Start paper trading',   'Start Paper Trading'),
@@ -119,10 +88,9 @@ export const ENDPOINTS = {
     resolve: def('POST', '/paper/resolve', 'contract-pending', 'Resolve paper trades',  'Resolve Paper Trades'),
   },
 
-  // ── Execution mutations (deployed 2026-07-22, confirmed via 405 on GET) ─────
-  // Same rationale as `paper.*` above — deployed, method-gated, intentionally
-  // not integrated until a mutation layer + safety UX exists. emergency-stop in
-  // particular should be prioritized whenever that layer is built.
+  // ── Execution mutations ──────────────────────────────────────────────────────
+  // Deployed POST mutations (405 on GET); contract-pending until a mutation
+  // layer + safety UX exists (prioritise emergency-stop when it is built).
   executionControl: {
     orders:        def('GET',  '/execution/orders', 'confirmed', 'All orders (active/closed envelope)', 'All Orders'),
     create:        def('POST', '/execution/create', 'contract-pending', 'Manually create an order', 'Create Order (Manual)'),
@@ -131,7 +99,7 @@ export const ENDPOINTS = {
     emergencyStop: def('POST', '/execution/emergency-stop', 'contract-pending', 'Emergency halt — close all positions', 'Emergency Stop'),
   },
 
-  // ── Consensus (deployed 2026-07-22) ─────────────────────────────────────────
+  // ── Consensus ────────────────────────────────────────────────────────────────
   consensus: {
     global:  def('GET', '/consensus',         'confirmed', 'Global consensus bar / score card', 'Global Consensus'),
     bias:    def('GET', '/consensus/bias',    'confirmed', 'Institutional/retail-style bias breakdown', 'Consensus Bias'),
@@ -139,7 +107,7 @@ export const ENDPOINTS = {
     market:  def('GET', null, 'awaiting-backend', 'Per-market consensus panel — no such endpoint exists; /api/consensus is platform-wide only'),
   },
 
-  // ── Portfolio (deployed 2026-07-22) ─────────────────────────────────────────
+  // ── Portfolio ────────────────────────────────────────────────────────────────
   portfolio: {
     live:        def('GET', '/portfolio',             'confirmed', 'Portfolio live snapshot', 'Full Portfolio'),
     summary:     def('GET', '/portfolio/summary',     'confirmed', 'Portfolio summary', 'Portfolio Summary'),
@@ -149,14 +117,14 @@ export const ENDPOINTS = {
     activity:    def('GET', null, 'awaiting-backend', 'Portfolio activity feed — use /api/events instead, no dedicated endpoint'),
   },
 
-  // ── Research (deployed 2026-07-22) ──────────────────────────────────────────
+  // ── Research ─────────────────────────────────────────────────────────────────
   research: {
     reports:    def('GET', '/research/reports', 'confirmed', 'Research reports / library', 'Research Reports'),
     get:        def('GET', null, 'awaiting-backend', 'Research reader (single report detail) — no such endpoint exists yet'),
     categories: def('GET', null, 'awaiting-backend', 'Research sidebar categories — no such endpoint exists yet'),
   },
 
-  // ── Analytics (deployed 2026-07-22 — all live, but empty until trades accumulate) ─
+  // ── Analytics (live, but empty until trades accumulate) ──────────────────────
   analytics: {
     segments:    def('GET', '/analytics/segments',    'confirmed', 'Segment performance analytics', 'Analytics Segments'),
     signals:     def('GET', '/analytics/signals',     'confirmed', 'Signal performance analytics', 'Analytics Signals'),
@@ -171,18 +139,18 @@ export const ENDPOINTS = {
     onChainSnapshots:     def('GET', null, 'awaiting-backend', 'On-chain latest snapshots — no backend concept'),
   },
 
-  // ── Trade Ledger (deployed 2026-07-22 — live, empty until a trade settles) ──
+  // ── Trade Ledger (live, empty until a trade settles) ─────────────────────────
   trades: {
     ledger: def('GET', '/trades/ledger', 'confirmed', 'Settled trade ledger', 'Trade Ledger'),
   },
 
-  // ── Wallet (deployed 2026-07-22) ────────────────────────────────────────────
+  // ── Wallet ───────────────────────────────────────────────────────────────────
   wallet: {
     balance:      def('GET', '/balance', 'confirmed', 'Wallet / capital balance', 'Balance Check'),
     transactions: def('GET', null, 'awaiting-backend', 'Wallet transaction history — no such endpoint exists yet'),
   },
 
-  // ── Survival (patterns deployed 2026-07-22) ─────────────────────────────────
+  // ── Survival ─────────────────────────────────────────────────────────────────
   survival: {
     patterns: def('GET', '/survival/patterns', 'confirmed', 'Survival brain pattern analysis', 'Survival Patterns'),
   },

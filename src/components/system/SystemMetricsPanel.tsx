@@ -1,9 +1,7 @@
 'use client'
 
-// SystemMetricsPanel — new 2026-07-22, surfacing /api/system/metrics
-// (process uptime, memory, CPU, event-log size). No prior UI slot existed
-// for this data — HealthPanel covers per-component health, RuntimePanel
-// covers lifecycle/mode, but neither exposed raw process resource usage.
+// SystemMetricsPanel — process uptime, memory, CPU, and event-log size from
+// /api/system/metrics.
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { Card }       from '@/components/ui/Card'

@@ -32,6 +32,41 @@ function edgeAccent(edge: EdgeRow | undefined): string | null {
   return edge.direction.toLowerCase() === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)'
 }
 
+/** Confidence tier from the real edge confidence. */
+function confidenceTier(c: number | null): { label: string; color: string } | null {
+  if (c === null) return null
+  if (c >= 0.7) return { label: 'High conviction', color: 'var(--probex-positive)' }
+  if (c >= 0.5) return { label: 'Moderate',        color: 'var(--probex-warning)' }
+  return { label: 'Low conviction', color: 'var(--probex-text-muted)' }
+}
+
+/** EngineStrip — the engine's live read on a market (direction · edge% ·
+ *  confidence tier) from /api/edges. Rendered only when an edge exists. */
+function EngineStrip({ edge }: { edge: EdgeRow }) {
+  const color = edge.direction.toLowerCase() === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)'
+  const tier  = confidenceTier(edge.confidence)
+  const conf  = edge.confidence !== null ? Math.round(edge.confidence * 100) : null
+
+  return (
+    <div className="flex flex-col gap-1 rounded-md px-2 py-1.5" style={{ background: `color-mix(in srgb, ${color} 7%, var(--probex-surface-2))`, border: `1px solid color-mix(in srgb, ${color} 20%, transparent)` }}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-2xs font-black uppercase tracking-wider" style={{ color }}>
+          {edge.direction.toUpperCase()} · {edge.edgePct.toFixed(1)}% edge
+        </span>
+        {tier && <span className="text-2xs font-semibold" style={{ color: tier.color }}>{tier.label}</span>}
+      </div>
+      {conf !== null && (
+        <div className="flex items-center gap-1.5">
+          <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }}>
+            <div className="h-full rounded-full" style={{ width: `${conf}%`, background: color }} />
+          </div>
+          <span className="text-[9px] font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{conf}%</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function MarketCard({ market, edge, variant = 'grid', onClick, className = '' }: MarketCardProps) {
   if (variant === 'list') return <ListRow market={market} edge={edge} onClick={onClick} className={className} />
 
@@ -81,8 +116,7 @@ export function MarketCard({ market, edge, variant = 'grid', onClick, className 
         <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>Awaiting price data</p>
       )}
 
-      {/* Live edge badge — the engine's signal (the AI's mark) */}
-      <EdgeBadge edge={edge} showEmpty={false} className="self-start" />
+      {edge && <EngineStrip edge={edge} />}
 
       {/* Footer: volume + closes */}
       {(market.volume24h !== null || closes) && (

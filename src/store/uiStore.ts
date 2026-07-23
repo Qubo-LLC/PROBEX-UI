@@ -13,7 +13,6 @@
 // with preferencesStore, which is localStorage-backed).
 
 import { create } from 'zustand'
-import type { BitcoinSegment } from '@/types/market'
 
 export type MarketSortField = 'volume24h' | 'liquidity' | 'probability' | 'closesAt'
 export type SortDir = 'asc' | 'desc'
@@ -21,13 +20,17 @@ export type MarketViewMode = 'grid' | 'table'
 
 interface UIStore {
   // ── Markets catalog filters ────────────────────────────────────────────
-  marketSegment:  BitcoinSegment | null
+  // 2026-07-24: replaced `marketSegment` — the Bitcoin-category taxonomy it
+  // filtered on (price-targets/volatility/…) never exists on a real market, so
+  // those pills always returned nothing. `marketTimeframe` filters on
+  // `durationMinutes` (5 or 15 today), a field the backend genuinely sends.
+  marketTimeframe: number | null
   marketSearch:   string
   marketSortBy:   MarketSortField
   marketSortDir:  SortDir
   marketViewMode: MarketViewMode
 
-  setMarketSegment:  (segment: BitcoinSegment | null) => void
+  setMarketTimeframe: (minutes: number | null) => void
   setMarketSearch:   (query: string) => void
   setMarketSort:     (field: MarketSortField, dir?: SortDir) => void
   setMarketViewMode: (mode: MarketViewMode) => void
@@ -39,17 +42,17 @@ interface UIStore {
 }
 
 export const useUIStore = create<UIStore>((set) => ({
-  marketSegment:  null,
+  marketTimeframe: null,
   marketSearch:   '',
   marketSortBy:   'volume24h',
   marketSortDir:  'desc',
   marketViewMode: 'grid',
 
-  setMarketSegment:  (segment) => set({ marketSegment: segment }),
+  setMarketTimeframe: (minutes) => set({ marketTimeframe: minutes }),
   setMarketSearch:   (query)   => set({ marketSearch: query }),
   setMarketSort:     (field, dir) => set((s) => ({ marketSortBy: field, marketSortDir: dir ?? s.marketSortDir })),
   setMarketViewMode: (mode)    => set({ marketViewMode: mode }),
-  resetMarketFilters: () => set({ marketSegment: null, marketSearch: '' }),
+  resetMarketFilters: () => set({ marketTimeframe: null, marketSearch: '' }),
 
   focusMarketId: null,
   setFocusMarket: (id) => set({ focusMarketId: id }),

@@ -671,13 +671,9 @@ export interface PaperStats {
   timestamp:     number    // epoch ms
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PHASE 3 (2026-07-22 redeploy) — 20 newly-live endpoints, all types derived
-// directly from real captured payloads. Never invented. Item arrays with
-// zero observed elements stay `unknown[]` per the existing parse-or-report
-// convention (markets/positions/events/edges precedent) — a mapper is added
-// only once a real, non-empty sample exists.
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── Additional endpoint types ────────────────────────────────────────────────
+// Derived from real captured payloads. Item arrays with no observed elements
+// stay unknown[] until a non-empty sample confirms the schema.
 
 // ─── /api/positions/history ──────────────────────────────────────────────────
 // Envelope confirmed live; `history[]` empty in every capture so far — item

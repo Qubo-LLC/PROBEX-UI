@@ -385,42 +385,42 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   THEME: NOVA (BETA) — 2026-07-23 frontend revamp initiative
-   Built from Aurora's palette, not a copy of it: same deep-space duo-tone
-   structure (two brand hues over near-black), but the roles are inverted and
-   the background undertone shifts warmer/purpler than Aurora's blue-black —
-   electric magenta takes the primary role Aurora gave cyan; cyan is demoted
-   to secondary. positive/negative/warning/consensus stay the fixed semantic
-   values every dark theme shares (never themed) — only accent, background,
-   text, trading-side, chart, and gradient tokens vary here.
+   THEME: EMBER (BETA) — 2026-07-24 frontend revamp initiative
+   Molten warm-dark: burnt orange primary + amber secondary over a warm
+   near-black (brown-black, not the blue-blacks of the other dark themes).
+   Trading sides read as gold (yes) vs deep sienna (no) — both warm but split
+   by lightness so they stay unambiguous. positive/negative/warning/consensus
+   keep the fixed shared semantic values (green/red/amber) so P&L never
+   re-hues per theme; only accent, background, text, trading-side, chart, and
+   gradient tokens vary here. Replaces the earlier 'nova' (pink) beta slot.
 ───────────────────────────────────────────────────────────────────────── */
-[data-theme="nova"] {
-  --probex-bg:        #0A0616;
-  --probex-surface:   #0F0A1F;
-  --probex-surface-2: #150F28;
-  --probex-surface-3: #1B1433;
+[data-theme="ember"] {
+  --probex-bg:        #0B0705;
+  --probex-surface:   #140D08;
+  --probex-surface-2: #1D130B;
+  --probex-surface-3: #271A0F;
 
-  --probex-border:         rgba(255, 255, 255, 0.07);
-  --probex-border-default: rgba(255, 255, 255, 0.09);
-  --probex-border-strong:  rgba(255, 255, 255, 0.14);
-  --probex-border-active:  rgba(255, 62, 165, 0.35);
+  --probex-border:         rgba(255, 236, 214, 0.07);
+  --probex-border-default: rgba(255, 236, 214, 0.10);
+  --probex-border-strong:  rgba(255, 236, 214, 0.16);
+  --probex-border-active:  rgba(242, 100, 25, 0.4);
 
-  --probex-primary:   #FF3EA5;
-  --probex-secondary: #00D4FF;
-  --probex-primary-dim:   rgba(255, 62, 165, 0.12);
-  --probex-secondary-dim: rgba(0, 212, 255, 0.12);
+  --probex-primary:   #F26419;
+  --probex-secondary: #F7A23B;
+  --probex-primary-dim:   rgba(242, 100, 25, 0.14);
+  --probex-secondary-dim: rgba(247, 162, 59, 0.14);
 
-  --probex-text-primary:   #F3E9FF;
-  --probex-text-secondary: rgba(243, 233, 255, 0.58);
-  --probex-text-muted:     rgba(243, 233, 255, 0.32);
-  --probex-text-disabled:  rgba(243, 233, 255, 0.18);
+  --probex-text-primary:   #FBEEE2;
+  --probex-text-secondary: rgba(251, 238, 226, 0.60);
+  --probex-text-muted:     rgba(251, 238, 226, 0.34);
+  --probex-text-disabled:  rgba(251, 238, 226, 0.18);
 
-  --probex-yes:          #FF3EA5;
-  --probex-yes-dim:      rgba(255, 62, 165, 0.1);
-  --probex-yes-border:   rgba(255, 62, 165, 0.25);
-  --probex-no:           #00D4FF;
-  --probex-no-dim:       rgba(0, 212, 255, 0.1);
-  --probex-no-border:    rgba(0, 212, 255, 0.25);
+  --probex-yes:          #FBBF24;
+  --probex-yes-dim:      rgba(251, 191, 36, 0.12);
+  --probex-yes-border:   rgba(251, 191, 36, 0.28);
+  --probex-no:           #C2410C;
+  --probex-no-dim:       rgba(194, 65, 12, 0.14);
+  --probex-no-border:    rgba(194, 65, 12, 0.32);
 
   --probex-positive:  #10B981;
   --probex-positive-dim: rgba(16, 185, 129, 0.12);
@@ -433,21 +433,26 @@
   --probex-consensus-med:  #F59E0B;
   --probex-consensus-low:  #EF4444;
 
-  --probex-sidebar-bg: #0F0A1F;
-  --probex-sidebar-item-active-bg: rgba(255, 62, 165, 0.1);
-  --probex-sidebar-item-active-border: rgba(255, 62, 165, 0.2);
+  --probex-sidebar-bg: #140D08;
+  --probex-sidebar-item-active-bg: rgba(242, 100, 25, 0.12);
+  --probex-sidebar-item-active-border: rgba(242, 100, 25, 0.24);
 
-  --probex-chart-primary:   #FF3EA5;
-  --probex-chart-secondary: #00D4FF;
+  --probex-chart-primary:   #F26419;
+  --probex-chart-secondary: #F7A23B;
   --probex-chart-tertiary:  #10B981;
-  --probex-chart-grid:      rgba(255, 255, 255, 0.05);
-  --probex-chart-axis:      rgba(255, 255, 255, 0.2);
+  --probex-chart-grid:      rgba(255, 236, 214, 0.05);
+  --probex-chart-axis:      rgba(255, 236, 214, 0.22);
 
-  --probex-gradient-brand:   linear-gradient(135deg, #FF3EA5 0%, #00D4FF 100%);
-  --probex-gradient-yes:     linear-gradient(135deg, #FF3EA5 0%, #C2226F 100%);
-  --probex-gradient-no:      linear-gradient(135deg, #00D4FF 0%, #0099BB 100%);
-  --probex-gradient-surface: linear-gradient(180deg, #0F0A1F 0%, #0A0616 100%);
+  --probex-gradient-brand:   linear-gradient(135deg, #F26419 0%, #F7A23B 100%);
+  --probex-gradient-yes:     linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+  --probex-gradient-no:      linear-gradient(135deg, #C2410C 0%, #7C2D12 100%);
+  --probex-gradient-surface: linear-gradient(180deg, #140D08 0%, #0B0705 100%);
 
-  --probex-scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  /* Warm ember light-field — two warm radials smouldering in the corners. */
+  --probex-lightfield:
+    radial-gradient(60% 55% at 12% -5%, color-mix(in srgb, var(--probex-primary) 8%, transparent), transparent 60%),
+    radial-gradient(55% 50% at 105% 108%, color-mix(in srgb, var(--probex-secondary) 6%, transparent), transparent 58%);
+
+  --probex-scrollbar-thumb: rgba(255, 236, 214, 0.12);
   --probex-scrollbar-track: transparent;
 }

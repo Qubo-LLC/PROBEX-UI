@@ -12,10 +12,27 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 
 const STORAGE_KEY = 'probex-preferences'
 
+/** User-set profit-target overrides (USD). `null` = fall back to the engine's
+ *  own daily/weekly target from /api/survival. The engine's targets are
+ *  intentionally tiny ($0.46/day, $2.31/week), so any real profit instantly
+ *  fills the progress bar to 100% — letting the operator set a personal,
+ *  meaningful goal makes the target bars actually informative. This is a
+ *  DISPLAY-only overlay: it changes what the bar measures against, not the
+ *  engine's own behaviour. */
+export interface ProfitTargets {
+  daily:  number | null
+  weekly: number | null
+}
+
 interface PreferencesStore {
   /** Watchlisted market ids, keyed for O(1) membership checks. */
   watchlist: Record<string, true>
   toggleWatchlist: (marketId: string) => void
+
+  /** Personal profit-target overlay; null values defer to the engine's targets. */
+  profitTargets: ProfitTargets
+  /** Set (or clear, with null) a personal target for a period. */
+  setProfitTarget: (period: keyof ProfitTargets, value: number | null) => void
 }
 
 export const usePreferencesStore = create<PreferencesStore>()(
@@ -29,6 +46,10 @@ export const usePreferencesStore = create<PreferencesStore>()(
           else next[marketId] = true
           return { watchlist: next }
         }),
+
+      profitTargets: { daily: null, weekly: null },
+      setProfitTarget: (period, value) =>
+        set((s) => ({ profitTargets: { ...s.profitTargets, [period]: value } })),
     }),
     {
       name:    STORAGE_KEY,

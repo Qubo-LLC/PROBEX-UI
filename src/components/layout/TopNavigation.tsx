@@ -5,6 +5,7 @@ import Link                   from 'next/link'
 import { cn }                 from '@/lib/utils'
 import { ProbexMark }         from '@/components/ui/ProbexMark'
 import { EngineStatusStrip }  from './EngineStatusStrip'
+import { ProfileMenu }        from './ProfileMenu'
 import { CommandPalette }     from './CommandPalette'
 import { useSidebarStore, useSidebarCollapsed } from '@/store/sidebarStore'
 import { useSettingsStore }   from '@/store/settingsStore'
@@ -17,9 +18,10 @@ import { ROUTES, TOPNAV_HEIGHT } from '@/config/constants'
  * (PROBEX_PRODUCT_SPEC.md §3): brand + rail control on the left, live engine
  * vitals (BTC price · survival chip · feed status · mode badge) on the right.
  *
- * Consumer-dashboard conventions (search, notifications, profile menus)
- * were removed — none had a backend counterpart. Notifications return with
- * the P1 alerts API; profile returns with P3 auth.
+ * 2026-07-24: a session-identity element (ProfileMenu — gradient avatar +
+ * dropdown) was added on the right, matching the mock's premium topbar. It
+ * represents the ENGINE SESSION (bot/version/mode), not a signed-in user, so
+ * it needs no auth backend. Notifications still await the P1 alerts API.
  */
 export function TopNavigation() {
   const toggleMobile      = useSidebarStore((s) => s.toggleMobile)
@@ -125,9 +127,10 @@ export function TopNavigation() {
         </button>
       </div>
 
-      {/* ── Right region (col 3): engine vitals ──────────────────────── */}
-      <div className="flex items-center justify-end min-w-0">
+      {/* ── Right region (col 3): engine vitals + session identity ───── */}
+      <div className="flex items-center justify-end gap-2 sm:gap-3 min-w-0">
         <EngineStatusStrip />
+        <ProfileMenu />
       </div>
 
       <CommandPalette open={paletteOpen} onClose={closePalette} />

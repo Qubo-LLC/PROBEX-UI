@@ -1,22 +1,11 @@
 'use client'
 
-// Engine data hooks. Each returns a ServiceState<T> ({ status, data, error })
-// covering all four UI states. In mock mode the synchronous peek* snapshot seeds
-// the first render (no loading flash); in live mode the same hook surfaces
-// 'loading' → 'success' | 'empty' | 'error'.
-//
-// The raw useEngine* hooks accept an optional refreshMs for polling — only
-// ApplicationStateLoader passes it, which owns the polling tiers (spec §5).
-// Every other consumer reads the resulting slices from the ApplicationStore, so
-// there is exactly one fetch per endpoint regardless of how many components mount.
-//
-// Initial-fetch jitter (added 2026-07-22, Phase 3): ApplicationStateLoader grew
-// from 15 to 35 hooks in one redeploy. All 35 previously fired their first
-// fetch in the same tick on mount — verified via runtime testing against the
-// live backend, this produced a real timeout on /api/research/reports (15s,
-// ECONNABORTED) that did not reproduce on any of the other 34 endpoints. A
-// small random stagger on the INITIAL fetch only (polling intervals are
-// unaffected) spreads the mount-time burst without changing cadence.
+// Engine data hooks returning ServiceState<T> for all four UI states. In mock
+// mode the peek* snapshot seeds the first render; in live mode the hook goes
+// loading → success | empty | error. Only ApplicationStateLoader passes
+// refreshMs (owns polling); every other consumer reads store slices, so there's
+// one fetch per endpoint. The initial fetch is jittered to spread the ~35-hook
+// mount burst.
 
 import { useEffect, useMemo, useState, type DependencyList } from 'react'
 import { services } from '@/lib/services'
@@ -52,16 +41,9 @@ function useServiceQuery<T>(
         .then((r) => { if (active) setState(toServiceState(r)) })
         .catch((e) => {
           if (!active) return
-          // A poll-refresh failure (timeout, transient network blip) should
-          // never blank out data the user is already looking at — that's
-          // exactly the "tap out, tap in" flicker reported against
-          // /api/markets, whose backend-side rate limiter intermittently
-          // stalls past the client timeout. Only the FIRST fetch (no prior
-          // success/empty) surfaces as a hard error state; once real data has
-          // been shown once, a later failure is swallowed here and the next
-          // poll tries again — the failure is still fully visible in the
-          // System page's Endpoint Diagnostics panel via the axios
-          // interceptor, independent of this hook's state.
+          // Keep last-good data on a poll-refresh failure (avoids the Markets
+          // flicker); only surface an error before any data has arrived. The
+          // failure still shows in the System diagnostics panel regardless.
           setState((prev) => (prev.status === 'success' || prev.status === 'empty') ? prev : errorState<T>(toServiceError(e)))
         })
         .finally(() => { inFlight = false })
@@ -69,8 +51,7 @@ function useServiceQuery<T>(
 
     const s = seed()
     setState(s !== null ? toServiceState(ok(s)) : loadingState<T>())
-    // Stagger only the first fetch — spreads a large mount-time hook count
-    // (e.g. ApplicationStateLoader's 35) across ~1.5s instead of one tick.
+    // Jitter the first fetch to spread the mount-time burst across ~1.5s.
     const initialTimer = setTimeout(run, Math.random() * 1_500)
 
     if (refreshMs === undefined) return () => { active = false; clearTimeout(initialTimer) }
@@ -156,7 +137,7 @@ export function useEnginePaperStats(refreshMs?: number) {
   return useServiceQuery(() => services.engine.getPaperStats(), () => services.engine.peekPaperStats?.() ?? null, [], refreshMs)
 }
 
-// ─── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoint hooks ──────────────
+// ─── Additional engine endpoint hooks ────────────────────────────────────────
 
 /** /api/positions/history — historical closed positions (envelope only; items empty so far). */
 export function useEnginePositionsHistory(refreshMs?: number) {

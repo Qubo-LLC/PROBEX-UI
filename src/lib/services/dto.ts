@@ -33,10 +33,8 @@ import type {
   TradesLedgerDTO, TradesLedger, ExecutionOrdersDTO, ExecutionOrders,
 } from '@/types/engine'
 
-/** Every `win_rate` field on this backend is 0–100 (percentage) — confirmed
- *  from real 2026-07-22 samples (paper-stats: 28.6, survival/patterns: 33.3,
- *  portfolio/summary: 28.6). Normalize to 0–1 here so every domain winRate in
- *  the app shares one convention (matches the existing ExecutionStatus.winRate). */
+/** win_rate is 0–100 on the wire everywhere; normalize to 0–1 so all domain
+ *  winRates share one convention. */
 const pctToFraction = (pct: number): number => pct / 100
 
 // ─── Time normalization ─────────────────────────────────────────────────────────
@@ -371,9 +369,7 @@ export function toPaperStats(dto: PaperStatsDTO): PaperStats {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PHASE 3 (2026-07-22 redeploy) — adapters for the 20 newly-live endpoints.
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── Additional endpoint adapters ─────────────────────────────────────────────
 
 export function toPositionsHistory(dto: PositionsHistoryDTO): PositionsHistory {
   return { available: dto.available, history: dto.history, count: dto.count, limit: dto.limit, timestamp: isoToMs(dto.timestamp) }

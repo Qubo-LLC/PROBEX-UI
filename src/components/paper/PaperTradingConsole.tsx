@@ -1,19 +1,10 @@
 'use client'
 
-// PaperTradingConsole — dedicated Paper Trading page (/paper), built 2026-07-23
-// per direct product request. Paper trading previously had no single home:
-// its data was scattered across ExecutionConsole's "Paper Session" card
-// (paper-stats + paper/status) and Wallet's "Capital Ledger" (trades/ledger).
-// This page brings all of it together in one place, sourced entirely from
-// endpoints already wired end to end (no new backend calls) —
-// /api/paper-stats, /api/paper/status, /api/trades/ledger.
-//
-// Two real, unresolved cross-source discrepancies exist in this data and are
-// shown explicitly rather than silently reconciled, per this app's own
-// truth-telling convention (see ExecutionConsole's Paper Session card):
-//   • paper-stats.total_trades vs paper/status.completed_trades disagree
-//   • paper-stats.total_trades vs trades_ledger.count disagree (ledger is
-//     empty this session; paper-stats already has real trade history)
+// PaperTradingConsole — the Paper Trading page (/paper): session vitals,
+// edge-bucket/hourly breakdowns, survival-state timeline, and the settled
+// ledger, from /api/paper-stats, /api/paper/status, /api/trades/ledger.
+// paper-stats.total_trades and paper/status.completed_trades disagree upstream;
+// both are shown rather than silently reconciled.
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'

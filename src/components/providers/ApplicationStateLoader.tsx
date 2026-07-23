@@ -1,32 +1,10 @@
 'use client'
 
-// ApplicationStateLoader — renders null, mounts once in DashboardLayout.
-// Calls every engine service hook and syncs each resolved ServiceState<T>
-// into the global ApplicationStore so that ALL other hooks and components
-// can read engine data without issuing their own HTTP requests.
-//
-// This is the ONLY place in the application that calls raw useEngine* hooks
-// with polling enabled. EngineChainProbe (diagnostics) is intentionally
-// excluded — it issues independent one-shot requests to verify the chain.
-//
-// Polling tiers (PROBEX_PRODUCT_SPEC.md §5). The backend advertises a 500 ms
-// dashboard interval; we poll conservatively to respect the engine's own
-// rate limiters. Polling pauses while the tab is hidden (see useServiceQuery).
-//
-// Phase 3 (2026-07-22 redeploy) adds 20 endpoints to the same three tiers —
-// no new tiers, no new poll owner, per the "don't duplicate polling" rule.
-// Tier assignment follows the endpoint's own change cadence, evidenced by
-// its real payload:
-//   MEDIUM — live/cycle-driven signals (consensus mirrors edges' cadence;
-//            portfolio/balance mirror execution/status; executionOrders
-//            mirrors executionTrades; paperStatus mirrors paperStats;
-//            tradesLedger should reflect a newly-closed trade promptly).
-//   SLOW   — historical charts and aggregates that only meaningfully change
-//            over minutes, not seconds (consensusHistory, portfolioHistory,
-//            portfolioSummary, portfolioPerformance, researchReports,
-//            survivalPatterns, positionsHistory, systemMetrics, and the
-//            analytics/* family — the last five confirmed live but empty
-//            until trade history accumulates).
+// ApplicationStateLoader — renders null, mounts once in DashboardLayout. The
+// ONLY place that calls raw useEngine* hooks with polling; it syncs each
+// ServiceState<T> into ApplicationStore so components read data without their
+// own fetches. Three tiers (FAST/MEDIUM/SLOW) by each endpoint's change
+// cadence; polling pauses while the tab is hidden (useServiceQuery).
 
 import { useEffect }           from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
@@ -71,14 +49,9 @@ import {
 const FAST_MS   =  2_000  // live price + cockpit vitals
 const MEDIUM_MS =  5_000  // operational state; matches 5-min market cadence
 const SLOW_MS   = 30_000  // /health takes ~5s server-side; config rarely changes
-// /api/markets and /api/edges both read through the backend's own `market_fetch`
-// rate-limit bucket, which runtime evidence shows is chronically saturated
-// (~96% wait rate, ~6s average wait, capacity refills one token per 6s at the
-// bot's current rate). Polling at MEDIUM_MS (5s) — faster than the backend can
-// itself refresh — maximises the odds of catching it mid-throttle, which is
-// the direct cause of the "tap out, tap in" flicker on the Markets page.
-// Slowing just these two (not the shared MEDIUM_MS other endpoints use)
-// gives the backend's own refresh cycle room to complete between polls.
+// markets + edges read through the backend's saturated `market_fetch` limiter
+// (~96% wait); polling slower than MEDIUM avoids catching it mid-throttle
+// (the Markets "tap out, tap in" flicker).
 const MARKET_POLL_MS = 8_000
 
 export function ApplicationStateLoader() {
@@ -101,7 +74,7 @@ export function ApplicationStateLoader() {
   const executionPolicy = useEngineExecutionPolicy(SLOW_MS)  // read-only, rarely changes
   const identity        = useEngineIdentity()   // static per process — fetch once
 
-  // Phase 3 — MEDIUM tier: live/cycle-driven
+  // MEDIUM tier: live/cycle-driven
   const consensus            = useEngineConsensus(MEDIUM_MS)
   const consensusBias        = useEngineConsensusBias(MEDIUM_MS)
   const portfolio            = useEnginePortfolio(MEDIUM_MS)
@@ -110,7 +83,7 @@ export function ApplicationStateLoader() {
   const paperStatus          = useEnginePaperStatus(MEDIUM_MS)
   const tradesLedger         = useEngineTradesLedger(MEDIUM_MS)
 
-  // Phase 3 — SLOW tier: historical / aggregate
+  // SLOW tier: historical / aggregate
   const positionsHistory     = useEnginePositionsHistory(SLOW_MS)
   const survivalPatterns     = useEngineSurvivalPatterns(SLOW_MS)
   const consensusHistory     = useEngineConsensusHistory(SLOW_MS)

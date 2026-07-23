@@ -1,15 +1,8 @@
 'use client'
 
-// DiagnosticsPanel — production endpoint observability, driven by the
-// diagnostics singleton (src/lib/diagnostics.ts) that the Axios interceptors
-// feed on every completed request. This replaces the dev-only EngineChainProbe:
-// same insight (per-endpoint status + latency), zero duplicate HTTP.
-//
-// 2026-07-23 revamp: replaced the endpoint table with a grid of compact
-// RadialGauge instances (reusing the existing gauge primitive, not a new
-// chart library) — one gauge per endpoint showing its session success rate
-// at a glance, colored by health. Latency/call/error counts move to a
-// caption under each gauge instead of table columns.
+// DiagnosticsPanel — per-endpoint observability from the diagnostics singleton
+// (fed by the Axios interceptors). One RadialGauge per endpoint showing its
+// session success rate, with latency/call/error counts in a caption.
 
 import { useEffect, useState } from 'react'
 import { diagnostics, type DiagnosticsSnapshot, type EndpointRecord } from '@/lib/diagnostics'

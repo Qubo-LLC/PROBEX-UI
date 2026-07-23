@@ -1,15 +1,7 @@
 'use client'
 
-// ConsensusScoreCard — platform-wide consensus gauge, distinct from the
-// per-market EdgeStrengthGauge above it. Originally built as CE-3 (no
-// backend) with a fabricated "institutional-grade consensus" framing.
-//
-// 2026-07-22: /api/consensus and /api/consensus/bias are both live. The real
-// backend concept differs from V1's fiction — it's not institutional-vs-retail
-// volume, it's a multi-signal composite (edge direction/confidence, RSI
-// momentum, MACD trend, price momentum) plus a YES/NO directional bias across
-// currently-detected edges. Same gauge + 4-cell shell, now fed by the real
-// thing the backend actually measures.
+// ConsensusScoreCard — platform-wide consensus gauge from /api/consensus and
+// /api/consensus/bias: a multi-signal composite score plus YES/NO edge bias.
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { RadialGauge } from '@/components/shared/RadialGauge'

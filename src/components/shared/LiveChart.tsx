@@ -1,22 +1,9 @@
 'use client'
 
-// LiveChart — the real-data counterpart to PendingChart, sharing its exact
-// visual grammar (same grid/axis styling, same card wrapper) so a widget's
-// appearance doesn't change the moment its backing endpoint goes live —
-// only the ProvenanceBadge and the series itself do. Introduced 2026-07-22
-// when /api/consensus/history and /api/portfolio/history both went live,
-// replacing 5 separate PendingChart placeholders (ConfidenceEvolution,
-// ConsensusHistoryChart, PortfolioValueChart, PnLChart, WinRateChart) —
-// one real primitive instead of duplicating chart-shell code five times.
-//
-// Live-panning window (2026-07-23 revamp): as history accumulates, cramming
-// every point onto one fixed axis makes the x-axis illegible and buries the
-// most recent, most relevant data in a wall of ticks. `windowSize` slices to
-// only the most recent N points — as new data arrives the visible window
-// slides forward automatically (React re-renders with a new slice each
-// poll), giving the classic "live ticker" feel instead of an ever-widening
-// static chart. When the full series is longer than the window, a caption
-// says so explicitly rather than silently hiding older points.
+// LiveChart — real-data counterpart to PendingChart, same visual grammar so a
+// widget's look doesn't change when its endpoint goes live. `windowSize` shows
+// only the most recent N points (live-panning ticker feel), with a "last N of
+// M" caption when older points are off-screen.
 
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts'
 import { ProvenanceBadge, type Provenance } from './ProvenanceBadge'
@@ -44,9 +31,8 @@ interface LiveChartProps {
   valueFormatter?: (v: number) => string
   emptyTitle?: string
   emptyDescription?: string
-  /** Number of most-recent points to show — the chart pans forward as new
-   *  data arrives instead of cramming the full history onto one axis.
-   *  `undefined`/0 disables windowing (shows the full series). Default 40. */
+  /** Most-recent points to show; the window pans forward as data arrives.
+   *  0 disables windowing (full series). Default 40. */
   windowSize?: number
 }
 

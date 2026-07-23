@@ -1,13 +1,8 @@
 'use client'
 
-// SegmentPerformance — originally assumed a per-Bitcoin-category breakdown
-// (price-targets/volatility/etf-flows/…) via analytics.segmentPerformance.
-// 2026-07-22: /api/analytics/segments IS live, but returns segments: [] with
-// zero real items — that fictional Bitcoin-category taxonomy was never a
-// real backend concept (confirmed: no market ever carried a `segment` field
-// either). /api/survival/patterns, however, is live WITH real, non-empty
-// data — segmented by edge-size bucket and hour-of-day, which is what this
-// backend actually tracks. Repointed to that real source; same table shell.
+// SegmentPerformance — pattern performance by edge-bucket and hour-of-day from
+// /api/survival/patterns (analytics/segments is live but empty; survival
+// patterns is the real, populated source for this).
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'

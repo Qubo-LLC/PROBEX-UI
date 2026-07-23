@@ -1,11 +1,7 @@
 'use client'
 
-// PerformanceAnalytics — Drawdown and Capital Growth, originally P2-01 (no
-// backend). 2026-07-22: /api/portfolio/history is live (107 snapshots
-// observed). Capital Growth is the totalValue series directly; Drawdown is
-// computed client-side from that same series (peak-to-trough % decline) —
-// a `derived` value per the app's own provenance grammar, not a raw backend
-// field, so it's labelled as such rather than as `live`.
+// PerformanceAnalytics — Capital Growth (totalValue) and Drawdown (derived
+// peak-to-trough %) from /api/portfolio/history.
 
 import { useMemo } from 'react'
 import { useApplicationStore } from '@/store/applicationStore'

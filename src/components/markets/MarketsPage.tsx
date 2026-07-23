@@ -26,7 +26,7 @@ export function MarketsPage() {
   const edgesSlice    = useApplicationStore((s) => s.engine.edges)
 
   const search    = useUIStore((s) => s.marketSearch)
-  const segment   = useUIStore((s) => s.marketSegment)
+  const timeframe = useUIStore((s) => s.marketTimeframe)
   const sortBy    = useUIStore((s) => s.marketSortBy)
   const sortDir   = useUIStore((s) => s.marketSortDir)
   const viewMode  = useUIStore((s) => s.marketViewMode)
@@ -44,7 +44,7 @@ export function MarketsPage() {
     if (marketRows?.kind !== 'rows') return []
     let list = marketRows.rows
 
-    if (segment) list = list.filter((m) => m.segment === segment)
+    if (timeframe !== null) list = list.filter((m) => m.durationMinutes === timeframe)
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter((m) => m.title.toLowerCase().includes(q))
@@ -60,7 +60,7 @@ export function MarketsPage() {
         default:            return mult * ((a.volume24h ?? 0) - (b.volume24h ?? 0))
       }
     })
-  }, [marketRows, segment, search, sortBy, sortDir])
+  }, [marketRows, timeframe, search, sortBy, sortDir])
 
   const handleSelect = (id: string) => router.push(MARKET_DETAIL_PATH(id))
 
@@ -106,13 +106,13 @@ export function MarketsPage() {
       {marketRows?.kind === 'rows' && (
         <>
           <p className="text-xs" style={{ color: 'var(--probex-text-muted)' }}>
-            {filtered.length} market{filtered.length === 1 ? '' : 's'}{segment ? ` in ${segment}` : ''}
+            {filtered.length} market{filtered.length === 1 ? '' : 's'}{timeframe !== null ? ` · ${timeframe}m` : ''}
           </p>
 
           {viewMode === 'table' ? (
             <MarketTable markets={filtered} edgeMap={edgeMap} onSelect={handleSelect} />
           ) : filtered.length === 0 ? (
-            <EmptyState size="sm" title="No markets match your filters" description="Try adjusting your segment or search query." />
+            <EmptyState size="sm" title="No markets match your filters" description="Try a different timeframe or search query." />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {filtered.map((m) => (

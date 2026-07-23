@@ -1,14 +1,8 @@
 'use client'
 
-// SettledPositions — restored V1 visual (git 0e3833a4). Settled history now has a
-// live source: /api/execution/trades exposes closed_positions (Phase 2, 2026-07-21).
-// In the current paper session that list is empty and its per-row item schema is not
-// yet observed, so individual rows still can't be shown truthfully — but the section
-// is no longer "waiting for an endpoint that doesn't exist": the endpoint is live and
-// simply has nothing settled this session. The AGGREGATE win/loss count remains real
-// today, from /api/execution/status's resolutionStats. Per the Phase 4 "never collapse
-// premium layouts" directive the full table shell renders at full weight; only the
-// per-row figures are marked pending until a non-empty closed_positions sample lands.
+// SettledPositions — settled history from /api/execution/trades closed_positions.
+// The aggregate W/L (from execution/status resolutionStats) is real; per-row
+// figures stay pending until a non-empty closed_positions sample confirms the schema.
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { AwaitingValue } from '@/components/shared/AwaitingValue'

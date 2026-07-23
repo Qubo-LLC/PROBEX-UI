@@ -1,18 +1,9 @@
 'use client'
 
-// PortfolioSummaryCard — new 2026-07-22, surfacing /api/portfolio/summary,
-// /api/portfolio (live snapshot), and /api/balance, none of which had a UI
-// slot before this phase.
-//
-// Deliberately kept separate from PortfolioMetrics: that card is the engine's
-// own "source of trading truth" (/api/execution/status + /api/positions).
-// This card is a DIFFERENT backend source — a snapshot-history aggregation —
-// and the two genuinely disagree today (summary reports 4 current positions
-// / 21 total trades; execution/status + positions report 0 / 0, since no
-// trade has closed through the execution engine's own tracking yet this
-// session). Rather than picking one number to show, both sources are shown,
-// each under its own ProvenanceBadge, so the discrepancy is visible instead
-// of silently averaged away.
+// PortfolioSummaryCard — snapshot-history aggregation from /api/portfolio/summary
+// + /api/balance. A different source than PortfolioMetrics (execution/status +
+// positions), and the two genuinely disagree upstream; both are shown rather
+// than reconciled.
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatCurrency, formatPercent } from '@/lib/utils'

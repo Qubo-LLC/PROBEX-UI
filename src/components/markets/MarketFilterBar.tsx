@@ -4,11 +4,10 @@
 // marketStore (deleted in M5); now lives in uiStore, its first real
 // consumer — purely presentational otherwise, matching V1's design intent.
 
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { useUIStore } from '@/store/uiStore'
-import { BITCOIN_SEGMENTS } from '@/types/market'
-import { segmentLabel } from '@/lib/display/market'
-import type { BitcoinSegment } from '@/types/market'
+import { useApplicationStore } from '@/store/applicationStore'
+import { parseMarketRows } from '@/lib/mappers/markets'
 import type { MarketSortField } from '@/store/uiStore'
 
 const SORT_OPTIONS: Array<{ field: MarketSortField; label: string }> = [
@@ -20,17 +19,29 @@ const SORT_OPTIONS: Array<{ field: MarketSortField; label: string }> = [
 
 export function MarketFilterBar() {
   const search    = useUIStore((s) => s.marketSearch)
-  const segment   = useUIStore((s) => s.marketSegment)
+  const timeframe = useUIStore((s) => s.marketTimeframe)
   const sortBy    = useUIStore((s) => s.marketSortBy)
   const viewMode  = useUIStore((s) => s.marketViewMode)
   const setSearch = useUIStore((s) => s.setMarketSearch)
-  const setSegment = useUIStore((s) => s.setMarketSegment)
+  const setTimeframe = useUIStore((s) => s.setMarketTimeframe)
   const setSort    = useUIStore((s) => s.setMarketSort)
   const setViewMode = useUIStore((s) => s.setMarketViewMode)
   const resetFilters = useUIStore((s) => s.resetMarketFilters)
 
+  // Available timeframes are derived from the live markets — the filter only
+  // ever offers durations that actually exist right now (5m / 15m today).
+  const marketsSlice = useApplicationStore((s) => s.engine.markets)
+  const timeframes = useMemo(() => {
+    if (!marketsSlice.data) return []
+    const parsed = parseMarketRows(marketsSlice.data)
+    if (parsed.kind !== 'rows') return []
+    const set = new Set<number>()
+    for (const m of parsed.rows) if (m.durationMinutes !== null) set.add(m.durationMinutes)
+    return [...set].sort((a, b) => a - b)
+  }, [marketsSlice.data])
+
   const inputRef = useRef<HTMLInputElement>(null)
-  const hasFilter = Boolean(search || segment)
+  const hasFilter = Boolean(search || timeframe !== null)
 
   return (
     <div className="flex flex-col gap-2">
@@ -121,13 +132,15 @@ export function MarketFilterBar() {
         )}
       </div>
 
-      {/* Row 2: Segment pills */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar" role="tablist" aria-label="Bitcoin market segments">
-        <SegmentPill label="All" isActive={segment === null} onClick={() => setSegment(null)} />
-        {BITCOIN_SEGMENTS.map((seg) => (
-          <SegmentPill key={seg} label={segmentLabel(seg) ?? seg} isActive={segment === seg} onClick={() => setSegment(seg as BitcoinSegment)} />
-        ))}
-      </div>
+      {/* Row 2: Timeframe pills — only shown when the engine runs >1 timeframe */}
+      {timeframes.length > 1 && (
+        <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar" role="tablist" aria-label="Market timeframes">
+          <SegmentPill label="All" isActive={timeframe === null} onClick={() => setTimeframe(null)} />
+          {timeframes.map((tf) => (
+            <SegmentPill key={tf} label={`${tf}m`} isActive={timeframe === tf} onClick={() => setTimeframe(tf)} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

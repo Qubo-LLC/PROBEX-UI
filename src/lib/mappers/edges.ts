@@ -1,39 +1,22 @@
-// ─── Engine edges mapper ──────────────────────────────────────────────────────
-//
-// ✅ COVERAGE (2026-07-22): /api/edges now returns real, non-empty items —
-// schema corrected below from a real capture. It differs from the speculative
-// contract this file previously documented in several load-bearing ways:
-//   • no `id` field at all               → id derives from market_id
-//   • `market_title` doesn't exist        → real field is `market_question`
-//   • `direction` arrives as "YES"/"NO"   → normalized to lowercase here, once,
-//                                           so every existing `=== 'yes'` /
-//                                           `.toLowerCase() === 'yes'` check
-//                                           across the app keeps working
-//   • `edge` (0–1 fraction) doesn't exist → real field is `edge_pct`, already
-//                                           a percentage (5.48, not 0.0548)
-//   • `kelly_size`, `signal`, `recommendation`, `expires_at` don't exist on
-//     the wire → these stay null forever (never fabricated); components
-//     already degrade gracefully wherever they're read
-//   • real payload adds `indicators` (rsi, rsi_signal, macd_trend,
-//     alignment_score) — exposed as new EdgeRow fields, additive only
+// Engine edges mapper. Item schema from a real /api/edges capture. Notable:
+// edges have no `id` (derived from market_id); `direction` is "YES"/"NO"
+// (lowercased once here); `edge_pct` is already a percentage. kelly_size/signal/
+// recommendation aren't on the wire and stay null.
 
 import type { EngineEdges } from '@/types/engine'
 import { parseItems, isRecord, str, num, type ParseResult } from './parse'
 
-// ─── Confirmed wire schema (DTO) ──────────────────────────────────────────────
-// Matches a real GET /api/edges capture, 2026-07-22.
-
 export interface EngineEdgeIndicatorsDTO {
   rsi:             number
-  rsi_signal:      string   // e.g. "overbought" — only value observed so far
-  macd_trend:      string   // e.g. "bearish" — only value observed so far
+  rsi_signal:      string   // e.g. "overbought"
+  macd_trend:      string   // e.g. "bearish"
   alignment_score: number   // signed
 }
 
 export interface EngineEdgeItemDTO {
   market_id:        string
   market_question:  string
-  direction:        string  // "YES" | "NO" observed
+  direction:        string  // "YES" | "NO"
   edge_pct:         number  // already a percentage, e.g. 5.48
   confidence:       number  // 0–1
   current_price:    number
@@ -74,12 +57,11 @@ export interface EdgeRow {
   marketTitle:     string | null
   direction:       string  // normalized lowercase: 'yes' | 'no'
   edgePct:         number          // already a % (5.48 = 5.48%)
-  kellySize:       number | null   // fraction of bankroll — not sent by backend today
+  kellySize:       number | null   // not on the wire; null
   confidence:      number | null   // 0–1
-  signal:          string | null   // not sent by backend today
-  recommendation:  string | null   // not sent by backend today
+  signal:          string | null   // not on the wire; null
+  recommendation:  string | null   // not on the wire; null
   detectedAt:      number | null   // epoch ms
-  // 2026-07-22: real technical indicators the backend sends per edge.
   rsi:             number | null
   rsiSignal:       string | null
   macdTrend:       string | null

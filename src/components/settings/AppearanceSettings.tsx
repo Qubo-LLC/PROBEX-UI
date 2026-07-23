@@ -2,8 +2,8 @@
 
 // Theme selection panel within /settings.
 // Surfaces SURFACED_THEMES generically, with live preview swatches — Midnight
-// (dark), Institutional (light), and Nova (beta, added 2026-07-23 frontend
-// revamp initiative). Demoted themes (aurora/quantum/emerald) remain in the
+// (dark), Institutional (light), and Ember (beta — burnt orange on warm
+// black, 2026-07-24). Demoted themes (aurora/quantum/emerald) remain in the
 // engine and still render if already persisted — they are just not offered.
 
 import { useThemeStore }               from '@/store/themeStore'

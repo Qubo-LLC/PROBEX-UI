@@ -105,9 +105,7 @@ export const ROUTES = {
   RESET_PASSWORD:  '/auth/reset-password',
   VERIFY:          '/auth/verify',
 
-  // Cockpit (PROBEX_PRODUCT_SPEC.md §3)
-  // Routes are root-relative: nginx owns external routing, the app must not
-  // re-prefix with /dashboard (pages live in the app/(dashboard) route group).
+  // Cockpit routes are root-relative; the app is served at the domain root.
   HOME:       '/',
   LIVE:       '/live',
   STRATEGY:   '/strategy',

@@ -1,14 +1,7 @@
 'use client'
 
-// BiasBreakdown — originally built as CE-4 (no backend) with a fabricated
-// "institutional vs. retail" volume-split framing.
-//
-// 2026-07-22: /api/consensus/bias is live. The real backend concept is a
-// YES/NO directional split across currently-detected edges (bias.yes_percent/
-// no_percent), plus a confidence distribution and a recent-10-edges trend —
-// not an institutional/retail volume estimate, which the backend has no way
-// to measure. Same two-row + participation-bar shell, now fed by the real
-// thing the backend actually reports.
+// BiasBreakdown — YES/NO directional split across detected edges from
+// /api/consensus/bias, with a confidence distribution and recent-trend.
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { AwaitingValue } from '@/components/shared/AwaitingValue'

@@ -1,14 +1,7 @@
 'use client'
 
-// HotMarkets — replaces ActivityFeed in the Overview's sticky sidebar rail
-// (2026-07-24, direct product feedback: "Live Activity" showed raw engine
-// events, which read as internal log noise in the one slot meant to help a
-// visitor pick a market to watch). This rail shows the markets themselves —
-// ranked so the engine's own active edges surface first (the most actionable
-// thing to look at), then by soonest-closing (these are 5–15 minute markets;
-// "closes in 2m" is far more useful here than a 24h-volume ranking) — each
-// row clicks through to Market Detail. Reuses the existing MarketRow/EdgeRow
-// mappers and EdgeBadge; no new data source.
+// HotMarkets — the Overview's sidebar rail: open markets ranked by active edge
+// first, then soonest-closing. Each row links to Market Detail.
 
 import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'

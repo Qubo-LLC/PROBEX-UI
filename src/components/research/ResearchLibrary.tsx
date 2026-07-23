@@ -1,13 +1,7 @@
 'use client'
 
-// ResearchLibrary — restored V1 visual concept, gated behind AwaitingBackend
-// since no research-content endpoint existed. 2026-07-22: /api/research/reports
-// is live with real, structured reports (types observed: market_conditions,
-// edge_analysis, risk_assessment — auto-generated from the engine's own live
-// state, not long-form authored articles). The category-sidebar browsing
-// concept is dropped: it implied a searchable multi-topic library, which
-// isn't what this endpoint provides — 3 fixed report types, regenerated each
-// poll. Real cards replace the 6 skeleton ghosts.
+// ResearchLibrary — auto-generated reports from /api/research/reports
+// (market_conditions / edge_analysis / risk_assessment), regenerated each poll.
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
