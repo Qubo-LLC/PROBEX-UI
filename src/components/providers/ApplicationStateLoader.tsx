@@ -71,6 +71,15 @@ import {
 const FAST_MS   =  2_000  // live price + cockpit vitals
 const MEDIUM_MS =  5_000  // operational state; matches 5-min market cadence
 const SLOW_MS   = 30_000  // /health takes ~5s server-side; config rarely changes
+// /api/markets and /api/edges both read through the backend's own `market_fetch`
+// rate-limit bucket, which runtime evidence shows is chronically saturated
+// (~96% wait rate, ~6s average wait, capacity refills one token per 6s at the
+// bot's current rate). Polling at MEDIUM_MS (5s) — faster than the backend can
+// itself refresh — maximises the odds of catching it mid-throttle, which is
+// the direct cause of the "tap out, tap in" flicker on the Markets page.
+// Slowing just these two (not the shared MEDIUM_MS other endpoints use)
+// gives the backend's own refresh cycle room to complete between polls.
+const MARKET_POLL_MS = 8_000
 
 export function ApplicationStateLoader() {
   const updateEngine = useApplicationStore((s) => s.updateEngine)
@@ -79,10 +88,10 @@ export function ApplicationStateLoader() {
   const stats           = useEngineStats(FAST_MS)
   const priceHistory    = useEnginePriceHistory(FAST_MS)
   const survival        = useEngineSurvival(MEDIUM_MS)
-  const markets         = useEngineMarkets(MEDIUM_MS)
+  const markets         = useEngineMarkets(MARKET_POLL_MS)
   const positions       = useEnginePositions(MEDIUM_MS)
   const events          = useEngineEvents(MEDIUM_MS)
-  const edges           = useEngineEdges(MEDIUM_MS)
+  const edges           = useEngineEdges(MARKET_POLL_MS)
   const executionStatus = useEngineExecutionStatus(MEDIUM_MS)
   const executionTrades = useEngineExecutionTrades(MEDIUM_MS)
   const paperStats      = useEnginePaperStats(MEDIUM_MS)

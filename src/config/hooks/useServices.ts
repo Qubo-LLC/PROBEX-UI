@@ -50,7 +50,20 @@ function useServiceQuery<T>(
       inFlight = true
       fetcher()
         .then((r) => { if (active) setState(toServiceState(r)) })
-        .catch((e) => { if (active) setState(errorState<T>(toServiceError(e))) })
+        .catch((e) => {
+          if (!active) return
+          // A poll-refresh failure (timeout, transient network blip) should
+          // never blank out data the user is already looking at — that's
+          // exactly the "tap out, tap in" flicker reported against
+          // /api/markets, whose backend-side rate limiter intermittently
+          // stalls past the client timeout. Only the FIRST fetch (no prior
+          // success/empty) surfaces as a hard error state; once real data has
+          // been shown once, a later failure is swallowed here and the next
+          // poll tries again — the failure is still fully visible in the
+          // System page's Endpoint Diagnostics panel via the axios
+          // interceptor, independent of this hook's state.
+          setState((prev) => (prev.status === 'success' || prev.status === 'empty') ? prev : errorState<T>(toServiceError(e)))
+        })
         .finally(() => { inFlight = false })
     }
 

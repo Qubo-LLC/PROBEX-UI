@@ -113,6 +113,7 @@ export const ROUTES = {
   STRATEGY:   '/strategy',
   POSITIONS:  '/positions',
   EXECUTION:  '/execution',
+  PAPER:      '/paper',
   SURVIVAL:   '/survival',
   EVENTS:     '/events',
   SYSTEM:     '/system',

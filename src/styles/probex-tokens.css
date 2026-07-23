@@ -383,3 +383,71 @@
   --probex-scrollbar-thumb: rgba(15, 23, 42, 0.15);
   --probex-scrollbar-track: transparent;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THEME: NOVA (BETA) — 2026-07-23 frontend revamp initiative
+   Built from Aurora's palette, not a copy of it: same deep-space duo-tone
+   structure (two brand hues over near-black), but the roles are inverted and
+   the background undertone shifts warmer/purpler than Aurora's blue-black —
+   electric magenta takes the primary role Aurora gave cyan; cyan is demoted
+   to secondary. positive/negative/warning/consensus stay the fixed semantic
+   values every dark theme shares (never themed) — only accent, background,
+   text, trading-side, chart, and gradient tokens vary here.
+───────────────────────────────────────────────────────────────────────── */
+[data-theme="nova"] {
+  --probex-bg:        #0A0616;
+  --probex-surface:   #0F0A1F;
+  --probex-surface-2: #150F28;
+  --probex-surface-3: #1B1433;
+
+  --probex-border:         rgba(255, 255, 255, 0.07);
+  --probex-border-default: rgba(255, 255, 255, 0.09);
+  --probex-border-strong:  rgba(255, 255, 255, 0.14);
+  --probex-border-active:  rgba(255, 62, 165, 0.35);
+
+  --probex-primary:   #FF3EA5;
+  --probex-secondary: #00D4FF;
+  --probex-primary-dim:   rgba(255, 62, 165, 0.12);
+  --probex-secondary-dim: rgba(0, 212, 255, 0.12);
+
+  --probex-text-primary:   #F3E9FF;
+  --probex-text-secondary: rgba(243, 233, 255, 0.58);
+  --probex-text-muted:     rgba(243, 233, 255, 0.32);
+  --probex-text-disabled:  rgba(243, 233, 255, 0.18);
+
+  --probex-yes:          #FF3EA5;
+  --probex-yes-dim:      rgba(255, 62, 165, 0.1);
+  --probex-yes-border:   rgba(255, 62, 165, 0.25);
+  --probex-no:           #00D4FF;
+  --probex-no-dim:       rgba(0, 212, 255, 0.1);
+  --probex-no-border:    rgba(0, 212, 255, 0.25);
+
+  --probex-positive:  #10B981;
+  --probex-positive-dim: rgba(16, 185, 129, 0.12);
+  --probex-negative:  #EF4444;
+  --probex-negative-dim: rgba(239, 68, 68, 0.1);
+  --probex-warning:   #F59E0B;
+  --probex-warning-dim: rgba(245, 158, 11, 0.1);
+
+  --probex-consensus-high: #10B981;
+  --probex-consensus-med:  #F59E0B;
+  --probex-consensus-low:  #EF4444;
+
+  --probex-sidebar-bg: #0F0A1F;
+  --probex-sidebar-item-active-bg: rgba(255, 62, 165, 0.1);
+  --probex-sidebar-item-active-border: rgba(255, 62, 165, 0.2);
+
+  --probex-chart-primary:   #FF3EA5;
+  --probex-chart-secondary: #00D4FF;
+  --probex-chart-tertiary:  #10B981;
+  --probex-chart-grid:      rgba(255, 255, 255, 0.05);
+  --probex-chart-axis:      rgba(255, 255, 255, 0.2);
+
+  --probex-gradient-brand:   linear-gradient(135deg, #FF3EA5 0%, #00D4FF 100%);
+  --probex-gradient-yes:     linear-gradient(135deg, #FF3EA5 0%, #C2226F 100%);
+  --probex-gradient-no:      linear-gradient(135deg, #00D4FF 0%, #0099BB 100%);
+  --probex-gradient-surface: linear-gradient(180deg, #0F0A1F 0%, #0A0616 100%);
+
+  --probex-scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --probex-scrollbar-track: transparent;
+}

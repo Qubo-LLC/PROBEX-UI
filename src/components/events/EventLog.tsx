@@ -12,7 +12,7 @@
 
 import { useMemo, useState } from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
-import { parseEventRows, type EventRow } from '@/lib/mappers/events'
+import { parseEventRows, dedupeEventRows, type DedupedEventRow } from '@/lib/mappers/events'
 import { formatCurrency, formatPercent } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card }       from '@/components/ui/Card'
@@ -37,7 +37,11 @@ export function EventLog() {
     if (parsed?.kind !== 'rows') return []
     const rows = typeFilter ? parsed.rows.filter((r) => r.type === typeFilter) : parsed.rows
     // Newest first when timestamps exist; stable order otherwise.
-    return [...rows].sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
+    const sorted = [...rows].sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
+    // Collapse consecutive near-identical events (see dedupeEventRows) — the
+    // backend currently emits bursts of duplicate "edge detected" rows that
+    // would otherwise bury genuinely different event types in the log.
+    return dedupeEventRows(sorted)
   }, [parsed, typeFilter])
 
   return (
@@ -120,7 +124,7 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   )
 }
 
-function EventRowItem({ row }: { row: EventRow }) {
+function EventRowItem({ row }: { row: DedupedEventRow }) {
   return (
     <div
       className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs"
@@ -138,6 +142,15 @@ function EventRowItem({ row }: { row: EventRow }) {
           <span style={{ color: 'var(--probex-text-muted)' }}> — {row.marketTitle}</span>
         )}
       </span>
+      {row.repeatCount > 1 && (
+        <span
+          className="text-2xs font-bold rounded px-1.5 py-0.5 flex-shrink-0 tabular-nums"
+          style={{ color: 'var(--probex-warning)', background: 'var(--probex-warning-dim)' }}
+          title={`Repeated ${row.repeatCount} times — collapsed to reduce noise`}
+        >
+          ×{row.repeatCount}
+        </span>
+      )}
       {row.amount !== null && (
         <span className="tabular-nums font-semibold flex-shrink-0" style={{ color: 'var(--probex-text-primary)' }}>
           {formatCurrency(row.amount)}
@@ -149,7 +162,7 @@ function EventRowItem({ row }: { row: EventRow }) {
         </span>
       )}
       {row.timestamp !== null && (
-        <span className="tabular-nums flex-shrink-0" style={{ color: 'var(--probex-text-disabled)' }}>
+        <span className="tabular-nums flex-shrink-0" style={{ color: 'var(--probex-text-disabled)' }} title={row.firstTimestamp !== null && row.repeatCount > 1 ? `First seen ${new Date(row.firstTimestamp).toLocaleTimeString()}` : undefined}>
           {new Date(row.timestamp).toLocaleTimeString()}
         </span>
       )}

@@ -4,10 +4,17 @@
 // diagnostics singleton (src/lib/diagnostics.ts) that the Axios interceptors
 // feed on every completed request. This replaces the dev-only EngineChainProbe:
 // same insight (per-endpoint status + latency), zero duplicate HTTP.
+//
+// 2026-07-23 revamp: replaced the endpoint table with a grid of compact
+// RadialGauge instances (reusing the existing gauge primitive, not a new
+// chart library) — one gauge per endpoint showing its session success rate
+// at a glance, colored by health. Latency/call/error counts move to a
+// caption under each gauge instead of table columns.
 
 import { useEffect, useState } from 'react'
-import { diagnostics, type DiagnosticsSnapshot } from '@/lib/diagnostics'
+import { diagnostics, type DiagnosticsSnapshot, type EndpointRecord } from '@/lib/diagnostics'
 import { Card } from '@/components/ui/Card'
+import { RadialGauge } from '@/components/shared/RadialGauge'
 
 export function DiagnosticsPanel() {
   // The singleton is not reactive — poll a snapshot once per second while
@@ -41,62 +48,56 @@ export function DiagnosticsPanel() {
           No requests recorded yet this session.
         </p>
       ) : (
-        <div className="flex flex-col gap-1" role="table" aria-label="Endpoint diagnostics">
-          {/* Header */}
-          <div
-            className="grid items-center gap-3 px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wider"
-            style={{ gridTemplateColumns: 'minmax(0,1fr) 64px 72px 64px 88px', color: 'var(--probex-text-disabled)' }}
-            role="row"
-          >
-            <span>Endpoint</span>
-            <span className="text-right">Status</span>
-            <span className="text-right">Latency</span>
-            <span className="text-right">Calls</span>
-            <span className="text-right">Errors</span>
-          </div>
-
-          {records.map((r) => {
-            const failed = r.lastStatus === null || r.lastStatus >= 400
-            const errorRate = r.count > 0 ? r.errorCount / r.count : 0
-            return (
-              <div
-                key={`${r.method} ${r.endpoint}`}
-                className="grid items-center gap-3 rounded-md px-2.5 py-1.5 text-xs tabular-nums"
-                style={{
-                  gridTemplateColumns: 'minmax(0,1fr) 64px 72px 64px 88px',
-                  background: 'var(--probex-surface-2)',
-                  border: `1px solid ${failed ? 'var(--probex-negative-border)' : 'var(--probex-border)'}`,
-                }}
-                role="row"
-              >
-                <span className="truncate font-medium" style={{ color: 'var(--probex-text-secondary)' }}>
-                  <span style={{ color: 'var(--probex-text-disabled)' }}>{r.method}</span> {r.endpoint || '/'}
-                </span>
-                <span className="text-right font-bold" style={{ color: failed ? 'var(--probex-negative)' : 'var(--probex-positive)' }}>
-                  {r.lastStatus ?? 'ERR'}
-                </span>
-                <span className="text-right" style={{ color: 'var(--probex-text-muted)' }}>
-                  {Math.round(r.lastDurationMs).toLocaleString()}ms
-                </span>
-                <span className="text-right" style={{ color: 'var(--probex-text-muted)' }}>
-                  {r.count.toLocaleString()}
-                </span>
-                <span
-                  className="text-right"
-                  style={{ color: r.errorCount > 0 ? 'var(--probex-warning)' : 'var(--probex-text-disabled)' }}
-                >
-                  {r.errorCount.toLocaleString()}{r.errorCount > 0 ? ` (${Math.round(errorRate * 100)}%)` : ''}
-                </span>
-              </div>
-            )
-          })}
+        <div
+          className="grid gap-3"
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(108px, 1fr))' }}
+          role="table"
+          aria-label="Endpoint diagnostics"
+        >
+          {records.map((r) => <EndpointGauge key={`${r.method} ${r.endpoint}`} record={r} />)}
         </div>
       )}
 
       <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
-        Live view of this browser session’s requests to {snap.apiBaseUrl || 'the engine API'} —
-        latency includes network transit, not just engine processing.
+        Live view of this browser session's requests to {snap.apiBaseUrl || 'the engine API'} — each ring is this
+        endpoint's session success rate; latency includes network transit, not just engine processing.
       </p>
     </Card>
+  )
+}
+
+function EndpointGauge({ record: r }: { record: EndpointRecord }) {
+  const successRate = r.count > 0 ? (r.count - r.errorCount) / r.count : 1
+  const failed       = r.lastStatus === null || r.lastStatus >= 400
+  const color =
+    successRate >= 0.95 ? 'var(--probex-positive)'
+    : successRate >= 0.8 ? 'var(--probex-warning)'
+    : 'var(--probex-negative)'
+
+  return (
+    <div
+      className="flex flex-col items-center gap-1.5 p-2 rounded-lg"
+      style={{ background: 'var(--probex-surface-2)', border: `1px solid ${failed ? 'var(--probex-negative-border)' : 'var(--probex-border)'}` }}
+      role="row"
+      title={`${r.method} ${r.endpoint || '/'} — ${Math.round(successRate * 100)}% success, ${r.count} call${r.count === 1 ? '' : 's'}, ${r.errorCount} error${r.errorCount === 1 ? '' : 's'}`}
+    >
+      <RadialGauge
+        value={successRate}
+        color={color}
+        size={64}
+        strokeWidth={6}
+        ariaLabel={`${r.endpoint || '/'} success rate ${Math.round(successRate * 100)}%`}
+      >
+        <span className="text-2xs font-bold tabular-nums" style={{ color }}>
+          {Math.round(successRate * 100)}%
+        </span>
+      </RadialGauge>
+      <span className="text-2xs font-medium truncate w-full text-center" style={{ color: 'var(--probex-text-secondary)' }}>
+        {r.endpoint || '/'}
+      </span>
+      <span className="text-2xs tabular-nums" style={{ color: 'var(--probex-text-disabled)' }}>
+        {Math.round(r.lastDurationMs)}ms · {r.count}×{r.errorCount > 0 ? ` · ${r.errorCount} err` : ''}
+      </span>
+    </div>
   )
 }

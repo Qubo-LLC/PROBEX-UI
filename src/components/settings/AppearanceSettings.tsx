@@ -1,9 +1,10 @@
 'use client'
 
 // Theme selection panel within /settings.
-// Surfaces the canonical theme set (Phase 1 · T10): Midnight (dark) +
-// Institutional (light), with live preview swatches. Demoted themes remain in
-// the engine and still render if already persisted — they are just not offered.
+// Surfaces SURFACED_THEMES generically, with live preview swatches — Midnight
+// (dark), Institutional (light), and Nova (beta, added 2026-07-23 frontend
+// revamp initiative). Demoted themes (aurora/quantum/emerald) remain in the
+// engine and still render if already persisted — they are just not offered.
 
 import { useThemeStore }               from '@/store/themeStore'
 import { SURFACED_THEMES, THEME_META } from '@/types/theme'

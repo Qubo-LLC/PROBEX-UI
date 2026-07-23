@@ -18,7 +18,7 @@ import { EngineHealthBanner, CapitalPerformanceRow } from './EngineVitals'
 import { GlobalConsensusBar } from './GlobalConsensusBar'
 import { FeaturedMarkets }    from './FeaturedMarkets'
 import { TrendingMarkets }    from './TrendingMarkets'
-import { ActivityFeed }       from './ActivityFeed'
+import { HotMarkets }         from './HotMarkets'
 import { Footer }             from '@/components/layout/Footer'
 
 export function OverviewPage() {
@@ -58,7 +58,7 @@ export function OverviewPage() {
           </div>
 
           <aside className="flex flex-col gap-4 xl:sticky xl:top-5">
-            <ActivityFeed className="max-h-[420px]" />
+            <HotMarkets className="max-h-[420px]" />
           </aside>
         </div>
       </div>

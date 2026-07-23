@@ -154,21 +154,30 @@
     border-color: var(--probex-border);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
+    /* Quiet resting glow (2026-07-23 revamp) — a near-invisible theme-tinted
+       ring so surfaces read as "alive" before the pointer ever arrives,
+       instead of flat panels that only react on contact. */
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--probex-primary) 6%, transparent);
     transition: transform var(--motion-fast) var(--motion-ease),
                 border-color var(--motion-fast) var(--motion-ease),
                 background-color var(--motion-fast) var(--motion-ease),
                 box-shadow var(--motion-med) var(--motion-ease);
   }
 
-  /* Premium hover: subtle lift + tiny scale + border illumination + soft
-     theme-tinted light — responsiveness communicated by lighting, not by a
-     heavier black shadow. GPU-friendly (transform + shadow only). */
+  /* Premium hover: subtle lift + tiny scale + border illumination + a
+     theme-tinted accent glow underneath — responsiveness communicated by
+     lighting, not by a heavier black shadow. GPU-friendly (transform + shadow
+     only). Amplified 2026-07-23: the previous 22%/20px treatment read as too
+     faint against the Midnight theme; brought in line with the .card-glow-hover
+     intensity already used on the hero/price cards, so every interactive
+     surface in the app gets the same "glow under the card" the mock UI had. */
   .card-interactive:hover {
-    border-color: color-mix(in srgb, var(--probex-primary) 28%, var(--probex-border-strong));
+    border-color: color-mix(in srgb, var(--probex-primary) 32%, var(--probex-border-strong));
     background-color: var(--probex-surface-2);
-    transform: translateY(-1px) scale(1.008);
+    transform: translateY(-2px) scale(1.01);
     box-shadow: var(--probex-shadow-lift),
-                0 0 20px -8px color-mix(in srgb, var(--probex-primary) 22%, transparent);
+                0 0 0 1px color-mix(in srgb, var(--probex-primary) 20%, transparent),
+                0 10px 36px -8px color-mix(in srgb, var(--probex-primary) 32%, transparent);
   }
 
   /* Recessed tier — pending / awaiting surfaces. More opaque and less blurred

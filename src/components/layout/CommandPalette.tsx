@@ -20,6 +20,7 @@ const COMMANDS: Cmd[] = [
   { label: 'Wallet',     href: ROUTES.WALLET,    group: 'Trading' },
   { label: 'Strategy',   href: ROUTES.STRATEGY,  group: 'Trading' },
   { label: 'Execution',  href: ROUTES.EXECUTION, group: 'Trading' },
+  { label: 'Paper Trading', href: ROUTES.PAPER,  group: 'Trading' },
   { label: 'Analytics',  href: ROUTES.ANALYTICS, group: 'Insights' },
   { label: 'Research',   href: ROUTES.RESEARCH,  group: 'Insights' },
   { label: 'Watchlist',  href: ROUTES.WATCHLIST, group: 'Insights' },
