@@ -105,7 +105,7 @@ export const ROUTES = {
   RESET_PASSWORD:  '/auth/reset-password',
   VERIFY:          '/auth/verify',
 
-  // Cockpit routes are root-relative; the app is served at the domain root.
+  // Root-relative — Next.js applies the /dashboard basePath (next.config.ts) automatically.
   HOME:       '/',
   LIVE:       '/live',
   STRATEGY:   '/strategy',

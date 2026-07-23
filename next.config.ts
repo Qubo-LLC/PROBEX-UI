@@ -1,6 +1,25 @@
-import type { NextConfig } from 'next'
+import type { NextConfig } from "next";
 
-// Served at the domain root (https://qubo-probex.duckdns.org) — no basePath.
-const nextConfig: NextConfig = {}
+const nextConfig: NextConfig = {
+  basePath: "/dashboard",
 
-export default nextConfig
+  allowedDevOrigins: [
+    "qubo-probex.duckdns.org",
+    "136.119.171.6",
+  ],
+
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://136.119.171.6:8000/api/:path*",
+      },
+      {
+        source: "/health",
+        destination: "http://136.119.171.6:8000/health",
+      },
+    ];
+  },
+};
+
+export default nextConfig;
