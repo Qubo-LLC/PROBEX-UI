@@ -10,7 +10,7 @@
 //   <ProbexLogo variant="stacked" />   icon above wordmark (auth, splash)
 //   <ProbexLogo variant="loading" />   icon with a breathing pulse
 //
-// The mark itself is the photoreal crystal render, served from /public as a
+// The mark itself is the isometric brand render, served from /public as a
 // raster. It is used via <img> rather than inlined because it is a 3D render,
 // not vector art — there is no SVG source to inline, and the browser caches one
 // file across every surface.

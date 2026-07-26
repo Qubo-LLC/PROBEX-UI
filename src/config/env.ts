@@ -15,8 +15,14 @@ export const env = {
    * Single source of truth for the backend base URL (shared API client + live
    * services). Already includes the `/api` prefix, e.g. `https://<host>:<port>/api`
    * — set only via env (see .env.example), never hardcoded.
+   *
+   * Trailing slashes are stripped so the configured value is canonical: whether
+   * the deploy sets `.../api` or `.../api/`, requests are built as `/api/<path>`
+   * (axios appends the endpoint), and the bare `/api` — which the nginx bridge
+   * 301-redirects to `/api/` — is never sent. This makes the exact trailing
+   * slash in the env var irrelevant.
    */
-  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL ?? '',
+  API_BASE_URL: (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').replace(/\/+$/, ''),
 
   /** Base URL for the Consensus Engine API */
   CONSENSUS_API_URL: process.env.NEXT_PUBLIC_CONSENSUS_API_URL ?? '',

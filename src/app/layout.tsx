@@ -75,7 +75,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: BASE_PATH,
   },
-  // Open Graph. The social preview carries the crystal mark on the same plate
+  // Open Graph. The social preview carries the brand mark on the same plate
   // as the app icon, so a shared link and an installed icon read as one brand.
   // Image paths are NOT basePath-prefixed by Next — hence the explicit
   // BASE_PATH; they resolve to absolute URLs via metadataBase.
