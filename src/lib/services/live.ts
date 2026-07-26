@@ -45,16 +45,21 @@ import type {
 
 export class LiveEngineService implements IEngineService {
   async getHealth(): Promise<ApiResult<EngineHealth>> {
-    // /health lives at the engine's host root. That works when the base points
-    // straight at the engine (dev: http://IP:8000 → /health), but a reverse
-    // proxy that only forwards /api/* serves the same data at /api/health
-    // instead (prod: DuckDNS). Try host-root first, fall back to /api/health so
-    // both topologies work without an env change.
+    // The health probe path depends on the topology:
+    //   • Behind the nginx bridge (prod): the engine's host root is NOT the
+    //     engine — `/` and `/health` route to the marketing site. The bridge maps
+    //     `/api/health` → engine `/health`, so /api/health is the live path.
+    //   • Base pointing straight at the engine (dev: http://IP:8000): the engine
+    //     serves /health at its host root and has no /api/health.
+    // Try /api/health first (works in prod, and is the correct proxied path),
+    // then fall back to host-root /health (dev). Ordering it this way means prod
+    // never bounces a request off the marketing site. `endpointPath` returns
+    // `/health`, so apiGet → /api/health and apiGetHost → host-root /health.
     try {
-      const dto = await apiGetHost<EngineHealthDTO>(endpointPath(ENDPOINTS.engine.health))
+      const dto = await apiGet<EngineHealthDTO>(endpointPath(ENDPOINTS.engine.health))
       return ok(toEngineHealth(dto))
     } catch {
-      const dto = await apiGet<EngineHealthDTO>(endpointPath(ENDPOINTS.engine.health))
+      const dto = await apiGetHost<EngineHealthDTO>(endpointPath(ENDPOINTS.engine.health))
       return ok(toEngineHealth(dto))
     }
   }
@@ -121,24 +126,28 @@ export class LiveEngineService implements IEngineService {
   }
 
   async getIdentity(): Promise<ApiResult<EngineIdentity>> {
-    // The engine's identity is at the bare host root `/`. That works in dev
-    // (base → the engine), but in a reverse-proxied deployment `/` is the
-    // MARKETING site (HTTP 200 HTML, not JSON) and there is no /api identity
-    // route. So: try the root; if it isn't a valid identity payload, synthesise
-    // identity from /api/runtime (proxied everywhere — carries mode, components,
-    // initialized_at; bot/version come from app constants). This keeps the
-    // safety-critical mode badge live in production without a proxy change.
+    // /api/runtime is proxied everywhere (dev: engine; prod: nginx → engine) and
+    // carries mode + components + initialized_at; bot/version come from app
+    // constants. The engine also exposes a richer identity at its bare host root
+    // `/`, but behind the nginx bridge `/` is the MARKETING site (200 HTML, not
+    // JSON). So derive identity from runtime as the primary source — it works in
+    // both topologies and never touches the marketing site — and only fall back
+    // to host-root `/` when runtime itself is unavailable (a dev-only rescue).
     try {
-      const dto = await apiGetHost<EngineIdentityDTO>(endpointPath(ENDPOINTS.engine.apiRoot))
-      if (dto && typeof dto === 'object' && 'runtime' in dto) {
-        return ok(toEngineIdentity(dto))
+      const rt = await apiGet<EngineRuntimeDTO>(endpointPath(ENDPOINTS.engine.runtime))
+      return ok(runtimeToIdentity(rt))
+    } catch (runtimeErr) {
+      try {
+        const dto = await apiGetHost<EngineIdentityDTO>(endpointPath(ENDPOINTS.engine.apiRoot))
+        if (dto && typeof dto === 'object' && 'runtime' in dto) {
+          return ok(toEngineIdentity(dto))
+        }
+        // 200 but not identity (e.g. proxy served HTML) — no usable fallback.
+      } catch {
+        // host-root unreachable too — surface the runtime failure below.
       }
-      // 200 but not identity (e.g. proxy served HTML) — fall through to runtime.
-    } catch {
-      // host-root unreachable — fall through to runtime.
+      throw runtimeErr
     }
-    const rt = await apiGet<EngineRuntimeDTO>(endpointPath(ENDPOINTS.engine.runtime))
-    return ok(runtimeToIdentity(rt))
   }
 
   async getExecutionStatus(): Promise<ApiResult<ExecutionStatus>> {
