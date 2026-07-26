@@ -91,25 +91,64 @@ const ENV_REQUIREMENTS: EnvRequirement[] = [
   },
 ]
 
-/** Validate required env vars at startup — throws in production, warns in dev. */
+/**
+ * Validate env at startup. Runs at module scope in the root layout, so in a
+ * production build (`next build`, NODE_ENV=production) it executes during static
+ * generation — a thrown error there FAILS THE BUILD. That is intentional: it
+ * turns silent misconfiguration into a loud, early failure.
+ *
+ * Fatal (throw in production, warn in dev):
+ *   • a required var is missing
+ *   • production build with NEXT_PUBLIC_API_MODE unset — the exact bug that
+ *     shipped the DuckDNS deploy in MOCK mode, because the code defaults an
+ *     unset mode to 'mock' and nothing caught it. Explicit `mock` is allowed
+ *     (for intentional demo builds); only the *unset* case fails.
+ *
+ * Non-fatal (always warn):
+ *   • live mode with an http:// base URL — an HTTPS page blocks it as mixed
+ *     content, which looks exactly like "no data".
+ */
 export function validateEnv(): void {
-  const missing: string[] = []
+  const problems: string[] = []
+  const warnings: string[] = []
 
   for (const req of ENV_REQUIREMENTS) {
     if (!req.required) continue
-
     const value = process.env[req.key]
     if (!value || value.trim() === '') {
-      missing.push(`  ${req.key} — ${req.description}`)
+      problems.push(`  ${req.key} — ${req.description}`)
     }
   }
 
-  if (missing.length > 0) {
+  // Guard against the silent mock fallback in a production build.
+  if (env.NODE_ENV === 'production') {
+    const rawMode = process.env.NEXT_PUBLIC_API_MODE
+    if (!rawMode || rawMode.trim() === '') {
+      problems.push(
+        '  NEXT_PUBLIC_API_MODE — must be set explicitly for a production build ' +
+        '(unset defaults to "mock", which ships fake data). Set NEXT_PUBLIC_API_MODE=live.',
+      )
+    }
+  }
+
+  if (env.API_MODE === 'live' && env.API_BASE_URL.startsWith('http://')) {
+    warnings.push(
+      `  NEXT_PUBLIC_API_BASE_URL is http:// (${env.API_BASE_URL}). An HTTPS deployment ` +
+      'blocks these requests as mixed content — use https:// or a same-origin /api path.',
+    )
+  }
+
+  if (warnings.length > 0) {
+    console.warn(['[Probex] Environment warnings:', ...warnings].join('\n'))
+  }
+
+  if (problems.length > 0) {
     const message = [
-      '[Probex] Missing required environment variables:',
-      ...missing,
+      '[Probex] Environment misconfiguration:',
+      ...problems,
       '',
-      `Copy .env.local.example to .env.local and fill in the required values.`,
+      'Set these in the build environment (NEXT_PUBLIC_* are inlined at build time, ' +
+      'not at runtime). See .env.example and docs/DEPLOYMENT.md.',
     ].join('\n')
 
     if (env.NODE_ENV === 'production') {

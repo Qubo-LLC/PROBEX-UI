@@ -8,7 +8,7 @@ import type { IEngineService, CreateOrderInput, AnalyticsSegmentType, AnalyticsM
 import {
   toEngineHealth, toEngineRuntime, toEngineStats, toEngineConfig, toSurvivalStatus, toPriceHistory,
   toEngineMarkets, toEnginePositions, toEngineEvents, toEngineEdges,
-  toEngineIdentity, toExecutionStatus,
+  toEngineIdentity, runtimeToIdentity, toExecutionStatus,
   toExecutionPolicy, toExecutionTrades, toPaperStats,
   toPositionsHistory, toSurvivalPatterns,
   toConsensus, toConsensusBias, toConsensusHistory,
@@ -45,9 +45,18 @@ import type {
 
 export class LiveEngineService implements IEngineService {
   async getHealth(): Promise<ApiResult<EngineHealth>> {
-    // /health lives at the host root, NOT under the /api prefix — must use apiGetHost.
-    const dto = await apiGetHost<EngineHealthDTO>(endpointPath(ENDPOINTS.engine.health))
-    return ok(toEngineHealth(dto))
+    // /health lives at the engine's host root. That works when the base points
+    // straight at the engine (dev: http://IP:8000 → /health), but a reverse
+    // proxy that only forwards /api/* serves the same data at /api/health
+    // instead (prod: DuckDNS). Try host-root first, fall back to /api/health so
+    // both topologies work without an env change.
+    try {
+      const dto = await apiGetHost<EngineHealthDTO>(endpointPath(ENDPOINTS.engine.health))
+      return ok(toEngineHealth(dto))
+    } catch {
+      const dto = await apiGet<EngineHealthDTO>(endpointPath(ENDPOINTS.engine.health))
+      return ok(toEngineHealth(dto))
+    }
   }
 
   async getRuntime(): Promise<ApiResult<EngineRuntime>> {
@@ -112,9 +121,24 @@ export class LiveEngineService implements IEngineService {
   }
 
   async getIdentity(): Promise<ApiResult<EngineIdentity>> {
-    // API root lives at the bare host (like /health) — outside the /api prefix.
-    const dto = await apiGetHost<EngineIdentityDTO>(endpointPath(ENDPOINTS.engine.apiRoot))
-    return ok(toEngineIdentity(dto))
+    // The engine's identity is at the bare host root `/`. That works in dev
+    // (base → the engine), but in a reverse-proxied deployment `/` is the
+    // MARKETING site (HTTP 200 HTML, not JSON) and there is no /api identity
+    // route. So: try the root; if it isn't a valid identity payload, synthesise
+    // identity from /api/runtime (proxied everywhere — carries mode, components,
+    // initialized_at; bot/version come from app constants). This keeps the
+    // safety-critical mode badge live in production without a proxy change.
+    try {
+      const dto = await apiGetHost<EngineIdentityDTO>(endpointPath(ENDPOINTS.engine.apiRoot))
+      if (dto && typeof dto === 'object' && 'runtime' in dto) {
+        return ok(toEngineIdentity(dto))
+      }
+      // 200 but not identity (e.g. proxy served HTML) — fall through to runtime.
+    } catch {
+      // host-root unreachable — fall through to runtime.
+    }
+    const rt = await apiGet<EngineRuntimeDTO>(endpointPath(ENDPOINTS.engine.runtime))
+    return ok(runtimeToIdentity(rt))
   }
 
   async getExecutionStatus(): Promise<ApiResult<ExecutionStatus>> {

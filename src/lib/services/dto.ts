@@ -6,6 +6,7 @@
 //   • Entity timestamps are ISO 8601 strings → normalized to epoch ms here
 //   • Money is USD floats; percentages arrive as the backend sends them
 
+import { APP_NAME, APP_VERSION } from '@/config/constants'
 import type {
   EngineHealthDTO, HealthComponentDTO, RuntimeComponentsDTO,
   EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
@@ -205,6 +206,25 @@ export function toEngineIdentity(dto: EngineIdentityDTO): EngineIdentity {
     mode:          dto.runtime.mode as EngineMode,
     initializedAt: isoToMs(dto.runtime.initialized_at),
     components:    toRuntimeComponents(dto.runtime.components),
+  }
+}
+
+/**
+ * Identity synthesised from /api/runtime — the fallback source when the engine's
+ * host-root `/` is unreachable (e.g. behind a reverse proxy that only forwards
+ * `/api/*`, as in the DuckDNS production deployment). Runtime carries the
+ * functional identity (mode, initialized_at, components); bot name and version
+ * are static and come from app constants. `status` is 'online' because a
+ * successful runtime response means the engine process is up.
+ */
+export function runtimeToIdentity(dto: EngineRuntimeDTO): EngineIdentity {
+  return {
+    status:        'online',
+    bot:           APP_NAME,
+    version:       APP_VERSION,
+    mode:          dto.mode as EngineMode,
+    initializedAt: isoToMs(dto.initialized_at),
+    components:    toRuntimeComponents(dto.components),
   }
 }
 
