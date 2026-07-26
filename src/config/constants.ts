@@ -22,6 +22,12 @@ export const APP_FULL_NAME = 'QUBO Probex' as const
 export const APP_TAGLINE = 'Prediction Intelligence' as const
 export const APP_VERSION = '2.0.0' as const
 
+/** Meta/social description — a full sentence for search results and link
+ *  previews (APP_TAGLINE is the short brand line used in titles). Reflects the
+ *  actual product: an autonomous BTC trading console. */
+export const APP_DESCRIPTION =
+  "Autonomous trading intelligence for Bitcoin's fastest markets — the institutional console for consensus, capital survival, and live execution." as const
+
 // ─── Sidebar ──────────────────────────────────────────────────────────────
 
 export const SIDEBAR_EXPANDED_WIDTH  = 200 as const  // px
@@ -109,6 +115,28 @@ export const COMPACT_CURRENCY_FORMAT: Intl.NumberFormatOptions = {
  * claimed the whole origin and Chrome redirected users to the marketing site.
  */
 export const BASE_PATH = '/dashboard'
+
+/**
+ * Absolute origin the app is served from — used as Next's `metadataBase` so
+ * Open Graph / Twitter image and canonical URLs resolve to absolute URLs
+ * (without it, Next warns and falls back to `http://localhost:3000`).
+ *
+ * Environment-aware, with NO hardcoded production domain:
+ *   • production  → derived from NEXT_PUBLIC_APP_URL's origin (deploy-supplied)
+ *   • development → falls back to localhost when the var is unset
+ * NEXT_PUBLIC_APP_URL may include the /dashboard path; only its origin is used
+ * here (the basePath is added separately for canonical/OG URLs).
+ */
+export const SITE_ORIGIN: string = (() => {
+  const explicit = process.env.NEXT_PUBLIC_APP_URL
+  if (explicit) {
+    try { return new URL(explicit).origin } catch { /* malformed → fall through */ }
+  }
+  return 'http://localhost:3000'
+})()
+
+/** Canonical base URL of the dashboard (origin + basePath). */
+export const SITE_URL = `${SITE_ORIGIN}${BASE_PATH}`
 
 export const ROUTES = {
   // Auth

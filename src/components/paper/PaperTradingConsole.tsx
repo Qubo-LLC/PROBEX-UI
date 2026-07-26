@@ -8,6 +8,7 @@
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'
+import { survivalStateColor } from '@/lib/display/engine'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCard }   from '@/components/ui/StatCard'
 import { Card }       from '@/components/ui/Card'
@@ -161,13 +162,9 @@ export function PaperTradingConsole({ embedded = false }: EmbeddableProps = {}) 
   )
 }
 
-function stateColorVar(state: string): string {
-  const s = state.toUpperCase()
-  if (s === 'HEALTHY') return 'var(--probex-positive)'
-  if (s === 'CAUTION' || s === 'WOUNDED') return 'var(--probex-warning)'
-  if (s === 'DANGER' || s === 'CRITICAL') return 'var(--probex-negative)'
-  return 'var(--probex-text-muted)'
-}
+// Delegates to the shared severity source so this timeline can never drift
+// from the rest of the survival UI (it previously mis-coloured DEAD as grey).
+const stateColorVar = survivalStateColor
 function BucketTable({ title, source, buckets, formatKey }: { title: string; source: string; buckets: Record<string, BucketPerformanceStat>; formatKey?: (key: string) => string }) {
   const entries = Object.entries(buckets)
   return (

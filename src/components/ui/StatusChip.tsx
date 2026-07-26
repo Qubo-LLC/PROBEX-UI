@@ -85,6 +85,7 @@ export function toneForStatus(status: string | null | undefined): ChipTone {
       return 'warning'
     case 'critical':
     case 'danger':
+    case 'dead':
     case 'offline':
     case 'error':
     case 'failed':

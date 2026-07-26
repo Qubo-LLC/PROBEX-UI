@@ -5,6 +5,18 @@
 // ServiceState<T> into ApplicationStore so components read data without their
 // own fetches. Three tiers (FAST/MEDIUM/SLOW) by each endpoint's change
 // cadence; polling pauses while the tab is hidden (useServiceQuery).
+//
+// NOT polled here, deliberately (2026-07-26 hardening) — do not re-add:
+//   • portfolio            — backend 500s; the poll only ever errored. The four
+//                            sub-routes (balance/summary/history/performance)
+//                            cover the same data.
+//   • portfolioPerformance — PerformanceWindow fetches it directly with a
+//                            user-selectable lookback; a fixed 24h poll here was
+//                            a duplicate request no component read.
+//   • executionTrades      — Settled Positions was repointed to positions/history;
+//                            no consumer remained.
+//   • analyticsSegments    — superseded by survival/patterns; no consumer.
+// The service methods for these still exist (API surface preserved).
 
 import { useEffect }           from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
@@ -22,7 +34,6 @@ import {
   useEngineIdentity,
   useEngineExecutionStatus,
   useEngineExecutionPolicy,
-  useEngineExecutionTrades,
   useEnginePaperStats,
   useEnginePositionsHistory,
   useEngineSurvivalPatterns,
@@ -30,12 +41,9 @@ import {
   useEngineConsensusBias,
   useEngineConsensusHistory,
   useEngineResearchReports,
-  useEnginePortfolio,
   useEngineBalance,
   useEnginePortfolioHistory,
   useEnginePortfolioSummary,
-  useEnginePortfolioPerformance,
-  useEngineAnalyticsSegments,
   useEngineAnalyticsSignals,
   useEngineAnalyticsSummary,
   useEngineAnalyticsTopSegments,
@@ -66,7 +74,6 @@ export function ApplicationStateLoader() {
   const events          = useEngineEvents(MEDIUM_MS)
   const edges           = useEngineEdges(MARKET_POLL_MS)
   const executionStatus = useEngineExecutionStatus(MEDIUM_MS)
-  const executionTrades = useEngineExecutionTrades(MEDIUM_MS)
   const paperStats      = useEnginePaperStats(MEDIUM_MS)
   const runtime         = useEngineRuntime(SLOW_MS)
   const health          = useEngineHealth(SLOW_MS)
@@ -77,7 +84,6 @@ export function ApplicationStateLoader() {
   // MEDIUM tier: live/cycle-driven
   const consensus            = useEngineConsensus(MEDIUM_MS)
   const consensusBias        = useEngineConsensusBias(MEDIUM_MS)
-  const portfolio            = useEnginePortfolio(MEDIUM_MS)
   const balance              = useEngineBalance(MEDIUM_MS)
   const executionOrders      = useEngineExecutionOrders(MEDIUM_MS)
   const paperStatus          = useEnginePaperStatus(MEDIUM_MS)
@@ -90,8 +96,6 @@ export function ApplicationStateLoader() {
   const researchReports      = useEngineResearchReports(SLOW_MS)
   const portfolioHistory     = useEnginePortfolioHistory(SLOW_MS)
   const portfolioSummary     = useEnginePortfolioSummary(SLOW_MS)
-  const portfolioPerformance = useEnginePortfolioPerformance(SLOW_MS)
-  const analyticsSegments    = useEngineAnalyticsSegments(SLOW_MS)
   const analyticsSignals     = useEngineAnalyticsSignals(SLOW_MS)
   const analyticsSummary     = useEngineAnalyticsSummary(SLOW_MS)
   const analyticsTopSegments = useEngineAnalyticsTopSegments(SLOW_MS)
@@ -112,12 +116,10 @@ export function ApplicationStateLoader() {
   useEffect(() => { updateEngine({ identity }) },        [identity,        updateEngine])
   useEffect(() => { updateEngine({ executionStatus }) }, [executionStatus, updateEngine])
   useEffect(() => { updateEngine({ executionPolicy }) }, [executionPolicy, updateEngine])
-  useEffect(() => { updateEngine({ executionTrades }) }, [executionTrades, updateEngine])
   useEffect(() => { updateEngine({ paperStats }) },      [paperStats,      updateEngine])
 
   useEffect(() => { updateEngine({ consensus }) },            [consensus,            updateEngine])
   useEffect(() => { updateEngine({ consensusBias }) },        [consensusBias,        updateEngine])
-  useEffect(() => { updateEngine({ portfolio }) },            [portfolio,            updateEngine])
   useEffect(() => { updateEngine({ balance }) },              [balance,              updateEngine])
   useEffect(() => { updateEngine({ executionOrders }) },      [executionOrders,      updateEngine])
   useEffect(() => { updateEngine({ paperStatus }) },          [paperStatus,          updateEngine])
@@ -128,8 +130,6 @@ export function ApplicationStateLoader() {
   useEffect(() => { updateEngine({ researchReports }) },      [researchReports,      updateEngine])
   useEffect(() => { updateEngine({ portfolioHistory }) },     [portfolioHistory,     updateEngine])
   useEffect(() => { updateEngine({ portfolioSummary }) },     [portfolioSummary,     updateEngine])
-  useEffect(() => { updateEngine({ portfolioPerformance }) }, [portfolioPerformance, updateEngine])
-  useEffect(() => { updateEngine({ analyticsSegments }) },    [analyticsSegments,    updateEngine])
   useEffect(() => { updateEngine({ analyticsSignals }) },     [analyticsSignals,     updateEngine])
   useEffect(() => { updateEngine({ analyticsSummary }) },     [analyticsSummary,     updateEngine])
   useEffect(() => { updateEngine({ analyticsTopSegments }) }, [analyticsTopSegments, updateEngine])

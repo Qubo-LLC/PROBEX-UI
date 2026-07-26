@@ -23,7 +23,6 @@ import type {
   EngineIdentity,
   ExecutionStatus,
   ExecutionPolicy,
-  ExecutionTrades,
   PaperStats,
   PositionsHistory,
   SurvivalPatterns,
@@ -31,12 +30,9 @@ import type {
   ConsensusBias,
   ConsensusHistory,
   ResearchReports,
-  Portfolio,
   Balance,
   PortfolioHistory,
   PortfolioSummary,
-  PortfolioPerformance,
-  AnalyticsSegments,
   AnalyticsSignals,
   AnalyticsSummary,
   AnalyticsTopSegments,
@@ -63,7 +59,6 @@ export interface EngineEndpoints {
   identity:        ServiceState<EngineIdentity>
   executionStatus: ServiceState<ExecutionStatus>
   executionPolicy: ServiceState<ExecutionPolicy>
-  executionTrades: ServiceState<ExecutionTrades>
   paperStats:      ServiceState<PaperStats>
 
   // Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints
@@ -73,12 +68,9 @@ export interface EngineEndpoints {
   consensusBias:        ServiceState<ConsensusBias>
   consensusHistory:     ServiceState<ConsensusHistory>
   researchReports:      ServiceState<ResearchReports>
-  portfolio:            ServiceState<Portfolio>
   balance:              ServiceState<Balance>
   portfolioHistory:     ServiceState<PortfolioHistory>
   portfolioSummary:     ServiceState<PortfolioSummary>
-  portfolioPerformance: ServiceState<PortfolioPerformance>
-  analyticsSegments:    ServiceState<AnalyticsSegments>
   analyticsSignals:     ServiceState<AnalyticsSignals>
   analyticsSummary:     ServiceState<AnalyticsSummary>
   analyticsTopSegments: ServiceState<AnalyticsTopSegments>
@@ -116,7 +108,6 @@ const initialEndpoints: EngineEndpoints = {
   identity:        loadingState<EngineIdentity>(),
   executionStatus: loadingState<ExecutionStatus>(),
   executionPolicy: loadingState<ExecutionPolicy>(),
-  executionTrades: loadingState<ExecutionTrades>(),
   paperStats:      loadingState<PaperStats>(),
 
   positionsHistory:     loadingState<PositionsHistory>(),
@@ -125,12 +116,9 @@ const initialEndpoints: EngineEndpoints = {
   consensusBias:        loadingState<ConsensusBias>(),
   consensusHistory:     loadingState<ConsensusHistory>(),
   researchReports:      loadingState<ResearchReports>(),
-  portfolio:            loadingState<Portfolio>(),
   balance:              loadingState<Balance>(),
   portfolioHistory:     loadingState<PortfolioHistory>(),
   portfolioSummary:     loadingState<PortfolioSummary>(),
-  portfolioPerformance: loadingState<PortfolioPerformance>(),
-  analyticsSegments:    loadingState<AnalyticsSegments>(),
   analyticsSignals:     loadingState<AnalyticsSignals>(),
   analyticsSummary:     loadingState<AnalyticsSummary>(),
   analyticsTopSegments: loadingState<AnalyticsTopSegments>(),

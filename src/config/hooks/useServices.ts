@@ -145,11 +145,6 @@ export function useEngineExecutionPolicy(refreshMs?: number) {
   return useServiceQuery(() => services.engine.getExecutionPolicy(), () => services.engine.peekExecutionPolicy?.() ?? null, [], refreshMs)
 }
 
-/** /api/execution/trades — active + closed trade lists (item schema TBD). */
-export function useEngineExecutionTrades(refreshMs?: number) {
-  return useServiceQuery(() => services.engine.getExecutionTrades(), () => services.engine.peekExecutionTrades?.() ?? null, [], refreshMs)
-}
-
 /** /api/paper-stats — paper-trading session performance. */
 export function useEnginePaperStats(refreshMs?: number) {
   return useServiceQuery(() => services.engine.getPaperStats(), () => services.engine.peekPaperStats?.() ?? null, [], refreshMs)
@@ -187,11 +182,6 @@ export function useEngineResearchReports(refreshMs?: number) {
   return useServiceQuery(() => services.engine.getResearchReports(), () => services.engine.peekResearchReports?.() ?? null, [], refreshMs)
 }
 
-/** /api/portfolio — full live portfolio snapshot. */
-export function useEnginePortfolio(refreshMs?: number) {
-  return useServiceQuery(() => services.engine.getPortfolio(), () => services.engine.peekPortfolio?.() ?? null, [], refreshMs)
-}
-
 /** /api/balance — quick capital balance check. */
 export function useEngineBalance(refreshMs?: number) {
   return useServiceQuery(() => services.engine.getBalance(), () => services.engine.peekBalance?.() ?? null, [], refreshMs)
@@ -205,16 +195,6 @@ export function useEnginePortfolioHistory(refreshMs?: number) {
 /** /api/portfolio/summary — portfolio summary statistics. */
 export function useEnginePortfolioSummary(refreshMs?: number) {
   return useServiceQuery(() => services.engine.getPortfolioSummary(), () => services.engine.peekPortfolioSummary?.() ?? null, [], refreshMs)
-}
-
-/** /api/portfolio/performance — performance metrics over a 24h lookback. */
-export function useEnginePortfolioPerformance(refreshMs?: number) {
-  return useServiceQuery(() => services.engine.getPortfolioPerformance(), () => services.engine.peekPortfolioPerformance?.() ?? null, [], refreshMs)
-}
-
-/** /api/analytics/segments — performance metrics by segment. */
-export function useEngineAnalyticsSegments(refreshMs?: number) {
-  return useServiceQuery(() => services.engine.getAnalyticsSegments(), () => services.engine.peekAnalyticsSegments?.() ?? null, [], refreshMs)
 }
 
 /** /api/analytics/signals — signal effectiveness metrics. */

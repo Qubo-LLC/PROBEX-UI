@@ -16,6 +16,7 @@ import type {
   EngineEdges, EngineHealth, HealthComponent,
   EngineMode, SurvivalState, RuntimeComponents, EngineHealthStatus,
 } from '@/types/engine'
+import { survivalStateSeverity, survivalStateLabel } from '@/lib/display/engine'
 
 // ─── View model ───────────────────────────────────────────────────────────────
 
@@ -168,18 +169,14 @@ export function toCommandCenter(s: CommandCenterSlices): CommandCenterVM {
     critical.push({ severity: 'critical', message: 'Price feed disconnected' })
   }
   if (survival) {
-    if (survival.state === 'CRITICAL' || survival.state === 'DANGER') {
-      critical.push({
-        severity: 'critical',
-        message:  `Survival state: ${survival.state}`,
-        detail:   `Capital at ${survival.capitalPct.toFixed(1)}% of initial`,
-      })
-    } else if (survival.state === 'CAUTION') {
-      warning.push({
-        severity: 'warning',
-        message:  'Survival state: CAUTION',
-        detail:   `Capital at ${survival.capitalPct.toFixed(1)}% of initial`,
-      })
+    // Severity-driven so DEAD (and any future danger-class state) escalates to
+    // a critical alert instead of being silently skipped by a state whitelist.
+    const sev = survivalStateSeverity(survival.state)
+    const detail = `Capital at ${survival.capitalPct.toFixed(1)}% of initial`
+    if (sev === 'danger') {
+      critical.push({ severity: 'critical', message: `Survival state: ${survivalStateLabel(survival.state)}`, detail })
+    } else if (sev === 'caution') {
+      warning.push({ severity: 'warning', message: `Survival state: ${survivalStateLabel(survival.state)}`, detail })
     }
   }
   for (const c of health?.components ?? []) {

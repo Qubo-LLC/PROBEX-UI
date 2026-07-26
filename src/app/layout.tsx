@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { cookies } from 'next/headers'
 import { AppProviders } from '@/providers'
-import { APP_NAME, APP_TAGLINE, BASE_PATH } from '@/config/constants'
+import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION, BASE_PATH, SITE_ORIGIN, SITE_URL } from '@/config/constants'
 import { validateEnv } from '@/config/env'
 import { DEFAULT_THEME, type ThemeName, THEME_NAMES } from '@/types/theme'
 import './globals.css'
@@ -36,49 +36,70 @@ const jetbrainsMono = JetBrains_Mono({
 
 // ─── Metadata ─────────────────────────────────────────────────────────────
 
+// Optional social handle — only emitted when the deploy provides it, so a
+// wrong/placeholder @handle is never shipped. See .env.example.
+const TWITTER_HANDLE = process.env.NEXT_PUBLIC_TWITTER_HANDLE
+
 export const metadata: Metadata = {
+  // Resolves relative Open Graph / Twitter / canonical URLs to absolute ones.
+  // Setting this is what silences Next's "metadataBase is not set … falling
+  // back to http://localhost:3000" warning. Origin is environment-aware
+  // (see SITE_ORIGIN); the /dashboard basePath is added per-field below.
+  metadataBase: new URL(SITE_ORIGIN),
   title: {
     template: `%s | ${APP_NAME}`,
-    default:  'Probex | Prediction Intelligence',
+    default:  `${APP_NAME} | ${APP_TAGLINE}`,
   },
-  description: APP_TAGLINE,
+  description:     APP_DESCRIPTION,
+  applicationName: APP_NAME,
   keywords: [
-    'prediction markets',
-    'prediction intelligence',
-    'consensus intelligence',
     'probex',
-    'institutional analytics',
-    'forecasting platform',
+    'autonomous trading',
+    'bitcoin trading bot',
+    'quantitative trading',
+    'trading intelligence',
+    'institutional trading platform',
+    'consensus engine',
+    'execution engine',
   ],
-  authors: [{ name: 'QUBO' }],
-  creator: 'QUBO',
+  authors:   [{ name: 'QUBO', url: SITE_ORIGIN }],
+  creator:   'QUBO',
+  publisher: 'QUBO',
+  category:  'finance',
+  referrer:  'strict-origin-when-cross-origin',
   robots: {
     index:  false, // MVP: not indexed
     follow: false,
   },
+  // Canonical points at the dashboard base, not the marketing-site origin.
+  alternates: {
+    canonical: BASE_PATH,
+  },
   // Open Graph. The social preview carries the crystal mark on the same plate
   // as the app icon, so a shared link and an installed icon read as one brand.
-  // Like `icons`, these paths are NOT basePath-prefixed by Next — hence the
-  // explicit BASE_PATH.
+  // Image paths are NOT basePath-prefixed by Next — hence the explicit
+  // BASE_PATH; they resolve to absolute URLs via metadataBase.
   openGraph: {
     type:        'website',
     locale:      'en_US',
-    url:         process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.probex.io',
+    url:         SITE_URL,
     siteName:    APP_NAME,
-    title:       'Probex | Prediction Intelligence',
-    description: APP_TAGLINE,
+    title:       `${APP_NAME} | ${APP_TAGLINE}`,
+    description: APP_DESCRIPTION,
     images: [{
       url:    `${BASE_PATH}/og-image.png`,
       width:  1200,
       height: 630,
-      alt:    'Probex — autonomous prediction intelligence',
+      alt:    `${APP_NAME} — autonomous trading intelligence`,
     }],
   },
   // Twitter card
   twitter: {
-    card:  'summary_large_image',
-    title: 'Probex | Prediction Intelligence',
-    images: [`${BASE_PATH}/og-image.png`],
+    card:        'summary_large_image',
+    title:       `${APP_NAME} | ${APP_TAGLINE}`,
+    description: APP_DESCRIPTION,
+    images:      [`${BASE_PATH}/og-image.png`],
+    ...(TWITTER_HANDLE ? { creator: TWITTER_HANDLE, site: TWITTER_HANDLE } : {}),
   },
   // PWA manifest. Next DOES prefix basePath on this field.
   manifest: '/manifest.webmanifest',
@@ -106,6 +127,9 @@ export const viewport: Viewport = {
   initialScale:        1,
   maximumScale:        5,
   userScalable:        true,
+  // Dark-first product with a sanctioned light (institutional) theme — declaring
+  // both lets the browser render form controls/scrollbars to match either.
+  colorScheme:         'dark light',
   themeColor: [
     { media: '(prefers-color-scheme: dark)',  color: '#0B1220' },
     { media: '(prefers-color-scheme: light)', color: '#3B82F6' },

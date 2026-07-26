@@ -160,7 +160,20 @@ export interface PriceHistoryDTO {
 
 export type EngineMode         = 'paper' | 'live'
 export type EngineHealthStatus = 'online' | 'degraded' | 'offline'
-export type SurvivalState      = 'HEALTHY' | 'CAUTION' | 'DANGER' | 'CRITICAL'
+
+/**
+ * Survival-brain state, ordered by severity: HEALTHY → CAUTION → WOUNDED →
+ * DANGER → CRITICAL → DEAD.
+ *
+ * The `(string & {})` member is intentional: it keeps autocomplete for the six
+ * known states while allowing any future backend value to type-check. This is
+ * deliberate future-proofing — the backend added DEAD/WOUNDED after this type
+ * was first written, and an open union means the next new state is a display
+ * fallback (see lib/display/engine.ts) rather than a runtime `undefined`.
+ */
+export type SurvivalState =
+  | 'HEALTHY' | 'CAUTION' | 'WOUNDED' | 'DANGER' | 'CRITICAL' | 'DEAD'
+  | (string & {})
 
 export interface HealthComponent {
   name:      string

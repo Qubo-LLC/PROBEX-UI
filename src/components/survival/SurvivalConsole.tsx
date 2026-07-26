@@ -15,22 +15,29 @@
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatCurrency, formatPercent } from '@/lib/utils'
-import { survivalStateColor, survivalStateLabel } from '@/lib/display/engine'
+import { survivalStateColor, survivalStateLabel, SURVIVAL_STATES } from '@/lib/display/engine'
 import { StatCard }       from '@/components/ui/StatCard'
 import { Card }           from '@/components/ui/Card'
 import { PageHeader }     from '@/components/ui/PageHeader'
 import { ErrorState }     from '@/components/ui/ErrorState'
 import { TargetProgress } from '@/components/shared/TargetProgress'
-import type { SurvivalState } from '@/types/engine'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
-const STATES: SurvivalState[] = ['HEALTHY', 'CAUTION', 'DANGER', 'CRITICAL']
-
-const STATE_DESCRIPTIONS: Record<SurvivalState, string> = {
+// State-machine tiles come from the shared severity-ordered list so a new
+// backend state appears here automatically instead of vanishing from the strip.
+const STATE_DESCRIPTIONS: Record<string, string> = {
   HEALTHY:  'Capital intact — full position sizing available.',
   CAUTION:  'Capital drawdown detected — the brain reduces sizing and raises the edge bar.',
+  WOUNDED:  'Capital taking damage — sizing curtailed and the edge bar lifted.',
   DANGER:   'Significant drawdown — sizing sharply reduced, only strong edges accepted.',
   CRITICAL: 'Capital preservation mode — trading effectively halted until recovery.',
+  DEAD:     'Capital exhausted — the survival brain has halted all trading.',
+}
+
+/** Description for any state, with a safe fallback for unrecognised values. */
+function stateDescription(state: string): string {
+  return STATE_DESCRIPTIONS[String(state).toUpperCase()]
+    ?? 'Unrecognised survival state reported by the engine.'
 }
 
 export function SurvivalConsole({ embedded = false }: EmbeddableProps = {}) {
@@ -71,12 +78,20 @@ export function SurvivalConsole({ embedded = false }: EmbeddableProps = {}) {
                 Survival State
               </h3>
               <span className="text-xs" style={{ color: 'var(--probex-text-muted)' }}>
-                {STATE_DESCRIPTIONS[sv.state]}
+                {stateDescription(sv.state)}
               </span>
             </div>
             <div className="flex items-center gap-1.5" role="list" aria-label="Survival state machine">
-              {STATES.map((state) => {
-                const isCurrent = state === sv.state
+              {(() => {
+                // Guarantee the active state always has a tile — even a future
+                // state not in the known list gets appended so it can never be
+                // invisible on its own page (the exact bug this sprint fixes).
+                const active = String(sv.state).toUpperCase()
+                const tiles: readonly string[] = SURVIVAL_STATES.includes(active as typeof SURVIVAL_STATES[number])
+                  ? SURVIVAL_STATES
+                  : [...SURVIVAL_STATES, active]
+                return tiles.map((state) => {
+                const isCurrent = state === active
                 return (
                   <div
                     key={state}
@@ -102,7 +117,8 @@ export function SurvivalConsole({ embedded = false }: EmbeddableProps = {}) {
                     </span>
                   </div>
                 )
-              })}
+                })
+              })()}
             </div>
           </Card>
 

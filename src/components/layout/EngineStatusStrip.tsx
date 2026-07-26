@@ -10,7 +10,7 @@
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatBtcPrice } from '@/lib/mappers/priceHistory'
-import { survivalStateLabel } from '@/lib/display/engine'
+import { survivalStateLabel, survivalStateIsAlarm } from '@/lib/display/engine'
 import { LiveHeartbeat } from '@/components/shared/LiveHeartbeat'
 import { StatusChip, toneForStatus } from '@/components/ui/StatusChip'
 
@@ -57,11 +57,11 @@ export function EngineStatusStrip() {
       {state && (
         <StatusChip
           tone={toneForStatus(state)}
-          live={state === 'CRITICAL' || state === 'DANGER'}
+          live={survivalStateIsAlarm(state)}
           className="hidden sm:inline-flex"
           title={`Survival state: ${survivalStateLabel(state)}`}
         >
-          {state}
+          {survivalStateLabel(state)}
         </StatusChip>
       )}
 

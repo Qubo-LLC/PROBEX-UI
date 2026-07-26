@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { BASE_PATH } from '@/config/constants'
+import { BASE_PATH, APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from '@/config/constants'
 
 /**
  * Probex Web App Manifest
@@ -23,15 +23,17 @@ const appUrl = (path = '') => `${BASE_PATH}/${path}`
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name:             'Probex | Prediction Intelligence',
-    short_name:       'Probex',
-    description:      'Prediction intelligence powered by the Consensus Engine. Institutional-grade forecasting across prediction markets.',
+    name:             `${APP_NAME} | ${APP_TAGLINE}`,
+    short_name:       APP_NAME,
+    description:      APP_DESCRIPTION,
 
     // Scoped to the dashboard so the manifest never claims the marketing site.
     start_url:        appUrl(),
     scope:            appUrl(),
     display:          'standalone',
-    orientation:      'portrait-primary',
+    // A dense data console is used in both orientations (desktop/tablet
+    // landscape, phone portrait) — don't lock it to portrait.
+    orientation:      'any',
 
     background_color: '#0B1220',
     theme_color:      '#3B82F6',
@@ -84,7 +86,7 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name:        'Markets',
         short_name:  'Markets',
-        description: 'Browse Bitcoin prediction markets',
+        description: 'Browse Bitcoin 5-minute markets',
         url:         appUrl('markets/'),
       },
       {
