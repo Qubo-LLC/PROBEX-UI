@@ -60,7 +60,7 @@ export function AwaitingBackend({
         role="status"
         aria-label={`${title} — awaiting backend`}
       >
-        <h3 className="text-2xs font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: 'var(--probex-text-muted)' }}>
+        <h3 className="t-label whitespace-nowrap">
           {title}
         </h3>
         {badge}
@@ -72,7 +72,7 @@ export function AwaitingBackend({
       <div className={`flex flex-col gap-3 ${className}`} role="status" aria-label={`${title} — awaiting backend`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1 min-w-0">
-            <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+            <h3 className="t-label">
               {title}
             </h3>
             <p className="text-xs leading-relaxed" style={{ color: 'var(--probex-text-disabled)' }}>

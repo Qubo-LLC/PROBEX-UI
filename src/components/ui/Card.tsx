@@ -40,7 +40,10 @@ export function Card({
     <div
       className={cn(
         variantStyles[variant],
-        !noPadding && 'p-4',
+        // p-5 (20px) on the 8px rhythm's half-step. p-4 was measurably tight
+        // for the density here — content sat close enough to the border that
+        // cards read as boxes of text rather than as composed surfaces.
+        !noPadding && 'p-5',
         className,
       )}
       {...props}
@@ -59,7 +62,7 @@ interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
 export function CardHeader({ className, children, ...props }: CardHeaderProps) {
   return (
     <div
-      className={cn('flex items-center justify-between mb-3', className)}
+      className={cn('flex items-center justify-between mb-4', className)}
       {...props}
     >
       {children}
@@ -73,11 +76,11 @@ interface CardTitleProps extends HTMLAttributes<HTMLHeadingElement> {
 }
 
 export function CardTitle({ as: Tag = 'h3', className, children, ...props }: CardTitleProps) {
+  // t-card-title: small, uppercase, tracked, secondary. A card title's job is
+  // to name the surface and then get out of the way — at the previous
+  // text-sm/primary it competed with the metric it was introducing.
   return (
-    <Tag
-      className={cn('text-sm font-semibold text-text-primary', className)}
-      {...props}
-    >
+    <Tag className={cn('t-card-title', className)} {...props}>
       {children}
     </Tag>
   )

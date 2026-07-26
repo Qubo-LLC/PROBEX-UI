@@ -31,6 +31,10 @@ import type {
   AnalyticsHourlyDTO, AnalyticsHourly,
   PaperStatusDTO, PaperStatus, SystemMetricsDTO, SystemMetrics,
   TradesLedgerDTO, TradesLedger, ExecutionOrdersDTO, ExecutionOrders,
+  MarketsSummaryDTO, MarketsSummary, MarketSummaryItemDTO, MarketSummaryItem,
+  MarketPriceHistoryDTO, MarketPriceHistory, MarketHistoryPointDTO, MarketHistoryPoint,
+  SettledTradeDTO, SettledTrade,
+  MutationResultDTO, MutationResult,
 } from '@/types/engine'
 
 /** win_rate is 0–100 on the wire everywhere; normalize to 0–1 so all domain
@@ -372,7 +376,13 @@ export function toPaperStats(dto: PaperStatsDTO): PaperStats {
 // ─── Additional endpoint adapters ─────────────────────────────────────────────
 
 export function toPositionsHistory(dto: PositionsHistoryDTO): PositionsHistory {
-  return { available: dto.available, history: dto.history, count: dto.count, limit: dto.limit, timestamp: isoToMs(dto.timestamp) }
+  return {
+    available: dto.available,
+    history:   dto.history.map(toSettledTrade),
+    count:     dto.count,
+    limit:     dto.limit,
+    timestamp: isoToMs(dto.timestamp),
+  }
 }
 
 function toSurvivalPatternItem(dto: SurvivalPatternItemDTO): SurvivalPatternItem {
@@ -577,7 +587,7 @@ export function toSystemMetrics(dto: SystemMetricsDTO): SystemMetrics {
 
 export function toTradesLedger(dto: TradesLedgerDTO): TradesLedger {
   return {
-    available: dto.available, ledger: dto.ledger, count: dto.count,
+    available: dto.available, ledger: dto.ledger.map(toSettledTrade), count: dto.count,
     summary: {
       totalPnl: dto.summary.total_pnl, wins: dto.summary.wins, losses: dto.summary.losses,
       winRate: pctToFraction(dto.summary.win_rate),
@@ -592,4 +602,136 @@ export function toExecutionOrders(dto: ExecutionOrdersDTO): ExecutionOrders {
     activeCount: dto.active_count, closedCount: dto.closed_count, totalCount: dto.total_count,
     timestamp: isoToMs(dto.timestamp),
   }
+}
+
+// ─── Markets (2026-07-25 — summary is the primary source while /markets hangs) ─
+
+/** Wire prices are 0–1 probabilities; the UI renders cents throughout. */
+const priceToCents = (p: number): number => p * 100
+
+function toMarketSummaryItem(dto: MarketSummaryItemDTO): MarketSummaryItem {
+  return {
+    marketId:         dto.market_id,
+    question:         dto.question,
+    snapshotCount:    dto.snapshot_count,
+    timeRangeSeconds: dto.time_range_seconds,
+    firstSnapshot:    isoToMs(dto.first_snapshot),
+    lastSnapshot:     isoToMs(dto.last_snapshot),
+    yesPrice: {
+      current: priceToCents(dto.yes_price.current), min: priceToCents(dto.yes_price.min),
+      max:     priceToCents(dto.yes_price.max),     avg: priceToCents(dto.yes_price.avg),
+    },
+    noPrice: {
+      current: priceToCents(dto.no_price.current), min: priceToCents(dto.no_price.min),
+      max:     priceToCents(dto.no_price.max),     avg: priceToCents(dto.no_price.avg),
+    },
+    // BTC price is an absolute USD figure — no cents conversion.
+    btcPrice: { ...dto.btc_price },
+    volume:   { ...dto.volume },
+  }
+}
+
+export function toMarketsSummary(dto: MarketsSummaryDTO): MarketsSummary {
+  return {
+    available: dto.available,
+    markets:   dto.markets.map(toMarketSummaryItem),
+    count:     dto.count,
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+function toMarketHistoryPoint(dto: MarketHistoryPointDTO): MarketHistoryPoint {
+  return {
+    ts:              isoToMs(dto.timestamp),
+    marketId:        dto.market_id,
+    question:        dto.question,
+    yesPrice:        priceToCents(dto.yes_price),
+    noPrice:         priceToCents(dto.no_price),
+    volume:          dto.volume,
+    btcPrice:        dto.btc_price,
+    baselinePrice:   dto.baseline_price,
+    edgePct:         dto.edge_pct,
+    durationMinutes: dto.duration_minutes,
+  }
+}
+
+export function toMarketPriceHistory(dto: MarketPriceHistoryDTO): MarketPriceHistory {
+  return {
+    available: dto.available,
+    marketId:  dto.market_id,
+    // Wire returns newest-first; charts want oldest-first.
+    history:   dto.history.map(toMarketHistoryPoint).sort((a, b) => a.ts - b.ts),
+    count:     dto.count,
+    limit:     dto.limit,
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+/**
+ * Adapts the historical archive (/api/markets/history/summary) into the same
+ * EngineMarkets envelope the markets surface consumes, so a browsable list of
+ * past markets can reuse parseMarketRows() and the existing market components.
+ *
+ * NOT a replacement for /api/markets — that returns only what the engine is
+ * scanning right now (1–3 live markets), whereas this is the 100+ market
+ * archive. Keep the two distinct; conflating them mislabels historical markets
+ * as live ones.
+ *
+ * Operates on the raw DTO so prices stay 0–1 — parseMarketRows does its own
+ * ×100 conversion, and going through toMarketsSummary() would double it.
+ */
+export function marketsSummaryToEngineMarkets(dto: MarketsSummaryDTO): EngineMarkets {
+  return {
+    markets: dto.markets.map((m) => ({
+      id:            m.market_id,
+      question:      m.question,
+      yes_price:     m.yes_price.current,
+      no_price:      m.no_price.current,
+      volume:        m.volume.current,
+      baseline_price: m.btc_price.current,
+      // The summary reports observation windows, not market close times. Using
+      // last_snapshot as closes_at would be a lie, so it stays absent.
+    })),
+    count:     dto.count,
+    timestamp: isoToMs(dto.timestamp),
+  }
+}
+
+// ─── Settled trades (ledger + positions history share this item shape) ────────
+
+export function toSettledTrade(dto: SettledTradeDTO): SettledTrade {
+  return {
+    marketId:        dto.market_id,
+    direction:       dto.direction.toLowerCase(),
+    size:            dto.size,
+    entryPrice:      priceToCents(dto.entry_price),
+    exitPrice:       dto.exit_price === null ? null : priceToCents(dto.exit_price),
+    pnl:             dto.pnl,
+    pnlPercent:      pctToFraction(dto.pnl_percent),
+    edgePct:         dto.edge_pct,
+    holdTimeSeconds: dto.hold_time_seconds,
+    openedAt:        isoToMs(dto.opened_at),
+    closedAt:        isoToMs(dto.closed_at),
+    won:             dto.won,
+  }
+}
+
+// ─── Mutations ────────────────────────────────────────────────────────────────
+
+/** A 2xx is the real success signal; the body only downgrades it if it says so
+ *  explicitly (`success: false`, or a status of 'error'/'failed'). */
+export function toMutationResult(dto: MutationResultDTO | null | undefined): MutationResult {
+  const raw = (dto ?? {}) as Record<string, unknown>
+  const explicitFailure =
+    dto?.success === false ||
+    dto?.status === 'error' ||
+    dto?.status === 'failed'
+
+  const message =
+    typeof dto?.message === 'string' ? dto.message :
+    typeof dto?.detail  === 'string' ? dto.detail  :
+    typeof dto?.status  === 'string' ? dto.status  :
+    null
+
+  return { success: !explicitFailure, message, raw }
 }

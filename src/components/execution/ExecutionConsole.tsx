@@ -17,10 +17,14 @@ import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils
 import { StatCard }   from '@/components/ui/StatCard'
 import { Card }       from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { EmergencyStopPanel } from './EmergencyStopPanel'
+import { ManualOrderPanel } from './ManualOrderPanel'
+import { OrdersTable } from './OrdersTable'
 import { ErrorState } from '@/components/ui/ErrorState'
 import type { RateLimitBucket, ExecutionPolicy, PaperStats, PaperStatus } from '@/types/engine'
+import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
-export function ExecutionConsole() {
+export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
   const slice = useApplicationStore((s) => s.engine.executionStatus)
   const ex    = slice.data
 
@@ -32,11 +36,23 @@ export function ExecutionConsole() {
   const paperStatus      = paperStatusSlice.status === 'success' ? paperStatusSlice.data : null
 
   return (
-    <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
-      <PageHeader
-        title="Execution"
-        subtitle="Execution engine quality — trading record, latency, reliability, throttling"
-      />
+    <div className={pageShell(embedded, 'gap-4')}>
+      {!embedded && (
+        <PageHeader
+          title="Execution"
+          subtitle="Execution engine quality — trading record, latency, reliability, throttling"
+        />
+      )}
+
+      {/* Manual controls sit above the telemetry: when an operator opens this
+          page to intervene, the halt control should be the first thing reached,
+          not something to scroll past the metrics for. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+        <EmergencyStopPanel />
+        <ManualOrderPanel />
+      </div>
+
+      <OrdersTable />
 
       {slice.status === 'loading' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
@@ -106,7 +122,7 @@ export function ExecutionConsole() {
           {/* 2 · Latency + reliability */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
             <Card className="flex flex-col gap-3">
-              <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+              <h3 className="t-label">
                 Execution Latency
               </h3>
               {ex.totalTrades > 0 ? (
@@ -124,7 +140,7 @@ export function ExecutionConsole() {
             </Card>
 
             <Card className="flex flex-col gap-3">
-              <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+              <h3 className="t-label">
                 Order Reliability
               </h3>
               {ex.retryStats.totalRetries > 0 ? (
@@ -149,7 +165,7 @@ export function ExecutionConsole() {
           {/* 3 · Rate limiters + backoff */}
           <Card className="flex flex-col gap-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+              <h3 className="t-label">
                 Rate Limiters
               </h3>
               <span
@@ -171,7 +187,7 @@ export function ExecutionConsole() {
           {/* 4 · Resolution tracker */}
           <Card className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
-              <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+              <h3 className="t-label">
                 Resolution Tracker
               </h3>
               <span
@@ -294,7 +310,7 @@ function PaperSessionCard({ paper, paperStatus }: { paper: PaperStats; paperStat
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+        <h3 className="t-label">
           Paper Session
         </h3>
         <span className="text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
@@ -361,7 +377,7 @@ function ExecutionPolicyCard({ policy }: { policy: ExecutionPolicy }) {
   return (
     <Card className="flex flex-col gap-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+        <h3 className="t-label">
           Execution Policy
         </h3>
         <span
@@ -386,7 +402,7 @@ function ExecutionPolicyCard({ policy }: { policy: ExecutionPolicy }) {
 
       {/* Order flow pipeline */}
       <div className="flex flex-col gap-1.5">
-        <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+        <span className="t-label">
           Order Flow
         </span>
         <ol className="flex flex-wrap items-center gap-1.5">
@@ -409,7 +425,7 @@ function ExecutionPolicyCard({ policy }: { policy: ExecutionPolicy }) {
       {/* Known limitations */}
       {policy.knownLimitations.length > 0 && (
         <div className="flex flex-col gap-1">
-          <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+          <span className="t-label">
             Known Limitations
           </span>
           <ul className="flex flex-col gap-1">

@@ -105,13 +105,22 @@ const config: Config = {
       // count-up, ticker-scroll, fade-in) were removed as unused tokens.
       animation: {
         // Motion-language easing (--motion-ease): soft settle, never mechanical.
-        "fade-in-up": "fade-in-up 0.35s cubic-bezier(0.22, 1, 0.36, 1)",
+        "fade-in-up":  "fade-in-up 0.35s cubic-bezier(0.22, 1, 0.36, 1)",
+        // Brand mark on splash / loading surfaces.
+        "brand-pulse": "brand-pulse 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite",
       },
 
       // ─── Box Shadow ──────────────────────────────────────────────────────
+      // The elev-* scale is the canonical elevation vocabulary; each pairs a
+      // drop shadow with an inset top highlight so surfaces read as milled
+      // rather than blurred. Tokens live in styles/probex-tokens.css.
       boxShadow: {
         "surface": "0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px var(--probex-border)",
         "surface-lg": "0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--probex-border)",
+        "elev-1": "var(--probex-elev-1)",
+        "elev-2": "var(--probex-elev-2)",
+        "elev-3": "var(--probex-elev-3)",
+        "elev-4": "var(--probex-elev-4)",
       },
 
       // ─── Backdrop Blur ───────────────────────────────────────────────────

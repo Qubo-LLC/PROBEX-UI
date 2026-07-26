@@ -12,6 +12,7 @@ import { useApplicationStore } from '@/store/applicationStore'
 import { formatSignedCurrency } from '@/lib/utils'
 import { Card }       from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
+import { StatusChip } from '@/components/ui/StatusChip'
 import type { RuntimeComponents } from '@/types/engine'
 
 const COMPONENT_LABELS: Record<keyof RuntimeComponents, string> = {
@@ -53,42 +54,74 @@ export function RuntimePanel() {
   return (
     <Card className="flex flex-col gap-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2.5">
-          <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
-            Runtime
-          </h3>
-          <span className="text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+        <div className="flex items-center gap-3">
+          <h3 className="t-card-title">Runtime</h3>
+          <span
+            className="t-value"
+            style={activeCount < keys.length ? { color: 'var(--probex-warning)' } : undefined}
+          >
             {activeCount}/{keys.length} components active
           </span>
         </div>
-        <div className="flex items-center gap-4 text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
-          <span>Mode <span className="font-bold uppercase" style={{ color: 'var(--probex-text-secondary)' }}>{runtime.mode}</span></span>
-          <span>Initialized {new Date(runtime.initializedAt).toLocaleString()}</span>
+        <div className="flex items-center gap-3">
+          <StatusChip tone={runtime.mode === 'live' ? 'positive' : 'info'} dot={false}>
+            {runtime.mode}
+          </StatusChip>
+          <span className="t-metadata">
+            since {new Date(runtime.initializedAt).toLocaleString()}
+          </span>
         </div>
       </div>
 
-      {/* Component matrix */}
+      {/* Component matrix.
+          Each tile is a small monitoring widget rather than a labelled
+          rectangle: a status dot with a matching halo, the component name, and
+          an explicit ON/OFF readout on the right. Previously an inactive tile
+          was signalled only by 55% opacity on the whole tile, which is easy to
+          miss in a grid of fourteen and reads as "disabled control" rather than
+          "component down". Now the dot colour, the text weight and the readout
+          all agree, and inactive tiles keep full contrast on their label so
+          they stay legible while still looking distinct. */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         {keys.map((key) => {
           const active = runtime.components[key]
+          const tone = active ? 'var(--probex-positive)' : 'var(--probex-text-disabled)'
           return (
             <div
               key={key}
-              className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs"
+              className="elev-hover group flex items-center gap-2.5 rounded-md px-3 py-2.5 text-xs"
               style={{
-                background: 'var(--probex-surface-2)',
-                border:     '1px solid var(--probex-border)',
-                opacity:    active ? 1 : 0.55,
+                background: active
+                  ? 'var(--probex-surface-2)'
+                  : 'color-mix(in srgb, var(--probex-surface) 70%, transparent)',
+                border: `1px solid ${active ? 'var(--probex-border)' : 'var(--probex-border)'}`,
+                boxShadow: active ? 'var(--probex-elev-1)' : 'none',
               }}
-              title={active ? `${COMPONENT_LABELS[key]}: active` : `${COMPONENT_LABELS[key]}: inactive`}
+              title={`${COMPONENT_LABELS[key]}: ${active ? 'active' : 'inactive'}`}
             >
               <span
                 className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ background: active ? 'var(--probex-positive)' : 'var(--probex-text-disabled)' }}
+                style={{
+                  background: tone,
+                  // Halo only on live components — the glow is the "running"
+                  // signal, so an offline dot must not have one.
+                  boxShadow: active
+                    ? `0 0 0 3px color-mix(in srgb, ${tone} 18%, transparent)`
+                    : 'none',
+                }}
                 aria-hidden="true"
               />
-              <span className="truncate" style={{ color: active ? 'var(--probex-text-secondary)' : 'var(--probex-text-disabled)' }}>
+              <span
+                className="truncate flex-1 font-medium"
+                style={{ color: active ? 'var(--probex-text-secondary)' : 'var(--probex-text-muted)' }}
+              >
                 {COMPONENT_LABELS[key]}
+              </span>
+              <span
+                className="text-[9px] font-bold uppercase tracking-wider flex-shrink-0 tabular-nums"
+                style={{ color: active ? 'color-mix(in srgb, var(--probex-positive) 80%, transparent)' : 'var(--probex-text-disabled)' }}
+              >
+                {active ? 'on' : 'off'}
               </span>
             </div>
           )

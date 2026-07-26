@@ -1,11 +1,9 @@
-import type { Metadata } from 'next'
-import { SurvivalConsole } from '@/components/survival/SurvivalConsole'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = {
-  title: 'Survival',
-  description: 'Capital protection — survival state machine, burn rate, runway, and targets.',
-}
-
-export default function SurvivalPage() {
-  return <SurvivalConsole />
+// Survival was absorbed into Strategy › Survival by the IA consolidation
+// (16 routes -> 9 domain pages). Kept as a redirect so existing bookmarks and
+// in-app links keep resolving. Tab state lives in the URL, so this lands on
+// the right tab rather than the domain's default.
+export default function SurvivalRedirectPage() {
+  redirect('/strategy?view=survival')
 }

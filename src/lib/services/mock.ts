@@ -3,7 +3,7 @@
 // The live implementation swaps in behind the same registry (see index.ts).
 
 import { ok, type ApiResult } from './response'
-import type { IEngineService, ServiceRegistry } from './interfaces'
+import type { IEngineService, ServiceRegistry, CreateOrderInput } from './interfaces'
 import {
   MOCK_ENGINE_HEALTH, MOCK_ENGINE_RUNTIME, MOCK_ENGINE_STATS,
   MOCK_ENGINE_CONFIG, MOCK_SURVIVAL_STATUS, MOCK_PRICE_HISTORY,
@@ -15,6 +15,7 @@ import {
   MOCK_RESEARCH_REPORTS, MOCK_PORTFOLIO, MOCK_BALANCE, MOCK_PORTFOLIO_HISTORY, MOCK_PORTFOLIO_SUMMARY, MOCK_PORTFOLIO_PERFORMANCE,
   MOCK_ANALYTICS_SEGMENTS, MOCK_ANALYTICS_SIGNALS, MOCK_ANALYTICS_SUMMARY, MOCK_ANALYTICS_TOP_SEGMENTS, MOCK_ANALYTICS_HOURLY,
   MOCK_PAPER_STATUS, MOCK_SYSTEM_METRICS, MOCK_TRADES_LEDGER, MOCK_EXECUTION_ORDERS,
+  MOCK_MARKETS_SUMMARY, mockMarketPriceHistory,
 } from '@/mock/engine'
 import type {
   EngineHealth, EngineRuntime, EngineStats, EngineConfig, SurvivalStatus, PriceHistory,
@@ -26,6 +27,7 @@ import type {
   ResearchReports, Portfolio, Balance, PortfolioHistory, PortfolioSummary, PortfolioPerformance,
   AnalyticsSegments, AnalyticsSignals, AnalyticsSummary, AnalyticsTopSegments, AnalyticsHourly,
   PaperStatus, SystemMetrics, TradesLedger, ExecutionOrders,
+  MarketsSummary, MarketPriceHistory, MutationResult,
 } from '@/types/engine'
 
 class MockEngineService implements IEngineService {
@@ -102,6 +104,40 @@ class MockEngineService implements IEngineService {
   async getSystemMetrics():        Promise<ApiResult<SystemMetrics>>        { return ok(MOCK_SYSTEM_METRICS) }
   async getTradesLedger():         Promise<ApiResult<TradesLedger>>         { return ok(MOCK_TRADES_LEDGER) }
   async getExecutionOrders():      Promise<ApiResult<ExecutionOrders>>      { return ok(MOCK_EXECUTION_ORDERS) }
+
+  /** No mock orders exist — mirrors the live 404 for an unknown id. */
+  async getOrderById(): Promise<ApiResult<unknown>> { return ok(null) }
+
+  // ── Phase 1 (2026-07-25) — markets recovery ────────────────────────────────
+  peekMarketsSummary():            MarketsSummary                           { return MOCK_MARKETS_SUMMARY }
+  async getMarketsSummary():       Promise<ApiResult<MarketsSummary>>       { return ok(MOCK_MARKETS_SUMMARY) }
+
+  async getMarketPriceHistory(marketId: string, limit = 100): Promise<ApiResult<MarketPriceHistory>> {
+    return ok(mockMarketPriceHistory(marketId, limit))
+  }
+
+  // ── Phase 1 (2026-07-25) — mutation layer ──────────────────────────────────
+  // Mock mode must never imply a real state change happened; each returns a
+  // clearly-labelled no-op so the UI can be exercised without a live engine.
+  async createOrder(input: CreateOrderInput): Promise<ApiResult<MutationResult>> {
+    return ok(mockMutation(`Mock: ${input.previewOnly ? 'previewed' : 'created'} ${input.direction} order for $${input.sizeUsd}`))
+  }
+  async closePosition(marketId: string): Promise<ApiResult<MutationResult>> {
+    return ok(mockMutation(`Mock: closed position ${marketId}`))
+  }
+  async cancelOrder(orderId: string): Promise<ApiResult<MutationResult>> {
+    return ok(mockMutation(`Mock: cancelled order ${orderId}`))
+  }
+  async emergencyStop():      Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: emergency stop — no live positions affected')) }
+  async startPaperTrading():  Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: paper trading started')) }
+  async stopPaperTrading():   Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: paper trading stopped')) }
+  async resetPaperTrading():  Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: paper trading reset')) }
+  async resolvePaperTrades(): Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: paper trades resolved')) }
+}
+
+/** Uniform mock mutation envelope — always succeeds, always says it's a mock. */
+function mockMutation(message: string): MutationResult {
+  return { success: true, message, raw: { mock: true, message } }
 }
 
 export const mockServices: ServiceRegistry = {

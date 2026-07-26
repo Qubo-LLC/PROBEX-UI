@@ -14,19 +14,22 @@ import { useApplicationStore } from '@/store/applicationStore'
 import { TargetProgress } from '@/components/shared/TargetProgress'
 import { CapitalOverview } from './CapitalOverview'
 import { CapitalLedger } from './CapitalLedger'
+import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
-export function WalletPage() {
+export function WalletPage({ embedded = false }: EmbeddableProps = {}) {
   const survivalSlice = useApplicationStore((s) => s.engine.survival)
   const sv = survivalSlice.status === 'success' ? survivalSlice.data : null
 
   return (
-    <div className="page-container flex flex-col gap-5 pb-8 animate-fade-in-up">
-      <div>
-        <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--probex-text-primary)' }}>Wallet</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--probex-text-muted)' }}>
-          The engine&apos;s capital right now — balance composition, what&apos;s at risk, and your profit targets
-        </p>
-      </div>
+    <div className={pageShell(embedded, 'gap-5')}>
+      {!embedded && (
+        <div>
+          <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--probex-text-primary)' }}>Wallet</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--probex-text-muted)' }}>
+            The engine&apos;s capital right now — balance composition, what&apos;s at risk, and your profit targets
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-3">
         <CapitalOverview />

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { MarketsPage } from '@/components/markets/MarketsPage'
+import { MarketsDomain } from '@/components/markets/MarketsDomain'
 
 export const metadata: Metadata = {
   title: 'Markets',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function MarketsRoutePage() {
-  return <MarketsPage />
+  return <MarketsDomain />
 }

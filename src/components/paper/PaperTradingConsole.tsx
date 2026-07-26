@@ -15,9 +15,11 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
 import { CapitalLedger } from '@/components/wallet/CapitalLedger'
+import { PaperTradingControls } from './PaperTradingControls'
 import type { BucketPerformanceStat } from '@/types/engine'
+import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
-export function PaperTradingConsole() {
+export function PaperTradingConsole({ embedded = false }: EmbeddableProps = {}) {
   const statsSlice  = useApplicationStore((s) => s.engine.paperStats)
   const statusSlice = useApplicationStore((s) => s.engine.paperStatus)
 
@@ -25,23 +27,30 @@ export function PaperTradingConsole() {
   const status = statusSlice.status === 'success' ? statusSlice.data : null
 
   return (
-    <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
-      <PageHeader
-        title="Paper Trading"
-        subtitle="The engine's simulated trading session — capital, trades, and settlement, all in one place"
-        actions={
-          status ? (
-            <span className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: status.enabled ? 'var(--probex-positive)' : 'var(--probex-text-muted)' }}>
-              <span className={status.enabled ? 'live-dot w-1.5 h-1.5' : 'w-1.5 h-1.5 rounded-full inline-block'} style={{ background: status.enabled ? 'var(--probex-positive)' : 'var(--probex-text-disabled)' }} aria-hidden="true" />
-              {status.enabled ? 'Enabled' : 'Disabled'}
-            </span>
-          ) : undefined
-        }
-      />
+    <div className={pageShell(embedded, 'gap-4')}>
+      {!embedded && (
+        <PageHeader
+          title="Paper Trading"
+          subtitle="The engine's simulated trading session — capital, trades, and settlement, all in one place"
+          actions={
+            status ? (
+              <span className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: status.enabled ? 'var(--probex-positive)' : 'var(--probex-text-muted)' }}>
+                <span className={status.enabled ? 'live-dot w-1.5 h-1.5' : 'w-1.5 h-1.5 rounded-full inline-block'} style={{ background: status.enabled ? 'var(--probex-positive)' : 'var(--probex-text-disabled)' }} aria-hidden="true" />
+                {status.enabled ? 'Enabled' : 'Disabled'}
+              </span>
+            ) : undefined
+          }
+        />
+      )}
 
       {statsSlice.status === 'error' && (
         <ErrorState title="Paper trading data unavailable" description={statsSlice.error?.message ?? 'The /api/paper-stats endpoint did not respond.'} fullPage={false} />
       )}
+
+      {/* Controls render regardless of whether stats loaded — if the session is
+          in a bad state, the ability to stop or reset it is exactly what's
+          needed, so it must not be gated behind a successful stats fetch. */}
+      <PaperTradingControls />
 
       {p && (
         <>
@@ -103,7 +112,7 @@ export function PaperTradingConsole() {
           {/* 4 · Survival state timeline */}
           {p.survivalStates.length > 0 && (
             <Card className="flex flex-col gap-3">
-              <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+              <h3 className="t-label">
                 Survival State Timeline
               </h3>
               <div className="flex flex-wrap items-center gap-2">
@@ -164,7 +173,7 @@ function BucketTable({ title, source, buckets, formatKey }: { title: string; sou
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>{title}</h3>
+        <h3 className="t-label">{title}</h3>
         <ProvenanceBadge provenance="live" detail={source} />
       </div>
       {entries.length === 0 ? (

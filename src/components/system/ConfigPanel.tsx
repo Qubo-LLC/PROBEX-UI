@@ -47,7 +47,7 @@ export function ConfigPanel() {
   return (
     <Card className="flex flex-col gap-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+        <h3 className="t-label">
           Configuration
         </h3>
         <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>

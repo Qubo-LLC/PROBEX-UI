@@ -26,8 +26,9 @@ import { Card }       from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { EdgeTable }  from '@/components/shared/EdgeTable'
 import { DecisionPipeline } from '@/components/shared/DecisionPipeline'
+import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
-export function StrategyConsole() {
+export function StrategyConsole({ embedded = false }: EmbeddableProps = {}) {
   const survival  = useApplicationStore((s) => s.engine.survival)
   const config    = useApplicationStore((s) => s.engine.config)
   const markets   = useApplicationStore((s) => s.engine.markets)
@@ -49,11 +50,13 @@ export function StrategyConsole() {
   const maxStakeUsd = cfg && sv ? sv.currentCapital * (cfg.maxBetPercent / 100) : null
 
   return (
-    <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
-      <PageHeader
-        title="Strategy"
-        subtitle="How the engine thinks — the live decision pipeline from market scan to execution"
-      />
+    <div className={pageShell(embedded, 'gap-4')}>
+      {!embedded && (
+        <PageHeader
+          title="Strategy"
+          subtitle="How the engine thinks — the live decision pipeline from market scan to execution"
+        />
+      )}
 
       {survival.status === 'error' && config.status === 'error' && (
         <ErrorState
@@ -66,7 +69,7 @@ export function StrategyConsole() {
       {/* ── The decision pipeline ─────────────────────────────────────── */}
       <Card className="flex flex-col gap-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+          <h3 className="t-label">
             Decision Pipeline
           </h3>
           <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
@@ -120,7 +123,7 @@ export function StrategyConsole() {
       {/* ── Sizing model + hard limits ────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
         <Card className="flex flex-col gap-3">
-          <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+          <h3 className="t-label">
             Position Sizing Model
           </h3>
           {cfg && sv ? (
@@ -161,7 +164,7 @@ export function StrategyConsole() {
         </Card>
 
         <Card className="flex flex-col gap-3">
-          <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+          <h3 className="t-label">
             Hard Limits
           </h3>
           {cfg ? (

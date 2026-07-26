@@ -100,7 +100,7 @@ export function EngineFocusHero() {
         {/* ── LEFT · Live BTC Market (the trader's domain) ────────────────── */}
         <div className="flex flex-col gap-3 p-6 lg:border-r" style={{ borderColor: 'var(--probex-border)' }}>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+            <span className="t-label">
               BTC / USD · Live Market
             </span>
             {/* Honest manual-trading acknowledgement — no order endpoint exists yet. */}
@@ -206,7 +206,7 @@ function EdgeSlide({ edge, activeEdges }: { edge: EdgeRow | null; activeEdges: n
   if (!edge) {
     return (
       <div className="flex flex-col justify-center h-full gap-2">
-        <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>Strongest Edge</span>
+        <span className="t-label">Strongest Edge</span>
         <p className="text-sm font-semibold" style={{ color: 'var(--probex-text-secondary)' }}>No edge has cleared the threshold</p>
         <p className="text-xs leading-relaxed" style={{ color: 'var(--probex-text-muted)' }}>
           The engine is holding — it prefers no trade over a weak one.
@@ -218,7 +218,7 @@ function EdgeSlide({ edge, activeEdges }: { edge: EdgeRow | null; activeEdges: n
   const color = edge.direction.toLowerCase() === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)'
   return (
     <div className="flex flex-col justify-center h-full gap-3">
-      <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>Strongest Active Edge</span>
+      <span className="t-label">Strongest Active Edge</span>
       <div className="flex items-center gap-4">
         <RadialGauge
           value={Math.min(1, edge.edgePct / 100)}
@@ -254,7 +254,7 @@ function PostureSlide({ capital }: { capital: NonNullable<CommandCenterVM['capit
   return (
     <div className="flex flex-col justify-center h-full gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>Engine Posture</span>
+        <span className="t-label">Engine Posture</span>
         <span
           className="text-2xs font-bold uppercase tracking-wider rounded-full px-2 py-0.5"
           style={{ color, background: `color-mix(in srgb, ${color} 12%, transparent)`, border: `1px solid color-mix(in srgb, ${color} 30%, transparent)` }}
@@ -276,7 +276,7 @@ function RecordSlide({ trading }: { trading: NonNullable<CommandCenterVM['tradin
   const pnlColor = trading.totalPnl > 0 ? 'var(--probex-positive)' : trading.totalPnl < 0 ? 'var(--probex-negative)' : 'var(--probex-text-primary)'
   return (
     <div className="flex flex-col justify-center h-full gap-3">
-      <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>Trading Record</span>
+      <span className="t-label">Trading Record</span>
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
         <MiniStat label="Balance"  value={formatCurrency(trading.balance)} />
         <MiniStat label="Total P&L" value={formatSignedCurrency(trading.totalPnl)} color={pnlColor} />

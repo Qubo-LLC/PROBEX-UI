@@ -131,37 +131,38 @@
        status          → semantic -dim tokens (var(--probex-{tone}-dim) + border);
                          applied inline per panel, not a card class.
   ──────────────────────────────────────────────────────────────────────────── */
+  /* Institutional refinement: cards are now fully opaque and carry elev-1.
+     They previously sat at 88% opacity over the page, which let the background
+     show through and was the main reason they "blended in" — a translucent
+     card cannot separate from what is behind it. Opacity also fought the new
+     surface ladder. The inset top highlight inside elev-1 is what gives the
+     lip of the card its milled edge. */
   .card {
-    @apply rounded-md border;
-    background-color: color-mix(in srgb, var(--probex-surface) 88%, transparent);
+    @apply rounded-lg border;
+    background-color: var(--probex-surface);
     border-color: var(--probex-border);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    box-shadow: var(--probex-elev-1);
   }
 
   .card-elevated {
-    @apply rounded-md border;
-    background-color: color-mix(in srgb, var(--probex-surface-2) 90%, transparent);
+    @apply rounded-lg border;
+    background-color: var(--probex-surface-2);
     border-color: var(--probex-border-default);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    box-shadow: var(--probex-shadow-sm);
+    box-shadow: var(--probex-elev-2);
   }
 
   .card-interactive {
-    @apply rounded-md border cursor-pointer;
-    background-color: color-mix(in srgb, var(--probex-surface) 88%, transparent);
+    @apply rounded-lg border cursor-pointer;
+    background-color: var(--probex-surface);
     border-color: var(--probex-border);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
     /* Quiet resting glow (2026-07-23 revamp) — a near-invisible theme-tinted
        ring so surfaces read as "alive" before the pointer ever arrives,
        instead of flat panels that only react on contact. */
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--probex-primary) 6%, transparent);
+    box-shadow: var(--probex-elev-1);
     transition: transform var(--motion-fast) var(--motion-ease),
                 border-color var(--motion-fast) var(--motion-ease),
                 background-color var(--motion-fast) var(--motion-ease),
-                box-shadow var(--motion-med) var(--motion-ease);
+                box-shadow var(--motion-slow) var(--motion-ease);
   }
 
   /* Premium hover: subtle lift + tiny scale + border illumination + a
@@ -174,10 +175,13 @@
   .card-interactive:hover {
     border-color: color-mix(in srgb, var(--probex-primary) 32%, var(--probex-border-strong));
     background-color: var(--probex-surface-2);
-    transform: translateY(-2px) scale(1.01);
-    box-shadow: var(--probex-shadow-lift),
-                0 0 0 1px color-mix(in srgb, var(--probex-primary) 20%, transparent),
-                0 10px 36px -8px color-mix(in srgb, var(--probex-primary) 32%, transparent);
+    /* Lift only — the 1.01 scale was dropped: on a dense grid it made adjacent
+       cards appear to nudge each other, which reads as instability rather than
+       responsiveness. Depth now comes from the elevation step. */
+    transform: translateY(-2px);
+    box-shadow: var(--probex-elev-3),
+                0 0 0 1px color-mix(in srgb, var(--probex-primary) 18%, transparent),
+                0 10px 36px -8px color-mix(in srgb, var(--probex-primary) 26%, transparent);
   }
 
   /* Recessed tier — pending / awaiting surfaces. More opaque and less blurred
@@ -410,13 +414,17 @@
   }
 
   /* ── Sidebar nav item ───────────────────────────────────── */
+  /* py-2.5 and a slightly wider gap: nav rows were tight enough that the
+     groups ran together, which flattened the sidebar's own hierarchy. */
   .nav-item {
-    @apply flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 cursor-pointer select-none;
+    @apply flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium cursor-pointer select-none;
     color: var(--probex-text-secondary);
+    transition: background-color var(--motion-fast) var(--motion-ease),
+                color var(--motion-fast) var(--motion-ease);
   }
 
   .nav-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--probex-state-hover);
     color: var(--probex-text-primary);
   }
 
@@ -429,25 +437,36 @@
     outline-offset: -2px;
   }
 
+  /* Active state given real presence. It previously differed from a hover only
+     by a faint tint, so "where am I" required reading the label. Now four
+     signals agree: a brighter fill, a lit border, a semibold label, and an
+     accent bar with a glow. */
   .nav-item-active {
-    background-color: var(--probex-sidebar-item-active-bg);
-    color: var(--probex-primary);
-    border: 1px solid var(--probex-sidebar-item-active-border);
+    background-color: color-mix(in srgb, var(--probex-primary) 14%, transparent);
+    color: var(--probex-text-primary);
+    border: 1px solid color-mix(in srgb, var(--probex-primary) 30%, transparent);
     font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .nav-item-active:hover {
+    background-color: color-mix(in srgb, var(--probex-primary) 18%, transparent);
   }
 
   /* Active-item accent bar — communicates "you are here" by position, not just
-     fill (Design Language: location certainty). Hidden in the collapsed rail. */
+     fill (Design Language: location certainty). Hidden in the collapsed rail.
+     Taller and lit, so it registers peripherally while reading content. */
   .nav-item-active::before {
     content: '';
     position: absolute;
-    left: 3px;
+    left: 0;
     top: 50%;
     transform: translateY(-50%);
     width: 3px;
-    height: 16px;
-    border-radius: 3px;
+    height: 60%;
+    border-radius: 0 3px 3px 0;
     background: var(--probex-primary);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--probex-primary) 60%, transparent);
   }
   .nav-item-active.justify-center::before {
     display: none;
@@ -563,6 +582,151 @@
 .widget-instrument { min-height: 160px; }
 .widget-focal      { min-height: 260px; }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   TYPOGRAPHY SCALE (institutional refinement)
+   ─────────────────────────────────────────────────────────────────────────
+   The dashboard read flat because nearly every string rendered at the same
+   size, weight and colour — a label, a value and a description were visually
+   peers, so nothing guided the eye. These classes encode ONE decision each:
+   how important is this string?
+
+   The ordering principle, borrowed from trading terminals: NUMBERS DOMINATE.
+   A metric's value is the largest, brightest, tightest thing in its card; its
+   label is small, uppercase and muted; its unit is smaller still. Descriptions
+   deliberately recede — they are read once, then never again.
+
+   Three signals move together at every level (size, weight, colour) rather
+   than one, because a size change alone is not enough separation on a dark
+   surface. Numerals use tabular figures everywhere so columns align and digits
+   don't jitter as values tick.
+───────────────────────────────────────────────────────────────────────── */
+@layer components {
+  /* ── Structure ── */
+  .t-page-title {
+    @apply text-2xl font-bold tracking-tight leading-tight;
+    color: var(--probex-text-primary);
+  }
+  .t-page-subtitle {
+    @apply text-sm leading-relaxed;
+    color: var(--probex-text-muted);
+  }
+  .t-section-title {
+    @apply text-sm font-semibold tracking-tight;
+    color: var(--probex-text-primary);
+  }
+  .t-card-title {
+    @apply text-2xs font-bold uppercase;
+    letter-spacing: 0.08em;
+    color: var(--probex-text-secondary);
+  }
+
+  /* ── Metrics — the loudest thing on any surface ── */
+  .t-metric {
+    @apply text-2xl font-bold tabular-nums;
+    letter-spacing: -0.02em;
+    color: var(--probex-text-primary);
+    font-feature-settings: "tnum" 1, "cv01" 1;
+  }
+  .t-metric-lg {
+    @apply text-4xl font-bold tabular-nums;
+    letter-spacing: -0.03em;
+    color: var(--probex-text-primary);
+    font-feature-settings: "tnum" 1, "cv01" 1;
+  }
+  .t-metric-sm {
+    @apply text-base font-semibold tabular-nums;
+    letter-spacing: -0.01em;
+    color: var(--probex-text-primary);
+    font-feature-settings: "tnum" 1;
+  }
+  /* Units and suffixes ride alongside a metric at reduced weight, so "$" and
+     "ms" never compete with the digits they qualify. */
+  .t-unit {
+    @apply text-sm font-medium tabular-nums;
+    color: var(--probex-text-muted);
+  }
+
+  /* ── Supporting text ── */
+  .t-label {
+    @apply text-2xs font-semibold uppercase;
+    letter-spacing: 0.07em;
+    color: var(--probex-text-muted);
+  }
+  .t-value {
+    @apply text-xs font-medium tabular-nums;
+    color: var(--probex-text-secondary);
+  }
+  .t-description {
+    @apply text-xs leading-relaxed;
+    color: var(--probex-text-muted);
+  }
+  .t-metadata {
+    @apply text-2xs tabular-nums;
+    color: var(--probex-text-disabled);
+  }
+  .t-helper {
+    @apply text-2xs leading-relaxed;
+    color: var(--probex-text-disabled);
+  }
+
+  /* ── Elevation utilities ──────────────────────────────────────────────
+     Paired with the --probex-elev-* tokens. Applied to a surface that already
+     has a background and border; these only supply depth. */
+  .elev-1 { box-shadow: var(--probex-elev-1); }
+  .elev-2 { box-shadow: var(--probex-elev-2); }
+  .elev-3 { box-shadow: var(--probex-elev-3); }
+  .elev-4 { box-shadow: var(--probex-elev-4); }
+
+  /* Raise on hover. Opacity/border/shadow only — no transform, so rows in a
+     dense table don't shift their neighbours as the pointer travels. */
+  .elev-hover {
+    transition: box-shadow var(--motion-fast) var(--motion-ease),
+                border-color var(--motion-fast) var(--motion-ease),
+                background-color var(--motion-fast) var(--motion-ease);
+  }
+  .elev-hover:hover {
+    box-shadow: var(--probex-elev-3);
+    border-color: var(--probex-border-strong);
+  }
+
+  /* ── Row hover ────────────────────────────────────────────────────────
+     For table rows and list items: a wash rather than a border change, so the
+     grid's alignment never appears to move. */
+  .row-hover {
+    transition: background-color var(--motion-fast) var(--motion-ease);
+  }
+  .row-hover:hover {
+    background-color: var(--probex-state-hover);
+  }
+
+  /* ── Status chips ─────────────────────────────────────────────────────
+     One shape for every status in the product. Tone is supplied by the caller
+     as --chip-color; the fill, border and dot all derive from it, so a new
+     status needs a colour and nothing else. Soft fill + hairline border +
+     small indicator, in the Linear/Vercel register rather than a solid badge. */
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-md font-semibold uppercase whitespace-nowrap;
+    padding: 3px 8px;
+    font-size: 0.625rem;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    color: var(--chip-color, var(--probex-text-secondary));
+    background-color: color-mix(in srgb, var(--chip-color, var(--probex-text-muted)) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--chip-color, var(--probex-text-muted)) 26%, transparent);
+  }
+  .chip-dot {
+    @apply rounded-full shrink-0;
+    width: 5px;
+    height: 5px;
+    background-color: var(--chip-color, var(--probex-text-muted));
+  }
+  /* Live statuses breathe; static ones don't. Motion is reserved for things
+     that are genuinely still happening. */
+  .chip-dot-live {
+    animation: live-pulse 2s var(--motion-ease) infinite;
+  }
+}
+
 @layer utilities {
   .page-container {
     @apply px-5 py-5 max-w-[1920px] mx-auto w-full;
@@ -666,4 +830,17 @@
 @keyframes hero-breathe {
   from { opacity: 0.55; }
   to   { opacity: 1; }
+}
+
+/* Brand mark breathing — splash / loading states (see ProbexLogo variant
+   "loading"). Deliberately not a spin: the logo is the brand moment on a cold
+   start, and rotating it cheapens the mark. Opacity + a fractional scale only,
+   so it reads as alive rather than as a progress indicator. */
+@keyframes brand-pulse {
+  0%, 100% { opacity: 0.72; transform: scale(0.97); }
+  50%      { opacity: 1;    transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-brand-pulse { animation: none !important; opacity: 1 !important; }
 }

@@ -96,7 +96,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 style={{ background: i === sel ? 'var(--probex-primary-dim)' : 'transparent' }}
               >
                 <span className="text-sm font-medium" style={{ color: i === sel ? 'var(--probex-primary)' : 'var(--probex-text-primary)' }}>{c.label}</span>
-                <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>{c.group}</span>
+                <span className="t-label">{c.group}</span>
               </button>
             ))
           )}

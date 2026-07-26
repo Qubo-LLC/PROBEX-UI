@@ -16,12 +16,14 @@
 import type { ReactNode } from 'react'
 import { PortfolioOverview } from './PortfolioOverview'
 import { PortfolioSummaryCard } from './PortfolioSummaryCard'
+import { PerformanceWindow } from './PerformanceWindow'
 import { PortfolioAllocation } from './PortfolioAllocation'
 import { PortfolioInsights } from './PortfolioInsights'
 import { PortfolioActivity } from './PortfolioActivity'
 import { PortfolioValueChart } from './charts/PortfolioValueChart'
 import { PnLChart } from './charts/PnLChart'
 import { WinRateChart } from './charts/WinRateChart'
+import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
 function ChartCard({ title, children, className = '' }: { title: string; children: ReactNode; className?: string }) {
   return (
@@ -32,17 +34,21 @@ function ChartCard({ title, children, className = '' }: { title: string; childre
   )
 }
 
-export function PortfolioPage() {
+export function PortfolioPage({ embedded = false }: EmbeddableProps = {}) {
   return (
-    <div className="page-container flex flex-col gap-5 pb-8 animate-fade-in-up">
-      <div>
-        <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--probex-text-primary)' }}>Portfolio</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--probex-text-muted)' }}>Performance, exposure, and the engine's live edge alignment</p>
-      </div>
+    <div className={pageShell(embedded, 'gap-5')}>
+      {!embedded && (
+        <div>
+          <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--probex-text-primary)' }}>Portfolio</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--probex-text-muted)' }}>Performance, exposure, and the engine&apos;s live edge alignment</p>
+        </div>
+      )}
 
       <PortfolioOverview />
 
       <PortfolioSummaryCard />
+
+      <PerformanceWindow />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Performance History</h2>

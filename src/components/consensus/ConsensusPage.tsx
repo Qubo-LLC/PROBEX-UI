@@ -31,8 +31,9 @@ import { BiasBreakdown } from './BiasBreakdown'
 import { ConfidenceEvolution } from './ConfidenceEvolution'
 import { HistoricalSnapshots } from './HistoricalSnapshots'
 import { ConsensusHistoryChart } from './ConsensusHistoryChart'
+import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
-export function ConsensusPage() {
+export function ConsensusPage({ embedded = false }: EmbeddableProps = {}) {
   const marketsSlice = useApplicationStore((s) => s.engine.markets)
   const edgesSlice    = useApplicationStore((s) => s.engine.edges)
   const survivalSlice = useApplicationStore((s) => s.engine.survival)
@@ -71,11 +72,13 @@ export function ConsensusPage() {
   const effectiveKelly = cfg && sv ? cfg.kellyFraction * sv.kellyModifier : null
 
   return (
-    <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
-      <PageHeader
-        title="Consensus"
-        subtitle="What the engine sees, why it likes a market, and how strongly it believes it — made visible."
-      />
+    <div className={pageShell(embedded, 'gap-4')}>
+      {!embedded && (
+        <PageHeader
+          title="Consensus"
+          subtitle="What the engine sees, why it likes a market, and how strongly it believes it — made visible."
+        />
+      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <MarketSelector markets={marketRows} edgeMap={edgeMap} value={focusMarketId} onSelect={setFocusMarket} />
@@ -107,7 +110,7 @@ export function ConsensusPage() {
 
       {/* ── Decision Pipeline (live, whole-engine cycle — not market-scoped) ── */}
       <Card className="flex flex-col gap-3">
-        <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+        <h3 className="t-label">
           Decision Pipeline
         </h3>
         <DecisionPipeline

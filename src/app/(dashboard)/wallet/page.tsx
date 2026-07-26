@@ -1,11 +1,9 @@
-import type { Metadata } from 'next'
-import { WalletPage } from '@/components/wallet/WalletPage'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = {
-  title: 'Wallet — Probex',
-  description: "The engine's capital — balance, allocation, and profit target progress.",
-}
-
-export default function WalletRoutePage() {
-  return <WalletPage />
+// Wallet was absorbed into Portfolio › Capital & Ledger by the IA consolidation
+// (16 routes -> 9 domain pages). Kept as a redirect so existing bookmarks and
+// in-app links keep resolving. Tab state lives in the URL, so this lands on
+// the right tab rather than the domain's default.
+export default function WalletRedirectPage() {
+  redirect('/portfolio?view=capital')
 }

@@ -24,10 +24,11 @@ import { MarketCard } from '@/components/markets/MarketCard'
 import { MarketTable } from '@/components/markets/MarketTable'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
+import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
 type ViewMode = 'grid' | 'table'
 
-export function WatchlistPage() {
+export function WatchlistPage({ embedded = false }: EmbeddableProps = {}) {
   const router = useRouter()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
 
@@ -63,14 +64,16 @@ export function WatchlistPage() {
   const onSelect = (marketId: string) => router.push(MARKET_DETAIL_PATH(marketId))
 
   return (
-    <div className="page-container flex flex-col gap-5 pb-8 animate-fade-in-up">
+    <div className={pageShell(embedded, 'gap-5')}>
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--probex-text-primary)' }}>Watchlist</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--probex-text-muted)' }}>
-            {watchedIds.length === 0 ? "Markets you're following closely" : `${watchedIds.length} market${watchedIds.length === 1 ? '' : 's'} you're following closely`}
-          </p>
-        </div>
+        {!embedded && (
+          <div>
+            <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--probex-text-primary)' }}>Watchlist</h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--probex-text-muted)' }}>
+              {watchedIds.length === 0 ? "Markets you're following closely" : `${watchedIds.length} market${watchedIds.length === 1 ? '' : 's'} you're following closely`}
+            </p>
+          </div>
+        )}
         {watchedIds.length > 0 && (
           <div className="flex rounded-md overflow-hidden flex-shrink-0" style={{ border: '1px solid var(--probex-border-default)' }} role="group" aria-label="View mode">
             {(['grid', 'table'] as const).map((m) => (

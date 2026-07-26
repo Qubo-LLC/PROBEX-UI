@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { SystemConsole } from '@/components/system/SystemConsole'
+import { SystemDomain } from '@/components/system/SystemDomain'
 
 export const metadata: Metadata = {
   title: 'System',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function SystemPage() {
-  return <SystemConsole />
+  return <SystemDomain />
 }

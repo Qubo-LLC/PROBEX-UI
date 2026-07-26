@@ -29,7 +29,7 @@ export function TargetProgress({ capital }: TargetProgressProps) {
   return (
     <Card className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+        <h3 className="t-label">
           Profit Targets
         </h3>
         {(overrides.daily !== null || overrides.weekly !== null) && (

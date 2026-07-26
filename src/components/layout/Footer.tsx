@@ -7,7 +7,7 @@
 // prediction market you trade. Server component — no interactivity, no data.
 
 import Link            from 'next/link'
-import { ProbexMark }  from '@/components/ui/ProbexMark'
+import { ProbexLogo }  from '@/components/ui/ProbexLogo'
 import { ROUTES }      from '@/config/constants'
 
 const PLATFORM_LINKS = [
@@ -37,9 +37,8 @@ export function Footer() {
         <div className="flex gap-12 flex-wrap justify-between">
           {/* Brand column */}
           <div className="min-w-[220px] max-w-[320px]">
-            <div className="flex items-center gap-2.5 mb-3">
-              <ProbexMark size={26} />
-              <span className="text-base font-bold" style={{ color: 'var(--probex-text-primary)' }}>Probex</span>
+            <div className="mb-3">
+              <ProbexLogo variant="lockup" size="sm" />
             </div>
             <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--probex-text-muted)' }}>
               An autonomous intelligence trading Bitcoin&apos;s fastest markets —

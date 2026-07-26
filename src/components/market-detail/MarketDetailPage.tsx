@@ -20,8 +20,6 @@ import { parseMarketRows } from '@/lib/mappers/markets'
 import { parseEdgeRows, toEdgeRowMap, type EdgeRow } from '@/lib/mappers/edges'
 import { MARKET_DETAIL_PATH, ROUTES } from '@/config/constants'
 import { Skeleton } from '@/components/ui/LoadingState'
-import { ErrorState } from '@/components/ui/ErrorState'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { MarketHeader } from './MarketHeader'
 import { MarketCharts } from './MarketCharts'
 import { EngineThesisPanel } from './EngineThesisPanel'
@@ -83,26 +81,37 @@ export function MarketDetailPage({ marketId }: { marketId: string }) {
     )
   }
 
-  if (marketsSlice.status === 'error') {
-    return (
-      <ErrorState
-        title="Markets unavailable"
-        description={marketsSlice.error?.message ?? 'The /api/markets endpoint did not respond.'}
-        secondary={<button onClick={() => router.push(ROUTES.MARKETS)} className="btn-secondary px-4 py-2 text-sm">Back to Markets</button>}
-      />
-    )
-  }
-
   const market = marketRows?.find((m) => m.id === marketId)
 
-  if (!market) {
+  // Degraded path. /api/markets intermittently stalls (audit finding B-02) and
+  // is also scoped to CURRENTLY-scanned markets, so a closed market won't be in
+  // it either. Neither case should blank the page: /api/markets/:id/history is a
+  // separate endpoint that still resolves and carries the market's own
+  // question, so the charts remain useful on their own. Previously both cases
+  // returned a dead end.
+  if (market === undefined) {
+    const marketsDown = marketsSlice.status === 'error'
     return (
-      <EmptyState
-        size="lg"
-        title="This market is no longer active"
-        description="Polymarket's 5-minute Bitcoin markets rotate continuously — this one has likely closed or been replaced. Browse the current set instead."
-        action={<button onClick={() => router.push(ROUTES.MARKETS)} className="btn-primary px-4 py-2 text-sm">Back to Markets</button>}
-      />
+      <div className="flex flex-col" style={{ background: 'var(--probex-bg)' }}>
+        <div className="px-6 py-5" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="text-base font-bold" style={{ color: 'var(--probex-text-primary)' }}>
+                {marketsDown ? 'Live market data unavailable' : 'This market is no longer active'}
+              </h1>
+              <p className="text-xs mt-1 max-w-[62ch]" style={{ color: 'var(--probex-text-muted)' }}>
+                {marketsDown
+                  ? `The live market list didn't respond (${marketsSlice.error?.message ?? 'request failed'}), so current pricing and edge aren't available. Recorded history for this market is shown below.`
+                  : "Polymarket's 5-minute Bitcoin markets rotate continuously — this one has closed or been replaced. Its recorded history is shown below."}
+              </p>
+            </div>
+            <button onClick={() => router.push(ROUTES.MARKETS)} className="btn-secondary px-4 py-2 text-sm flex-shrink-0">
+              Back to Markets
+            </button>
+          </div>
+        </div>
+        <MarketCharts marketId={marketId} />
+      </div>
     )
   }
 
@@ -114,7 +123,7 @@ export function MarketDetailPage({ marketId }: { marketId: string }) {
 
       <div className="grid gap-0" style={{ gridTemplateColumns: 'minmax(0, 1fr) 320px' }}>
         <div className="min-w-0" style={{ borderRight: '1px solid var(--probex-border)' }}>
-          <MarketCharts />
+          <MarketCharts marketId={market.id} />
           <EngineThesisPanel market={market} edge={edge} />
           <MarketActivityFeed marketId={market.id} />
           <RelatedMarkets currentMarketId={market.id} segment={market.segment} onSelect={goToMarket} />

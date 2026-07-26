@@ -6,14 +6,10 @@
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatUptime } from '@/lib/display/engine'
+import { cn } from '@/lib/utils'
 import { Card }       from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
-
-const STATUS_COLOR: Record<string, string> = {
-  online:   'var(--probex-positive)',
-  degraded: 'var(--probex-warning)',
-  offline:  'var(--probex-negative)',
-}
+import { StatusChip, toneForStatus } from '@/components/ui/StatusChip'
 
 export function HealthPanel() {
   const slice  = useApplicationStore((s) => s.engine.health)
@@ -39,79 +35,134 @@ export function HealthPanel() {
     )
   }
 
-  const statusColor = STATUS_COLOR[health.status] ?? 'var(--probex-text-muted)'
   const healthyCount = health.components.filter((c) => c.healthy).length
+  const allHealthy   = healthyCount === health.components.length
 
   return (
-    <Card className="flex flex-col gap-4">
+    <Card className="flex flex-col gap-5">
       {/* Header row: overall status + uptime + monitor counters */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2.5">
-          <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
-            Health
-          </h3>
-          <span
-            className="text-2xs font-bold uppercase tracking-wider rounded px-1.5 py-0.5"
-            style={{ color: statusColor, background: 'var(--probex-surface-2)', border: `1px solid ${statusColor}` }}
-          >
+        <div className="flex items-center gap-3">
+          <h3 className="t-card-title">Health</h3>
+          <StatusChip tone={toneForStatus(health.status)} live={health.status === 'online'}>
             {health.status}
-          </span>
-          <span className="text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+          </StatusChip>
+          <span
+            className="t-value"
+            style={!allHealthy ? { color: 'var(--probex-warning)' } : undefined}
+          >
             {healthyCount}/{health.components.length} probes healthy
           </span>
         </div>
-        <div className="flex items-center gap-4 text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
-          <span>Uptime {formatUptime(health.uptimeSeconds)}</span>
-          <span>{health.stats.healthChecks.toLocaleString()} checks</span>
-          <span style={{ color: health.stats.errors > 0 ? 'var(--probex-warning)' : undefined }}>
-            {health.stats.errors.toLocaleString()} errors
-          </span>
-          <span>{health.stats.restarts} restarts</span>
+        <div className="flex items-center gap-4">
+          <Counter label="uptime" value={formatUptime(health.uptimeSeconds)} />
+          <Counter label="checks" value={health.stats.healthChecks.toLocaleString()} />
+          <Counter
+            label="errors"
+            value={health.stats.errors.toLocaleString()}
+            {...(health.stats.errors > 0 ? { tone: 'var(--probex-warning)' } : {})}
+          />
+          <Counter label="restarts" value={String(health.stats.restarts)} />
         </div>
       </div>
 
-      {/* Probe rows */}
-      <div className="flex flex-col gap-2">
-        {health.components.map((c) => (
-          <div
-            key={c.name}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-xs"
-            style={{
-              background: 'var(--probex-surface-2)',
-              border:     `1px solid ${c.healthy ? 'var(--probex-border)' : 'var(--probex-warning-border)'}`,
-            }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ background: c.healthy ? 'var(--probex-positive)' : 'var(--probex-negative)' }}
-              aria-hidden="true"
-            />
-            <span className="font-semibold w-28 flex-shrink-0" style={{ color: 'var(--probex-text-primary)' }}>
-              {c.name}
-            </span>
-            <span className="flex-1 truncate" style={{ color: 'var(--probex-text-muted)' }} title={c.message}>
-              {c.message}
-            </span>
-            {c.latencyMs !== null && (
-              <span className="tabular-nums flex-shrink-0" style={{ color: 'var(--probex-text-disabled)' }}>
-                {Math.round(c.latencyMs)}ms
+      {/* Probe rows.
+          Healthy rows are deliberately quiet so the eye slides down them
+          without stopping; an unhealthy row gets a tinted fill and a coloured
+          left rule so it breaks the column and pulls attention. Previously
+          every row carried identical weight, which meant scanning for a problem
+          required reading all of them.
+
+          Latency is the other half of that: a probe can report "healthy" while
+          answering in 8.7 seconds. Slow-but-healthy is now amber and slow is
+          bold, so the number is scannable instead of uniformly muted. */}
+      <div className="flex flex-col gap-1.5">
+        {health.components.map((c) => {
+          const latency = c.latencyMs
+          const slow    = latency !== null && latency >= 1000
+          const sluggish = latency !== null && latency >= 250 && latency < 1000
+          return (
+            <div
+              key={c.name}
+              className="row-hover flex items-center gap-3 rounded-md pl-3 pr-3.5 py-2.5 text-xs"
+              style={{
+                background: c.healthy
+                  ? 'var(--probex-surface-2)'
+                  : 'color-mix(in srgb, var(--probex-negative) 9%, var(--probex-surface-2))',
+                border: `1px solid ${c.healthy ? 'var(--probex-border)' : 'color-mix(in srgb, var(--probex-negative) 38%, transparent)'}`,
+                borderLeftWidth: c.healthy ? '1px' : '3px',
+                borderLeftColor: c.healthy ? 'var(--probex-border)' : 'var(--probex-negative)',
+              }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style={{ background: c.healthy ? 'var(--probex-positive)' : 'var(--probex-negative)' }}
+                aria-hidden="true"
+              />
+              <span
+                className="font-semibold w-32 flex-shrink-0 truncate"
+                style={{ color: c.healthy ? 'var(--probex-text-secondary)' : 'var(--probex-text-primary)' }}
+              >
+                {c.name}
               </span>
-            )}
-          </div>
-        ))}
+              <span className="flex-1 truncate" style={{ color: 'var(--probex-text-muted)' }} title={c.message}>
+                {c.message}
+              </span>
+              {latency !== null && (
+                <span
+                  className={cn(
+                    'tabular-nums flex-shrink-0 text-right',
+                    slow ? 'font-bold' : sluggish ? 'font-semibold' : 'font-medium',
+                  )}
+                  style={{
+                    minWidth: '4.5rem',
+                    color: slow
+                      ? 'var(--probex-negative)'
+                      : sluggish
+                        ? 'var(--probex-warning)'
+                        : 'var(--probex-text-disabled)',
+                  }}
+                  title={slow ? 'Responding slowly' : undefined}
+                >
+                  {Math.round(latency).toLocaleString()}ms
+                </span>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {/* Last warning / error, when the monitor has them */}
       {(health.stats.lastError || health.stats.lastWarning) && (
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
+        <div className="flex flex-wrap gap-x-6 gap-y-1.5">
           {health.stats.lastError && (
-            <span>Last error: <span style={{ color: 'var(--probex-warning)' }}>{health.stats.lastError}</span></span>
+            <span className="t-metadata">
+              Last error <span className="font-semibold" style={{ color: 'var(--probex-negative)' }}>{health.stats.lastError}</span>
+            </span>
           )}
           {health.stats.lastWarning && (
-            <span>Last warning: <span style={{ color: 'var(--probex-warning)' }}>{health.stats.lastWarning}</span></span>
+            <span className="t-metadata">
+              Last warning <span className="font-semibold" style={{ color: 'var(--probex-warning)' }}>{health.stats.lastWarning}</span>
+            </span>
           )}
         </div>
       )}
     </Card>
+  )
+}
+
+/** Header counter: value dominant, label recessive beneath it. Reads as a
+ *  monitoring readout rather than as a run-on sentence of stats. */
+function Counter({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <span className="flex flex-col items-end leading-tight">
+      <span
+        className="text-xs font-semibold tabular-nums"
+        style={{ color: tone ?? 'var(--probex-text-secondary)' }}
+      >
+        {value}
+      </span>
+      <span className="t-metadata uppercase" style={{ letterSpacing: '0.06em' }}>{label}</span>
+    </span>
   )
 }

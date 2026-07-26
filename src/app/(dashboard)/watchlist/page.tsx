@@ -1,11 +1,9 @@
-import type { Metadata } from 'next'
-import { WatchlistPage } from '@/components/watchlist/WatchlistPage'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = {
-  title: 'Watchlist — Probex',
-  description: "Markets you're following closely.",
-}
-
-export default function WatchlistRoutePage() {
-  return <WatchlistPage />
+// Watchlist was absorbed into Markets › Watchlist by the IA consolidation
+// (16 routes -> 9 domain pages). Kept as a redirect so existing bookmarks and
+// in-app links keep resolving. Tab state lives in the URL, so this lands on
+// the right tab rather than the domain's default.
+export default function WatchlistRedirectPage() {
+  redirect('/markets?view=watchlist')
 }

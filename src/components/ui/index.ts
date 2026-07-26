@@ -5,6 +5,9 @@ export { EmptyState } from './EmptyState'
 export { ErrorState } from './ErrorState'
 export { Tooltip, TooltipProvider } from './Tooltip'
 export { Dialog, ConfirmDialog } from './Dialog'
+export { StatusChip, toneForStatus, type ChipTone } from './StatusChip'
+export { ProbexLogo, LOGO_SIZES, type LogoSize } from './ProbexLogo'
+export { Tabs, TabPanel, useActiveTab, type TabDef } from './Tabs'
 export {
   Skeleton,
   StatCardSkeleton,

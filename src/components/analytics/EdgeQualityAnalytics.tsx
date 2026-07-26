@@ -73,7 +73,7 @@ export function EdgeQualityAnalytics() {
             </div>
 
             <div>
-              <h3 className="text-2xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--probex-text-muted)' }}>Confidence Distribution</h3>
+              <h3 className="t-label mb-2">Confidence Distribution</h3>
               <div className="flex h-2 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }}>
                 <div className="h-full" style={{ width: `${(stats.high / stats.total) * 100}%`, background: 'var(--probex-positive)' }} title="High" />
                 <div className="h-full" style={{ width: `${(stats.medium / stats.total) * 100}%`, background: 'var(--probex-warning)' }} title="Medium" />
@@ -87,7 +87,7 @@ export function EdgeQualityAnalytics() {
             </div>
 
             <div>
-              <h3 className="text-2xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--probex-text-muted)' }}>By Signal Source</h3>
+              <h3 className="t-label mb-2">By Signal Source</h3>
               <div className="flex flex-col gap-2">
                 {stats.signals.map((s) => (
                   <div key={s.signal} className="flex items-center justify-between text-xs">

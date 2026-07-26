@@ -56,7 +56,7 @@ export function KellyUtilization() {
           ariaLabel={`Kelly utilization: ${Math.round(utilization * 100)}%`}
         >
           <span className="text-2xl font-black tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{Math.round(utilization * 100)}%</span>
-          <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>Utilized</span>
+          <span className="t-label">Utilized</span>
         </RadialGauge>
 
         <div className="flex-1 w-full grid grid-cols-2 gap-2">

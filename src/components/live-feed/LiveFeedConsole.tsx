@@ -203,7 +203,7 @@ export function LiveFeedConsole() {
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>{label}</span>
+      <span className="t-label">{label}</span>
       <span className="text-lg font-bold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{value}</span>
     </div>
   )

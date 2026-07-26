@@ -17,6 +17,24 @@ import { toBtcPriceChart, type BtcPriceChartViewModel } from '@/lib/mappers/pric
 import { toCommandCenter, type CommandCenterVM }        from '@/lib/mappers/overview'
 import { useApplicationStore } from '@/store/applicationStore'
 
+/**
+ * Page sizes for the polled list endpoints.
+ *
+ * These previously sent no `limit` at all, so every poll pulled the server's
+ * default page — unbounded as the engine accumulates history. Each value is
+ * sized to what the corresponding UI actually renders (tables cap their rows,
+ * charts plot a window), not to the backend maximum. Raising one here is safe;
+ * these are all well inside the documented ranges.
+ */
+const POLL_LIMITS = {
+  events:           200,  // max the endpoint allows; the log is the one view that wants depth
+  edges:            50,   // edge lists are consumed as "current opportunities", not history
+  positionsHistory: 100,  // Settled Positions renders 30, Portfolio reads aggregates
+  consensusHistory: 200,  // drives the consensus trend chart
+  portfolioHistory: 500,  // three charts plot this; ~500 snapshots ≈ a full session
+  tradesLedger:     200,  // Capital Ledger renders 25, summary needs the whole set
+} as const
+
 function useServiceQuery<T>(
   fetcher: () => Promise<ApiResult<T>>,
   seed:    () => T | null,
@@ -105,11 +123,11 @@ export function useEnginePositions(refreshMs?: number) {
 }
 
 export function useEngineEvents(refreshMs?: number) {
-  return useServiceQuery(() => services.engine.getEvents(), () => services.engine.peekEvents?.() ?? null, [], refreshMs)
+  return useServiceQuery(() => services.engine.getEvents(POLL_LIMITS.events), () => services.engine.peekEvents?.() ?? null, [], refreshMs)
 }
 
 export function useEngineEdges(refreshMs?: number) {
-  return useServiceQuery(() => services.engine.getEdges(), () => services.engine.peekEdges?.() ?? null, [], refreshMs)
+  return useServiceQuery(() => services.engine.getEdges(POLL_LIMITS.edges), () => services.engine.peekEdges?.() ?? null, [], refreshMs)
 }
 
 /** Engine identity from the API root (`/`) — bot name, version, mode. Static per process. */
@@ -141,7 +159,7 @@ export function useEnginePaperStats(refreshMs?: number) {
 
 /** /api/positions/history — historical closed positions (envelope only; items empty so far). */
 export function useEnginePositionsHistory(refreshMs?: number) {
-  return useServiceQuery(() => services.engine.getPositionsHistory(), () => services.engine.peekPositionsHistory?.() ?? null, [], refreshMs)
+  return useServiceQuery(() => services.engine.getPositionsHistory(POLL_LIMITS.positionsHistory), () => services.engine.peekPositionsHistory?.() ?? null, [], refreshMs)
 }
 
 /** /api/survival/patterns — detailed pattern analysis from the survival brain. */
@@ -161,7 +179,7 @@ export function useEngineConsensusBias(refreshMs?: number) {
 
 /** /api/consensus/history — consensus score trajectory over the session. */
 export function useEngineConsensusHistory(refreshMs?: number) {
-  return useServiceQuery(() => services.engine.getConsensusHistory(), () => services.engine.peekConsensusHistory?.() ?? null, [], refreshMs)
+  return useServiceQuery(() => services.engine.getConsensusHistory(POLL_LIMITS.consensusHistory), () => services.engine.peekConsensusHistory?.() ?? null, [], refreshMs)
 }
 
 /** /api/research/reports — generated market analysis and insights. */
@@ -181,7 +199,7 @@ export function useEngineBalance(refreshMs?: number) {
 
 /** /api/portfolio/history — portfolio value history for charting. */
 export function useEnginePortfolioHistory(refreshMs?: number) {
-  return useServiceQuery(() => services.engine.getPortfolioHistory(), () => services.engine.peekPortfolioHistory?.() ?? null, [], refreshMs)
+  return useServiceQuery(() => services.engine.getPortfolioHistory(POLL_LIMITS.portfolioHistory), () => services.engine.peekPortfolioHistory?.() ?? null, [], refreshMs)
 }
 
 /** /api/portfolio/summary — portfolio summary statistics. */
@@ -231,7 +249,7 @@ export function useEngineSystemMetrics(refreshMs?: number) {
 
 /** /api/trades/ledger — settled trade ledger with aggregate summary. */
 export function useEngineTradesLedger(refreshMs?: number) {
-  return useServiceQuery(() => services.engine.getTradesLedger(), () => services.engine.peekTradesLedger?.() ?? null, [], refreshMs)
+  return useServiceQuery(() => services.engine.getTradesLedger(POLL_LIMITS.tradesLedger), () => services.engine.peekTradesLedger?.() ?? null, [], refreshMs)
 }
 
 /** /api/execution/orders — all orders (active + closed) envelope. */

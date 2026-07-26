@@ -1,11 +1,9 @@
-import type { Metadata } from 'next'
-import { ConsensusPage } from '@/components/consensus/ConsensusPage'
+import { redirect } from 'next/navigation'
 
-export const metadata: Metadata = {
-  title: 'Consensus — Probex',
-  description: 'The engine\'s reasoning made visible — edge strength, recommendation, decision pipeline, and explainability for any market.',
-}
-
-export default function ConsensusRoutePage() {
-  return <ConsensusPage />
+// Consensus was absorbed into Strategy › Consensus by the IA consolidation
+// (16 routes -> 9 domain pages). Kept as a redirect so existing bookmarks and
+// in-app links keep resolving. Tab state lives in the URL, so this lands on
+// the right tab rather than the domain's default.
+export default function ConsensusRedirectPage() {
+  redirect('/strategy?view=consensus')
 }

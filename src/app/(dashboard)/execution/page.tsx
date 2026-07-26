@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { ExecutionConsole } from '@/components/execution/ExecutionConsole'
+import { ExecutionDomain } from '@/components/execution/ExecutionDomain'
 
 export const metadata: Metadata = {
   title: 'Execution',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function ExecutionPage() {
-  return <ExecutionConsole />
+  return <ExecutionDomain />
 }

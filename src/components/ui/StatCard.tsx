@@ -78,9 +78,13 @@ export function StatCard({
     prevFlash.current = flashKey
   }, [flashKey])
 
+  // The metric is the loudest element on the card by design — see the
+  // typography scale in globals.css. t-metric* carries size, weight, tabular
+  // figures and negative tracking together; tightening the tracking is what
+  // makes large numerals read as a considered figure rather than as big text.
   const valueNode = (
     <div
-      className={`${valueSize === 'lg' ? 'text-3xl' : 'text-2xl'} font-bold leading-none tabular-nums`}
+      className={cn(valueSize === 'lg' ? 't-metric-lg' : 't-metric', 'leading-none')}
       style={valueColor ? { color: valueColor } : undefined}
     >
       {flashKey !== undefined ? <ValueFlash value={flashKey}>{value}</ValueFlash> : value}
@@ -89,13 +93,22 @@ export function StatCard({
 
   return (
     <Card
-      className={cn('relative flex flex-col gap-1.5 min-h-[88px]', className)}
+      // gap-3 and a taller floor: the metric needs air above and below to read
+      // as the focal point. At gap-1.5/88px the label, value and delta formed
+      // one undifferentiated block.
+      //
+      // Top-aligned, NOT centred. Centring looked fine in isolation but broke
+      // alignment across a row: a card with a delta line has three children and
+      // one without has two, so centring pushed their labels and values to
+      // different baselines. In a row of KPIs that misalignment is the first
+      // thing the eye catches. The min-height still supplies the floor.
+      className={cn('relative flex flex-col gap-3 min-h-[104px]', className)}
       {...props}
     >
       {pulseN > 0 && <span key={pulseN} className="pulse-ring" aria-hidden="true" />}
       {/* Label row */}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-2xs font-semibold uppercase tracking-wider text-text-muted">
+        <span className="t-label">
           {label}
         </span>
         <span className="flex items-center gap-2">
@@ -117,23 +130,18 @@ export function StatCard({
         valueNode
       )}
 
-      {/* Delta */}
+      {/* Delta / supporting line — the third tier. A signed delta keeps its
+          semantic colour because the direction is the point; a plain
+          descriptive string recedes to metadata so it never competes. */}
       {isLoading ? (
         <div className="skeleton h-3.5 w-16 rounded" />
       ) : deltaDisplay ? (
         <p
-          className={cn(
-            'text-xs font-medium',
-            hasDelta
-              ? isPositive
-                ? 'text-positive'
-                : 'text-negative'
-              : 'text-text-muted',
-          )}
+          className={hasDelta ? 'text-xs font-semibold tabular-nums' : 't-metadata'}
           style={
             hasDelta
               ? { color: isPositive ? 'var(--probex-positive)' : 'var(--probex-negative)' }
-              : { color: 'var(--probex-text-muted)' }
+              : undefined
           }
         >
           {deltaDisplay}

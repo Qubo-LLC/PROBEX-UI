@@ -1,85 +1,69 @@
 // ─── Engine positions mapper ──────────────────────────────────────────────────
 //
-// 🟡 COVERAGE: /api/positions envelope works; items[] are currently unknown[].
+// ✅ COVERAGE: item schema CONFIRMED from a live /api/positions capture
+// (2026-07-25). An earlier revision of this file guarded on a *proposed* shape
+// (`id` + `side`) that the backend never implemented — the wire actually keys on
+// `market_id` + `direction`, so every real row was being rejected as
+// 'unrecognized' and the Positions/Portfolio consoles rendered nothing while
+// live data was arriving. The guard below matches the real contract.
 //
-// This file serves two purposes:
-//   1. Documents the REQUIRED wire shape (EnginePositionItemDTO) that Jake needs
-//      to implement so the frontend can populate the existing Position type with
-//      zero component changes.
-//   2. Provides toPosition() / toPositions() functions ready to activate once
-//      the backend begins returning populated items.
-//
-// When items arrive, wire into:
-//   LiveEngineService.getPositions() → adapt with toPositions()
-//   usePositions() will pick up automatically
+// Unit conversions applied here (the wire and the UI disagree):
+//   entry_price / current_price   wire 0–1 fraction  → row cents (0–100)
+//   pnl_percent                   wire 0–100 percent → row signed fraction
+//   size                          wire is the USD cost basis, NOT a contract
+//                                 count (confirmed: ledger rows show
+//                                 pnl ≈ −size at pnl_percent −100)
 
 import type { EnginePositions } from '@/types/engine'
 import { parseItems, isRecord, str, num, type ParseResult } from './parse'
 
-// ─── Required wire schema (DTO) ───────────────────────────────────────────────
-// THIS IS THE BACKEND CONTRACT.
-// Jake must return this exact shape inside the positions[] array.
+// ─── Confirmed wire schema (DTO) ──────────────────────────────────────────────
+// Captured live 2026-07-25. No invented fields.
 
-/**
- * Single position item as returned by GET /api/positions items[].
- *
- * @required Jake — the backend must produce this shape.
- */
+/** Single position item as returned by GET /api/positions positions[]. */
 export interface EnginePositionItemDTO {
-  /** Unique position identifier. Used as React key. */
-  id:                 string
+  /** Market condition ID. Doubles as the row identity — the engine holds at most
+   *  one position per market, and no separate position id is on the wire. */
+  market_id:         string
 
-  /** Market this position belongs to. Matches EngineMarketItemDTO.id. */
-  market_id:          string
+  /** Market question, e.g. "Bitcoin Up or Down - July 25, 2:30AM-2:45AM ET". */
+  question:          string
 
-  /** Market question / title for display (denormalised — avoids a join). */
-  market_title:       string
+  /** 'YES' | 'NO' (uppercase on the wire). */
+  direction:         string
 
-  /** Bitcoin market segment (matches EngineMarketItemDTO.segment). */
-  segment:            string
+  /** Position stake in USD — this is the cost basis, not a contract count. */
+  size:              number
 
-  /** Position direction.
-   *  Must be one of: 'yes' | 'no' */
-  side:               string
+  /** Entry price as a 0–1 probability. */
+  entry_price:       number
 
-  /** Number of contracts held. */
-  contracts:          number
+  /** Current mark price as a 0–1 probability; null until the engine marks it. */
+  current_price:     number | null
 
-  /** Average entry price in cents [0, 100]. */
-  entry_price:        number
+  /** BTC spot at entry. */
+  entry_btc_price:   number
 
-  /** Current mark-to-market price in cents [0, 100]. Updated live. */
-  current_price:      number
+  /** BTC spot now. */
+  current_btc_price: number
 
-  /** Total cost paid to open this position (USD). */
-  cost_basis:         number
+  /** Detected edge at entry, as a percentage. */
+  edge_pct:          number
 
-  /** Current mark-to-market value (USD). */
-  current_value:      number
+  /** Seconds the position has been open. */
+  time_held_seconds: number
 
-  /** Unrealized P&L: current_value − cost_basis (USD, signed). */
-  unrealized_pnl:     number
+  /** Unrealized P&L in USD (signed). */
+  pnl:               number
 
-  /** Unrealized P&L as a decimal fraction of cost_basis (signed). */
-  unrealized_pnl_pct: number
-
-  /** Position lifecycle state.
-   *  Must be one of: 'open' | 'settled-win' | 'settled-loss' | 'sold' */
-  status:             string
+  /** Unrealized P&L as a percentage of size (signed, 0–100 scale). */
+  pnl_percent:       number
 
   /** ISO 8601 — when the position was opened. */
-  opened_at:          string
-
-  /** ISO 8601 or null if position is still open. */
-  closed_at:          string | null
-
-  /** Order ID that created this position. */
-  order_id:           string
+  opened_at:         string
 }
 
-/**
- * Full envelope returned by GET /api/positions.
- */
+/** Full envelope returned by GET /api/positions. */
 export interface EnginePositionsResponseDTO {
   positions:            EnginePositionItemDTO[]
   count:                number
@@ -121,26 +105,53 @@ export interface PositionRow {
   unrealizedPnl:    number | null   // USD, signed
   unrealizedPnlPct: number | null   // signed fraction
   openedAt:         number | null   // epoch ms
+
+  // ── Fields the confirmed wire carries that the original proposal lacked ────
+  /** Detected edge at entry, as a percentage (e.g. 11.5). */
+  edgePct:          number | null
+  /** Seconds the position has been open. */
+  timeHeldSeconds:  number | null
+  /** BTC spot at entry. */
+  entryBtcPrice:    number | null
+  /** BTC spot now — lets the UI show which way the underlying has moved. */
+  currentBtcPrice:  number | null
 }
 
+/** Matches the confirmed wire contract: market_id + direction, no `id`/`side`. */
 function isPositionItem(x: unknown): x is Record<string, unknown> {
-  return isRecord(x) && str(x.id) && str(x.side)
+  return isRecord(x) && str(x.market_id) && str(x.direction) && num(x.size)
 }
+
+/** Wire prices are 0–1 probabilities; the UI renders cents. */
+const toCents = (x: unknown): number | null => (num(x) ? x * 100 : null)
 
 export function parsePositionRows(p: EnginePositions): ParseResult<PositionRow> {
-  return parseItems(p.positions, isPositionItem, (dto) => ({
-    id:               dto.id as string,
-    marketId:         str(dto.market_id) ? dto.market_id : null,
-    segment:          str(dto.segment) ? dto.segment : null,
-    marketTitle:      str(dto.market_title) ? dto.market_title : null,
-    side:             dto.side as string,
-    contracts:        num(dto.contracts) ? dto.contracts : null,
-    entryPrice:       num(dto.entry_price) ? dto.entry_price : null,
-    currentPrice:     num(dto.current_price) ? dto.current_price : null,
-    costBasis:        num(dto.cost_basis) ? dto.cost_basis : null,
-    currentValue:     num(dto.current_value) ? dto.current_value : null,
-    unrealizedPnl:    num(dto.unrealized_pnl) ? dto.unrealized_pnl : null,
-    unrealizedPnlPct: num(dto.unrealized_pnl_pct) ? dto.unrealized_pnl_pct : null,
-    openedAt:         str(dto.opened_at) ? new Date(dto.opened_at).getTime() : null,
-  }))
+  return parseItems(p.positions, isPositionItem, (dto) => {
+    const size       = dto.size as number
+    const entryPrice = num(dto.entry_price) ? dto.entry_price : null
+    const pnl        = num(dto.pnl) ? dto.pnl : null
+
+    return {
+      // No dedicated position id on the wire — the engine holds at most one
+      // position per market, so market_id is a stable row identity.
+      id:               dto.market_id as string,
+      marketId:         dto.market_id as string,
+      segment:          null,                                  // not on the wire
+      marketTitle:      str(dto.question) ? dto.question : null,
+      side:             (dto.direction as string).toLowerCase(),
+      // `size` is USD stake, so contract count is stake ÷ entry probability.
+      contracts:        entryPrice !== null && entryPrice > 0 ? size / entryPrice : null,
+      entryPrice:       toCents(dto.entry_price),
+      currentPrice:     toCents(dto.current_price),
+      costBasis:        size,
+      currentValue:     pnl !== null ? size + pnl : null,
+      unrealizedPnl:    pnl,
+      unrealizedPnlPct: num(dto.pnl_percent) ? dto.pnl_percent / 100 : null,
+      openedAt:         str(dto.opened_at) ? new Date(dto.opened_at).getTime() : null,
+      edgePct:          num(dto.edge_pct) ? dto.edge_pct : null,
+      timeHeldSeconds:  num(dto.time_held_seconds) ? dto.time_held_seconds : null,
+      entryBtcPrice:    num(dto.entry_btc_price) ? dto.entry_btc_price : null,
+      currentBtcPrice:  num(dto.current_btc_price) ? dto.current_btc_price : null,
+    }
+  })
 }

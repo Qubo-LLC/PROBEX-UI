@@ -19,29 +19,35 @@ export function SystemMetricsPanel() {
   if (!m) return null
 
   return (
-    <Card className="flex flex-col gap-3">
+    <Card className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>Process Metrics</h3>
+        <h3 className="t-card-title">Process Metrics</h3>
         <ProvenanceBadge provenance="live" detail="/api/system/metrics" />
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
         <Stat label="Uptime" value={m.uptime.formatted} />
-        <Stat label="Memory (RSS)" value={`${m.memoryMb.rssMb.toFixed(1)} MB`} />
-        <Stat label="Memory (VMS)" value={`${m.memoryMb.vmsMb.toFixed(1)} MB`} />
-        <Stat label="CPU" value={`${m.cpuPercent.toFixed(1)}%`} />
+        <Stat label="Memory (RSS)" value={m.memoryMb.rssMb.toFixed(1)} unit="MB" />
+        <Stat label="Memory (VMS)" value={m.memoryMb.vmsMb.toFixed(1)} unit="MB" />
+        <Stat label="CPU" value={m.cpuPercent.toFixed(1)} unit="%" />
       </div>
-      <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
-        Event log holding {m.eventLogSize} entries.
+      <p className="t-helper">
+        Event log holding {m.eventLogSize.toLocaleString()} entries.
       </p>
     </Card>
   )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+/** Label above, figure below, unit alongside at reduced weight — the Bloomberg
+ *  readout order. The unit is split out of the value string so "MB" never
+ *  competes with the number it qualifies. */
+function Stat({ label, value, unit }: { label: string; value: string; unit?: string }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{label}</span>
-      <span className="text-base font-bold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{value}</span>
+    <div className="flex flex-col gap-1.5">
+      <span className="t-label">{label}</span>
+      <span className="flex items-baseline gap-1">
+        <span className="t-metric">{value}</span>
+        {unit && <span className="t-unit">{unit}</span>}
+      </span>
     </div>
   )
 }

@@ -4,7 +4,7 @@
 // ENDPOINT_NOT_CONFIGURED until the backend confirms them.
 
 import { ok, type ApiResult } from './response'
-import type { IEngineService } from './interfaces'
+import type { IEngineService, CreateOrderInput, AnalyticsSegmentType, AnalyticsMetric } from './interfaces'
 import {
   toEngineHealth, toEngineRuntime, toEngineStats, toEngineConfig, toSurvivalStatus, toPriceHistory,
   toEngineMarkets, toEnginePositions, toEngineEvents, toEngineEdges,
@@ -15,9 +15,10 @@ import {
   toResearchReports, toPortfolio, toBalance, toPortfolioHistory, toPortfolioSummary, toPortfolioPerformance,
   toAnalyticsSegments, toAnalyticsSignals, toAnalyticsSummary, toAnalyticsTopSegments, toAnalyticsHourly,
   toPaperStatus, toSystemMetrics, toTradesLedger, toExecutionOrders,
+  toMarketsSummary, toMarketPriceHistory, toMutationResult,
 } from './dto'
-import { apiGet, apiGetHost } from '@/lib/api/client'
-import { ENDPOINTS, endpointPath } from '@/lib/api/endpoints'
+import { apiGet, apiGetHost, apiPost } from '@/lib/api/client'
+import { ENDPOINTS, endpointPath, endpointPathWith } from '@/lib/api/endpoints'
 import type {
   EngineHealthDTO, EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
   EngineMarketsDTO, EnginePositionsDTO, EngineEventsDTO, EngineEdgesDTO,
@@ -38,6 +39,8 @@ import type {
   AnalyticsHourlyDTO, AnalyticsHourly,
   PaperStatusDTO, PaperStatus, SystemMetricsDTO, SystemMetrics,
   TradesLedgerDTO, TradesLedger, ExecutionOrdersDTO, ExecutionOrders,
+  MarketsSummaryDTO, MarketsSummary, MarketPriceHistoryDTO, MarketPriceHistory,
+  MutationResultDTO, MutationResult,
 } from '@/types/engine'
 
 export class LiveEngineService implements IEngineService {
@@ -72,6 +75,14 @@ export class LiveEngineService implements IEngineService {
     return ok(toPriceHistory(dto))
   }
 
+  /**
+   * Markets currently being scanned by the engine (typically 1–3 live 5m
+   * markets). NOT the historical archive — that is getMarketsSummary().
+   *
+   * This endpoint intermittently stalls (see the registry note); the 15s client
+   * timeout converts a stall into a retryable TIMEOUT, which the service state
+   * machine already surfaces as a transient error rather than a hang.
+   */
   async getMarkets(): Promise<ApiResult<EngineMarkets>> {
     const dto = await apiGet<EngineMarketsDTO>(endpointPath(ENDPOINTS.markets.list))
     return ok(toEngineMarkets(dto))
@@ -82,13 +93,21 @@ export class LiveEngineService implements IEngineService {
     return ok(toEnginePositions(dto))
   }
 
-  async getEvents(): Promise<ApiResult<EngineEvents>> {
-    const dto = await apiGet<EngineEventsDTO>(endpointPath(ENDPOINTS.engine.events))
+  async getEvents(limit?: number, types?: readonly string[]): Promise<ApiResult<EngineEvents>> {
+    const dto = await apiGet<EngineEventsDTO>(endpointPath(ENDPOINTS.engine.events), {
+      ...(limit !== undefined ? { limit } : {}),
+      // Server-side filtering — verified working 2026-07-25. Previously the app
+      // fetched everything and filtered client-side.
+      ...(types !== undefined && types.length > 0 ? { type: types.join(',') } : {}),
+    })
     return ok(toEngineEvents(dto))
   }
 
-  async getEdges(): Promise<ApiResult<EngineEdges>> {
-    const dto = await apiGet<EngineEdgesDTO>(endpointPath(ENDPOINTS.markets.edges))
+  async getEdges(limit?: number): Promise<ApiResult<EngineEdges>> {
+    const dto = await apiGet<EngineEdgesDTO>(
+      endpointPath(ENDPOINTS.markets.edges),
+      limit !== undefined ? { limit } : undefined,
+    )
     return ok(toEngineEdges(dto))
   }
 
@@ -120,8 +139,11 @@ export class LiveEngineService implements IEngineService {
 
   // ── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints ────────────────
 
-  async getPositionsHistory(): Promise<ApiResult<PositionsHistory>> {
-    const dto = await apiGet<PositionsHistoryDTO>(endpointPath(ENDPOINTS.positions.history))
+  async getPositionsHistory(limit?: number, direction?: 'YES' | 'NO'): Promise<ApiResult<PositionsHistory>> {
+    const dto = await apiGet<PositionsHistoryDTO>(endpointPath(ENDPOINTS.positions.history), {
+      ...(limit !== undefined ? { limit } : {}),
+      ...(direction !== undefined ? { direction } : {}),
+    })
     return ok(toPositionsHistory(dto))
   }
 
@@ -140,8 +162,11 @@ export class LiveEngineService implements IEngineService {
     return ok(toConsensusBias(dto))
   }
 
-  async getConsensusHistory(): Promise<ApiResult<ConsensusHistory>> {
-    const dto = await apiGet<ConsensusHistoryDTO>(endpointPath(ENDPOINTS.consensus.history))
+  async getConsensusHistory(limit?: number): Promise<ApiResult<ConsensusHistory>> {
+    const dto = await apiGet<ConsensusHistoryDTO>(
+      endpointPath(ENDPOINTS.consensus.history),
+      limit !== undefined ? { limit } : undefined,
+    )
     return ok(toConsensusHistory(dto))
   }
 
@@ -160,8 +185,11 @@ export class LiveEngineService implements IEngineService {
     return ok(toBalance(dto))
   }
 
-  async getPortfolioHistory(): Promise<ApiResult<PortfolioHistory>> {
-    const dto = await apiGet<PortfolioHistoryDTO>(endpointPath(ENDPOINTS.portfolio.history))
+  async getPortfolioHistory(limit?: number): Promise<ApiResult<PortfolioHistory>> {
+    const dto = await apiGet<PortfolioHistoryDTO>(
+      endpointPath(ENDPOINTS.portfolio.history),
+      limit !== undefined ? { limit } : undefined,
+    )
     return ok(toPortfolioHistory(dto))
   }
 
@@ -170,13 +198,16 @@ export class LiveEngineService implements IEngineService {
     return ok(toPortfolioSummary(dto))
   }
 
-  async getPortfolioPerformance(): Promise<ApiResult<PortfolioPerformance>> {
-    const dto = await apiGet<PortfolioPerformanceDTO>(endpointPath(ENDPOINTS.portfolio.performance), { lookback_hours: 24 })
+  async getPortfolioPerformance(lookbackHours = 24): Promise<ApiResult<PortfolioPerformance>> {
+    const dto = await apiGet<PortfolioPerformanceDTO>(endpointPath(ENDPOINTS.portfolio.performance), { lookback_hours: lookbackHours })
     return ok(toPortfolioPerformance(dto))
   }
 
-  async getAnalyticsSegments(): Promise<ApiResult<AnalyticsSegments>> {
-    const dto = await apiGet<AnalyticsSegmentsDTO>(endpointPath(ENDPOINTS.analytics.segments))
+  async getAnalyticsSegments(segmentType?: AnalyticsSegmentType): Promise<ApiResult<AnalyticsSegments>> {
+    const dto = await apiGet<AnalyticsSegmentsDTO>(
+      endpointPath(ENDPOINTS.analytics.segments),
+      segmentType !== undefined ? { segment_type: segmentType } : undefined,
+    )
     return ok(toAnalyticsSegments(dto))
   }
 
@@ -190,9 +221,15 @@ export class LiveEngineService implements IEngineService {
     return ok(toAnalyticsSummary(dto))
   }
 
-  async getAnalyticsTopSegments(): Promise<ApiResult<AnalyticsTopSegments>> {
+  /** segment_type and metric are REQUIRED — the backend 422s without them
+   *  (verified 2026-07-25), so these defaults are load-bearing, not cosmetic. */
+  async getAnalyticsTopSegments(
+    segmentType: AnalyticsSegmentType = 'edge_bucket',
+    metric:      AnalyticsMetric      = 'win_rate',
+    limit                             = 5,
+  ): Promise<ApiResult<AnalyticsTopSegments>> {
     const dto = await apiGet<AnalyticsTopSegmentsDTO>(endpointPath(ENDPOINTS.analytics.topSegments), {
-      segment_type: 'edge_bucket', metric: 'win_rate', limit: 5,
+      segment_type: segmentType, metric, limit,
     })
     return ok(toAnalyticsTopSegments(dto))
   }
@@ -212,13 +249,102 @@ export class LiveEngineService implements IEngineService {
     return ok(toSystemMetrics(dto))
   }
 
-  async getTradesLedger(): Promise<ApiResult<TradesLedger>> {
-    const dto = await apiGet<TradesLedgerDTO>(endpointPath(ENDPOINTS.trades.ledger))
+  async getTradesLedger(limit?: number, direction?: 'YES' | 'NO'): Promise<ApiResult<TradesLedger>> {
+    const dto = await apiGet<TradesLedgerDTO>(endpointPath(ENDPOINTS.trades.ledger), {
+      ...(limit !== undefined ? { limit } : {}),
+      ...(direction !== undefined ? { direction } : {}),
+    })
     return ok(toTradesLedger(dto))
   }
 
-  async getExecutionOrders(): Promise<ApiResult<ExecutionOrders>> {
-    const dto = await apiGet<ExecutionOrdersDTO>(endpointPath(ENDPOINTS.executionControl.orders))
+  async getExecutionOrders(status?: 'active' | 'closed'): Promise<ApiResult<ExecutionOrders>> {
+    const dto = await apiGet<ExecutionOrdersDTO>(
+      endpointPath(ENDPOINTS.executionControl.orders),
+      status !== undefined ? { status } : undefined,
+    )
     return ok(toExecutionOrders(dto))
+  }
+
+  /** Order lookup by id. Returns the raw body — the item schema is still
+   *  unconfirmed (no orders have existed yet; the routes 404 cleanly). */
+  async getOrderById(orderId: string, scope: 'any' | 'active' | 'closed' = 'any'): Promise<ApiResult<unknown>> {
+    const endpoint =
+      scope === 'active' ? ENDPOINTS.executionControl.activeOrderById :
+      scope === 'closed' ? ENDPOINTS.executionControl.closedOrderById :
+                           ENDPOINTS.executionControl.orderById
+    const dto = await apiGet<unknown>(endpointPathWith(endpoint, { order_id: orderId }))
+    return ok(dto)
+  }
+
+  // ── Phase 1 (2026-07-25) — markets recovery ────────────────────────────────
+  // GET /api/markets hangs, so the markets surface reads from the history
+  // summary instead. Same per-market coverage, plus min/max/avg pricing.
+
+  async getMarketsSummary(): Promise<ApiResult<MarketsSummary>> {
+    const dto = await apiGet<MarketsSummaryDTO>(endpointPath(ENDPOINTS.markets.historySummary))
+    return ok(toMarketsSummary(dto))
+  }
+
+  async getMarketPriceHistory(marketId: string, limit = 100): Promise<ApiResult<MarketPriceHistory>> {
+    const dto = await apiGet<MarketPriceHistoryDTO>(
+      endpointPathWith(ENDPOINTS.markets.volume, { market_id: marketId }),
+      { limit },
+    )
+    return ok(toMarketPriceHistory(dto))
+  }
+
+  // ── Phase 1 (2026-07-25) — mutation layer ──────────────────────────────────
+  // These change engine state. The UI is responsible for confirming with the
+  // operator before calling; no gating happens here.
+
+  async createOrder(input: CreateOrderInput): Promise<ApiResult<MutationResult>> {
+    const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.executionControl.create), {
+      market_id:    input.marketId,
+      direction:    input.direction,
+      size_usd:     input.sizeUsd,
+      edge_pct:     input.edgePct,
+      confidence:   input.confidence,
+      preview_only: input.previewOnly ?? false,
+    })
+    return ok(toMutationResult(dto))
+  }
+
+  async closePosition(marketId: string): Promise<ApiResult<MutationResult>> {
+    const dto = await apiPost<MutationResultDTO>(
+      endpointPathWith(ENDPOINTS.executionControl.close, { market_id: marketId }),
+    )
+    return ok(toMutationResult(dto))
+  }
+
+  async cancelOrder(orderId: string): Promise<ApiResult<MutationResult>> {
+    const dto = await apiPost<MutationResultDTO>(
+      endpointPathWith(ENDPOINTS.executionControl.cancel, { order_id: orderId }),
+    )
+    return ok(toMutationResult(dto))
+  }
+
+  async emergencyStop(): Promise<ApiResult<MutationResult>> {
+    const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.executionControl.emergencyStop))
+    return ok(toMutationResult(dto))
+  }
+
+  async startPaperTrading(): Promise<ApiResult<MutationResult>> {
+    const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.paper.start))
+    return ok(toMutationResult(dto))
+  }
+
+  async stopPaperTrading(): Promise<ApiResult<MutationResult>> {
+    const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.paper.stop))
+    return ok(toMutationResult(dto))
+  }
+
+  async resetPaperTrading(): Promise<ApiResult<MutationResult>> {
+    const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.paper.reset))
+    return ok(toMutationResult(dto))
+  }
+
+  async resolvePaperTrades(): Promise<ApiResult<MutationResult>> {
+    const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.paper.resolve))
+    return ok(toMutationResult(dto))
   }
 }

@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!--
+    PROBEX — simplified brand mark (small-size variant)
+    ───────────────────────────────────────────────────
+    Used for the 16px favicon ONLY. Every size from 32px up uses the real
+    photoreal crystal render — side-by-side trials showed the raster still reads
+    cleanly at 32 and 48, so brand fidelity wins there.
+
+    Why this exists: the crystal render's definition lives in thin specular
+    edges and internal facets, all of which fall below one pixel at 16px. Five
+    downsampling treatments were trialled (plain, tighter crops, brightness and
+    saturation lift, sharpen, contrast stretch) and every one came out muddy —
+    the brighter ones legible but no longer crystalline. The body is dark navy
+    on a black plate, so the silhouette has almost no contrast to begin with.
+
+    At 16px only three things can survive, so only three things are drawn: the
+    tall faceted silhouette (with the left notch that gives the mark its
+    profile), the bright vertical slab, and the cyan core. Contrast is lifted
+    relative to the source because the mark has to separate from a black browser
+    tab; hue and the violet→blue→cyan progression are held to the original.
+  -->
+  <defs>
+    <!-- Left facet: the violet-leaning crystal face. Deeper than a first pass
+         used — periwinkle read as a generic blue shield rather than the
+         source's saturated crystal. -->
+    <linearGradient id="pLeft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#818CF8"/>
+      <stop offset="45%"  stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#3730A3"/>
+    </linearGradient>
+    <!-- Right facet: the deeper blue mass -->
+    <linearGradient id="pRight" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#2563EB"/>
+      <stop offset="55%"  stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#172E6E"/>
+    </linearGradient>
+    <!-- Central slab: the vertical division, catches an edge highlight -->
+    <linearGradient id="pSlab" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#C7D2FE"/>
+      <stop offset="35%"  stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#312E81"/>
+    </linearGradient>
+    <!-- Core: the glowing cyan interior -->
+    <linearGradient id="pCore" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0%"   stop-color="#A5F3FC"/>
+      <stop offset="50%"  stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <radialGradient id="pGlow" cx="0.62" cy="0.5" r="0.42">
+      <stop offset="0%"   stop-color="#22D3EE" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Silhouette: elongated vertical hexagon, matching the source's mass -->
+    <clipPath id="pBody">
+      <polygon points="256,44 400,126 400,386 256,468 112,386 112,300 158,278 158,234 112,212 112,126"/>
+    </clipPath>
+  </defs>
+
+  <!-- Plate. Matches the app's darkest surface rather than pure black. -->
+  <rect width="512" height="512" rx="112" fill="#050810"/>
+
+  <g clip-path="url(#pBody)">
+    <!-- Left crystal face -->
+    <polygon points="256,44 256,468 112,386 112,126" fill="url(#pLeft)"/>
+    <!-- Right crystal face -->
+    <polygon points="256,44 400,126 400,386 256,468" fill="url(#pRight)"/>
+
+    <!-- Interior glow behind the core -->
+    <rect width="512" height="512" fill="url(#pGlow)"/>
+
+    <!-- Central vertical slab — the split that defines the mark's structure -->
+    <rect x="232" y="44" width="42" height="424" fill="url(#pSlab)"/>
+
+    <!-- Cyan core: chevron + bar. These are the brightest elements and the
+         only interior detail kept, because they are what still reads at 16px. -->
+    <polygon points="322,168 262,254 322,340 322,296 296,254 322,212"
+             fill="url(#pCore)"/>
+    <rect x="340" y="168" width="40" height="172" fill="url(#pCore)"/>
+
+    <!-- Facet highlights: thin bright edges that give the crystal read at 32px
+         and simply blend into the silhouette below that. -->
+    <g stroke="#E0E7FF" fill="none" stroke-opacity="0.55">
+      <polyline points="112,126 256,44 400,126" stroke-width="10"/>
+      <polyline points="112,126 112,386" stroke-width="6" stroke-opacity="0.35"/>
+      <polyline points="400,126 400,386" stroke-width="6" stroke-opacity="0.35"/>
+    </g>
+  </g>
+
+  <!-- Outer rim, kept inside the clip bounds so it stays crisp -->
+  <polygon points="256,44 400,126 400,386 256,468 112,386 112,300 158,278 158,234 112,212 112,126"
+           fill="none" stroke="#C7D2FE" stroke-opacity="0.65" stroke-width="8"
+           stroke-linejoin="round"/>
+</svg>

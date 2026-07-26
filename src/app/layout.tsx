@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { cookies } from 'next/headers'
 import { AppProviders } from '@/providers'
-import { APP_NAME, APP_TAGLINE } from '@/config/constants'
+import { APP_NAME, APP_TAGLINE, BASE_PATH } from '@/config/constants'
 import { validateEnv } from '@/config/env'
 import { DEFAULT_THEME, type ThemeName, THEME_NAMES } from '@/types/theme'
 import './globals.css'
@@ -56,7 +56,10 @@ export const metadata: Metadata = {
     index:  false, // MVP: not indexed
     follow: false,
   },
-  // Open Graph
+  // Open Graph. The social preview carries the crystal mark on the same plate
+  // as the app icon, so a shared link and an installed icon read as one brand.
+  // Like `icons`, these paths are NOT basePath-prefixed by Next — hence the
+  // explicit BASE_PATH.
   openGraph: {
     type:        'website',
     locale:      'en_US',
@@ -64,25 +67,37 @@ export const metadata: Metadata = {
     siteName:    APP_NAME,
     title:       'Probex | Prediction Intelligence',
     description: APP_TAGLINE,
+    images: [{
+      url:    `${BASE_PATH}/og-image.png`,
+      width:  1200,
+      height: 630,
+      alt:    'Probex — autonomous prediction intelligence',
+    }],
   },
   // Twitter card
   twitter: {
     card:  'summary_large_image',
     title: 'Probex | Prediction Intelligence',
+    images: [`${BASE_PATH}/og-image.png`],
   },
-  // PWA manifest
+  // PWA manifest. Next DOES prefix basePath on this field.
   manifest: '/manifest.webmanifest',
-  // Brand favicon — static blue "P" assets in /public (no longer generated).
-  // Replace these files with the final brand asset to update everywhere.
+  // Brand favicon.
+  //
+  // ⚠️ Next does NOT prefix basePath on `icons` (unlike `manifest` directly
+  // above — verified against the deployed HTML). Left root-relative, these
+  // resolved against the marketing site at the domain root, where every PNG
+  // 404s and only /favicon.ico exists — so the dashboard was silently showing
+  // the *marketing site's* icon. Paths must carry the prefix explicitly.
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon-16x16.png', type: 'image/png', sizes: '16x16' },
-      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
-      { url: '/icon-192x192.png', type: 'image/png', sizes: '192x192' },
+      { url: `${BASE_PATH}/favicon.ico`, sizes: 'any' },
+      { url: `${BASE_PATH}/favicon-16x16.png`, type: 'image/png', sizes: '16x16' },
+      { url: `${BASE_PATH}/favicon-32x32.png`, type: 'image/png', sizes: '32x32' },
+      { url: `${BASE_PATH}/icon-192x192.png`, type: 'image/png', sizes: '192x192' },
     ],
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    shortcut: `${BASE_PATH}/favicon.ico`,
+    apple: `${BASE_PATH}/apple-touch-icon.png`,
   },
 }
 

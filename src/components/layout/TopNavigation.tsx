@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link                   from 'next/link'
 import { cn }                 from '@/lib/utils'
-import { ProbexMark }         from '@/components/ui/ProbexMark'
+import { ProbexLogo }         from '@/components/ui/ProbexLogo'
 import { EngineStatusStrip }  from './EngineStatusStrip'
 import { ProfileMenu }        from './ProfileMenu'
 import { CommandPalette }     from './CommandPalette'
@@ -103,8 +103,7 @@ export function TopNavigation() {
           className="flex items-center gap-2 no-underline cursor-pointer pl-0.5"
           aria-label="Probex home"
         >
-          <ProbexMark size={24} />
-          <span className="text-base font-bold text-gradient-brand tracking-tight hidden sm:inline">Probex</span>
+          <ProbexLogo variant="lockup" size="sm" responsiveWordmark decorative />
         </Link>
       </div>
 

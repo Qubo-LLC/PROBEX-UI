@@ -28,17 +28,21 @@ export function SidebarSection({ label, children, className }: SidebarSectionPro
   const isCollapsed = useSidebarCollapsed()
 
   return (
-    <div className={cn('sidebar-section px-2 py-1', className)}>
+    <div className={cn('sidebar-section px-2 py-1.5', className)}>
       {/* Section label — hidden in collapsed mode. Empty-label groups (e.g. the
           unlabelled Settings group) keep an empty marker here; its padding is
-          collapsed on constrained heights via the sidebar-section-label rules. */}
+          collapsed on constrained heights via the sidebar-section-label rules.
+
+          Wider tracking and more space above than below: the heading should
+          bind to the group it introduces rather than float between two, which
+          is what an even gap produces. */}
       {!isCollapsed && (
         <p
           className={cn(
-            'sidebar-section-label px-2 pb-1 pt-2 text-2xs font-semibold uppercase tracking-wider select-none',
+            'sidebar-section-label px-2 pb-1.5 pt-3 text-2xs font-bold uppercase select-none',
             !label && 'sidebar-section-label-empty',
           )}
-          style={{ color: 'var(--probex-text-disabled)' }}
+          style={{ color: 'var(--probex-text-disabled)', letterSpacing: '0.1em' }}
         >
           {label}
         </p>

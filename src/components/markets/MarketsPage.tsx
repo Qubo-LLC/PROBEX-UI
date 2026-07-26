@@ -19,8 +19,9 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Card } from '@/components/ui/Card'
+import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
-export function MarketsPage() {
+export function MarketsPage({ embedded = false }: EmbeddableProps = {}) {
   const router = useRouter()
   const marketsSlice = useApplicationStore((s) => s.engine.markets)
   const edgesSlice    = useApplicationStore((s) => s.engine.edges)
@@ -65,8 +66,10 @@ export function MarketsPage() {
   const handleSelect = (id: string) => router.push(MARKET_DETAIL_PATH(id))
 
   return (
-    <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
-      <PageHeader title="Markets" subtitle="Bitcoin 5-minute markets the engine is scanning right now" />
+    <div className={pageShell(embedded, 'gap-4')}>
+      {!embedded && (
+        <PageHeader title="Markets" subtitle="Bitcoin 5-minute markets the engine is scanning right now" />
+      )}
 
       <div className="sticky top-0 z-10 -mx-5 px-5 pb-2" style={{ background: 'var(--probex-bg)', borderBottom: '1px solid var(--probex-border)' }}>
         <MarketFilterBar />

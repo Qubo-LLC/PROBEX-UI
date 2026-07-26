@@ -44,7 +44,7 @@ export function CapitalOverview() {
   return (
     <div className="card-elevated p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>Account Balance</span>
+        <span className="t-label">Account Balance</span>
         <span className="flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wider" style={{ color: ex.mode === 'live' ? 'var(--probex-positive)' : 'var(--probex-warning)' }}>
           <span className="live-dot w-1.5 h-1.5" aria-hidden="true" />
           {ex.mode}

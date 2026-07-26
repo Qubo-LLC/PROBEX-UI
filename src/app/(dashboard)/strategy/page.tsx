@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { StrategyConsole } from '@/components/strategy/StrategyConsole'
+import { StrategyDomain } from '@/components/strategy/StrategyDomain'
 
 export const metadata: Metadata = {
   title: 'Strategy',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function StrategyPage() {
-  return <StrategyConsole />
+  return <StrategyDomain />
 }

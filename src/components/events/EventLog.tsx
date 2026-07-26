@@ -2,16 +2,22 @@
 
 // EventLog — the engine event log (/api/events). Each row surfaces the full
 // payload: severity accent, title + message, and metadata chips (direction,
-// edge_pct, rejection reason). Type/severity filters render only from values
-// present in the data; duplicate bursts collapse via dedupeEventRows (×N).
+// edge_pct, rejection reason). Duplicate bursts collapse via dedupeEventRows.
+//
+// Type filtering is SERVER-side (the endpoint takes `type`), so selecting a
+// type narrows the request rather than fetching the whole log and throwing most
+// of it away. Severity has no server parameter and stays client-side.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
+import { services } from '@/lib/services'
 import { parseEventRows, dedupeEventRows, type DedupedEventRow } from '@/lib/mappers/events'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card }       from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
+import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
+import type { EngineEvents } from '@/types/engine'
 
 // Severity → accent colour. Anything unrecognised falls back to muted.
 const SEVERITY_COLOR: Record<string, string> = {
@@ -24,21 +30,58 @@ const SEVERITY_COLOR: Record<string, string> = {
 const severityColor = (s: string | null): string =>
   (s && SEVERITY_COLOR[s.toLowerCase()]) || 'var(--probex-text-muted)'
 
-export function EventLog() {
+/** The event types the backend documents for /api/events?type=. Used as the
+ *  filter vocabulary rather than deriving chips from whatever happened to
+ *  arrive — with server-side filtering the response only contains the selected
+ *  type, so a derived list would collapse to one chip after the first click.
+ *
+ *  Showing the full documented set also makes coverage visible: as of
+ *  2026-07-25 the engine emits `edge` and `trade`, and nothing for the other
+ *  six. Which types are live has already changed once during this work, so the
+ *  UI deliberately does not hardcode that fact anywhere the operator sees. */
+const EVENT_TYPES = [
+  'edge', 'trade', 'position', 'health',
+  'error', 'resolution', 'survival', 'paper_trading',
+] as const
+
+const EVENT_LIMIT = 200
+
+export function EventLog({ embedded = false }: EmbeddableProps = {}) {
   const slice = useApplicationStore((s) => s.engine.events)
   const [typeFilter, setTypeFilter] = useState<string | null>(null)
   const [severityFilter, setSeverityFilter] = useState<string | null>(null)
 
+  // Type filtering happens SERVER-side (the endpoint supports `type`), so a
+  // filtered view fetches its own narrowed result rather than pulling the full
+  // log and discarding most of it. With no filter we read the already-polled
+  // store slice instead — no reason to duplicate a request that's already
+  // happening every few seconds.
+  const [filtered, setFiltered]       = useState<EngineEvents | null>(null)
+  const [filterLoading, setLoading]   = useState(false)
+  const [filterError, setFilterError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (typeFilter === null) { setFiltered(null); setFilterError(null); return }
+    let active = true
+    setLoading(true)
+    setFilterError(null)
+    services.engine
+      .getEvents(EVENT_LIMIT, [typeFilter])
+      .then((r) => { if (active) setFiltered(r.data) })
+      .catch((e: unknown) => { if (active) setFilterError(e instanceof Error ? e.message : 'Request failed') })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [typeFilter])
+
+  const source = typeFilter === null ? slice.data : filtered
+
   const parsed = useMemo(
-    () => (slice.data ? parseEventRows(slice.data) : null),
-    [slice.data],
+    () => (source ? parseEventRows(source) : null),
+    [source],
   )
 
-  const presentTypes = useMemo(() => {
-    if (parsed?.kind !== 'rows') return []
-    return [...new Set(parsed.rows.map((r) => r.type))].sort()
-  }, [parsed])
-
+  // Severity has no server-side parameter on this endpoint, so it stays a
+  // client-side narrowing of whatever the (possibly type-filtered) result holds.
   const presentSeverities = useMemo(() => {
     if (parsed?.kind !== 'rows') return []
     return [...new Set(parsed.rows.map((r) => r.severity).filter((s): s is string => !!s))].sort()
@@ -47,27 +90,66 @@ export function EventLog() {
   const visibleRows = useMemo(() => {
     if (parsed?.kind !== 'rows') return []
     let rows = parsed.rows
-    if (typeFilter)     rows = rows.filter((r) => r.type === typeFilter)
     if (severityFilter) rows = rows.filter((r) => r.severity === severityFilter)
     const sorted = [...rows].sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
     return dedupeEventRows(sorted)
-  }, [parsed, typeFilter, severityFilter])
+  }, [parsed, severityFilter])
+
+  /** True when a server-side type filter came back genuinely empty. */
+  const emptyForType = typeFilter !== null && !filterLoading && filterError === null && visibleRows.length === 0
 
   return (
-    <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
-      <PageHeader
-        title="Events"
-        subtitle="Engine event log — edges, trades, resolutions, and system activity, with the reasoning behind each"
-        actions={
-          slice.data && slice.data.count > 0 ? (
-            <span className="text-xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
-              {slice.data.count} event{slice.data.count === 1 ? '' : 's'} · limit {slice.data.limit}
-            </span>
-          ) : undefined
-        }
-      />
+    <div className={pageShell(embedded, 'gap-4')}>
+      {!embedded && (
+        <PageHeader
+          title="Events"
+          subtitle="Engine event log — edges, trades, resolutions, and system activity, with the reasoning behind each"
+          actions={
+            slice.data && slice.data.count > 0 ? (
+              <span className="text-xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+                {slice.data.count} event{slice.data.count === 1 ? '' : 's'} · limit {slice.data.limit}
+              </span>
+            ) : undefined
+          }
+        />
+      )}
 
-      {slice.status === 'error' && (
+      {/* Filters render unconditionally. They used to sit inside the `rows`
+          branch, which meant a filter returning nothing removed the controls —
+          leaving no way back to "All" without a page reload. */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Filter events by type">
+          <span className="text-2xs uppercase tracking-wider font-semibold mr-1" style={{ color: 'var(--probex-text-disabled)' }}>Type</span>
+          <FilterChip label="All" active={typeFilter === null} onClick={() => setTypeFilter(null)} />
+          {EVENT_TYPES.map((t) => (
+            <FilterChip key={t} label={t} active={typeFilter === t} onClick={() => setTypeFilter(t)} />
+          ))}
+        </div>
+        {presentSeverities.length > 1 && (
+          <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Filter events by severity">
+            <span className="text-2xs uppercase tracking-wider font-semibold mr-1" style={{ color: 'var(--probex-text-disabled)' }}>Severity</span>
+            <FilterChip label="All" active={severityFilter === null} onClick={() => setSeverityFilter(null)} />
+            {presentSeverities.map((s) => (
+              <FilterChip key={s} label={s} active={severityFilter === s} onClick={() => setSeverityFilter(s)} dotColor={severityColor(s)} />
+            ))}
+          </div>
+        )}
+        {typeFilter !== null && (
+          <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
+            Filtered server-side via <span className="mono">/api/events?type={typeFilter}</span>
+          </p>
+        )}
+      </div>
+
+      {filterLoading && (
+        <p className="text-xs py-2" style={{ color: 'var(--probex-text-disabled)' }}>Loading {typeFilter} events…</p>
+      )}
+
+      {filterError !== null && (
+        <ErrorState title="Filtered event query failed" description={filterError} fullPage={false} />
+      )}
+
+      {typeFilter === null && slice.status === 'error' && (
         <ErrorState
           title="Event log unavailable"
           description={slice.error?.message ?? 'The /api/events endpoint did not respond.'}
@@ -75,7 +157,20 @@ export function EventLog() {
         />
       )}
 
-      {parsed?.kind === 'empty' && (
+      {/* A type that the engine never emits is a real finding, not a UI dead
+          end — say so plainly rather than showing a generic empty state. */}
+      {emptyForType && (
+        <Card>
+          <p className="text-xs" style={{ color: 'var(--probex-text-secondary)' }}>
+            The engine has not emitted any <strong>{typeFilter}</strong> events. This type is
+            documented by the API, but the engine only produces a subset of the documented types —
+            which types are live changes as the engine evolves, so try another filter to see what
+            it is currently recording.
+          </p>
+        </Card>
+      )}
+
+      {typeFilter === null && parsed?.kind === 'empty' && (
         <EmptyState
           title="No events recorded this session"
           description="The engine logs edge detections, trades, and resolutions here as they happen. The log resets when the engine restarts."
@@ -92,36 +187,10 @@ export function EventLog() {
         </Card>
       )}
 
-      {parsed?.kind === 'rows' && (
-        <>
-          {/* Filters — type + severity, only for values actually present */}
-          {(presentTypes.length > 1 || presentSeverities.length > 1) && (
-            <div className="flex flex-col gap-2">
-              {presentTypes.length > 1 && (
-                <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Filter events by type">
-                  <span className="text-2xs uppercase tracking-wider font-semibold mr-1" style={{ color: 'var(--probex-text-disabled)' }}>Type</span>
-                  <FilterChip label="All" active={typeFilter === null} onClick={() => setTypeFilter(null)} />
-                  {presentTypes.map((t) => (
-                    <FilterChip key={t} label={t} active={typeFilter === t} onClick={() => setTypeFilter(t)} />
-                  ))}
-                </div>
-              )}
-              {presentSeverities.length > 1 && (
-                <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Filter events by severity">
-                  <span className="text-2xs uppercase tracking-wider font-semibold mr-1" style={{ color: 'var(--probex-text-disabled)' }}>Severity</span>
-                  <FilterChip label="All" active={severityFilter === null} onClick={() => setSeverityFilter(null)} />
-                  {presentSeverities.map((s) => (
-                    <FilterChip key={s} label={s} active={severityFilter === s} onClick={() => setSeverityFilter(s)} dotColor={severityColor(s)} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="flex flex-col gap-1.5">
-            {visibleRows.map((row) => <EventRowItem key={row.id} row={row} />)}
-          </div>
-        </>
+      {visibleRows.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          {visibleRows.map((row) => <EventRowItem key={row.id} row={row} />)}
+        </div>
       )}
     </div>
   )

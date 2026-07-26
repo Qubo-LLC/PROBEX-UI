@@ -22,6 +22,7 @@ import { EdgeQualityAnalytics } from './EdgeQualityAnalytics'
 import { KellyUtilization } from './KellyUtilization'
 import { PerformanceAnalytics } from './PerformanceAnalytics'
 import { SegmentPerformance } from './SegmentPerformance'
+import { AnalyticsEngineStatus } from './AnalyticsEngineStatus'
 import { ConsensusAccuracyAnalytics } from './ConsensusAccuracyAnalytics'
 import { IntelligenceModule } from '@/components/shared/IntelligenceModule'
 
@@ -48,6 +49,7 @@ export function AnalyticsPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Attribution</h2>
+        <AnalyticsEngineStatus />
         <SegmentPerformance />
       </section>
 

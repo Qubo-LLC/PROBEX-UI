@@ -13,6 +13,7 @@ import type {
   ResearchReports, Portfolio, Balance, PortfolioHistory, PortfolioSummary, PortfolioPerformance,
   AnalyticsSegments, AnalyticsSignals, AnalyticsSummary, AnalyticsTopSegments, AnalyticsHourly,
   PaperStatus, SystemMetrics, TradesLedger, ExecutionOrders,
+  MarketsSummary, MarketPriceHistory, MarketHistoryPoint,
 } from '@/types/engine'
 
 const NOW = Date.now()
@@ -360,4 +361,64 @@ export const MOCK_PAPER_STATS: PaperStats = {
     hourlyPerformance: {},
   },
   timestamp: NOW,
+}
+
+// ─── Markets summary (2026-07-25) ─────────────────────────────────────────────
+// Primary markets source while GET /api/markets hangs. Shape mirrors a real
+// /api/markets/history/summary capture; prices are in cents (0–100) to match
+// the domain convention applied by toMarketsSummary().
+
+export const MOCK_MARKETS_SUMMARY: MarketsSummary = {
+  available: true,
+  markets: [
+    {
+      marketId:         '0xc325b6c6447818ed22565fff8c3f1c1e0d90ee1ae8c867276222e00c79cd0848',
+      question:         'Bitcoin Up or Down - July 24, 5:30PM-5:45PM ET',
+      snapshotCount:    6,
+      timeRangeSeconds: 137.8,
+      firstSnapshot:    NOW - 300_000,
+      lastSnapshot:     NOW - 160_000,
+      yesPrice:         { current: 7.5,  min: 2.5,  max: 31.5, avg: 21.67 },
+      noPrice:          { current: 92.5, min: 68.5, max: 97.5, avg: 78.33 },
+      btcPrice:         { current: 64099.4, min: 64099.4, max: 64100.1, avg: 64099.98 },
+      volume:           { current: 22101.12, total: 132606.71, avg: 22101.12 },
+    },
+    {
+      marketId:         '0x4c4d7b835105cb9639f2e5c9ddade041876cb6c36090a787873340c455e318e3',
+      question:         'Bitcoin Up or Down - July 25, 2:30AM-2:45AM ET',
+      snapshotCount:    4,
+      timeRangeSeconds: 98.2,
+      firstSnapshot:    NOW - 140_000,
+      lastSnapshot:     NOW - 42_000,
+      yesPrice:         { current: 38.5, min: 0.5,  max: 41.0, avg: 25.4 },
+      noPrice:          { current: 61.5, min: 59.0, max: 99.5, avg: 74.6 },
+      btcPrice:         { current: 63910.7, min: 63910.7, max: 63941.5, avg: 63925.3 },
+      volume:           { current: 18420.55, total: 73682.2, avg: 18420.55 },
+    },
+  ],
+  count: 2,
+  timestamp: NOW,
+}
+
+/** Synthesises a short price history for any market id, so mock mode can drive
+ *  the market-detail chart without a fixture per market. */
+export function mockMarketPriceHistory(marketId: string, limit = 100): MarketPriceHistory {
+  const points = Math.min(limit, 24)
+  const history: MarketHistoryPoint[] = Array.from({ length: points }, (_, i) => {
+    const ts       = NOW - (points - 1 - i) * 30_000
+    const yesPrice = 20 + Math.sin(i / 3) * 12
+    return {
+      ts,
+      marketId,
+      question:        'Bitcoin Up or Down - mock market',
+      yesPrice,
+      noPrice:         100 - yesPrice,
+      volume:          18000 + i * 120,
+      btcPrice:        64000 + Math.sin(i / 4) * 60,
+      baselinePrice:   64000,
+      edgePct:         i % 4 === 0 ? 6.5 : null,
+      durationMinutes: 15,
+    }
+  })
+  return { available: true, marketId, history, count: history.length, limit, timestamp: NOW }
 }

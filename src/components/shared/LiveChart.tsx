@@ -34,6 +34,11 @@ interface LiveChartProps {
   /** Most-recent points to show; the window pans forward as data arrives.
    *  0 disables windowing (full series). Default 40. */
   windowSize?: number
+  /** Y-axis domain. Recharts defaults to a zero-based axis, which is right for
+   *  volumes and P&L but flattens series that live far from zero — a BTC price
+   *  moving $30 inside a 5-minute market is invisible on a $0–$80k axis. Pass
+   *  `['dataMin', 'dataMax']` (or explicit bounds) for those. */
+  yDomain?: [number | string, number | string]
 }
 
 export function LiveChart({
@@ -44,6 +49,7 @@ export function LiveChart({
   emptyTitle = 'No history yet',
   emptyDescription = 'This chart populates as the session accumulates data.',
   windowSize = 40,
+  yDomain,
 }: LiveChartProps) {
   const gradientId = `live-${title.replace(/\s+/g, '-').toLowerCase()}`
   const windowed = windowSize ? data.slice(-windowSize) : data
@@ -75,7 +81,7 @@ export function LiveChart({
           )}
           <CartesianGrid strokeDasharray="3 3" stroke="var(--probex-border)" vertical={false} />
           <XAxis dataKey="tick" tick={{ fill: 'var(--probex-text-disabled)', fontSize: 10 }} tickLine={false} axisLine={false} minTickGap={24} />
-          <YAxis tick={{ fill: 'var(--probex-text-disabled)', fontSize: 10 }} tickLine={false} axisLine={false} width={40} tickFormatter={yTickFormatter} />
+          <YAxis tick={{ fill: 'var(--probex-text-disabled)', fontSize: 10 }} tickLine={false} axisLine={false} width={40} tickFormatter={yTickFormatter} {...(yDomain !== undefined ? { domain: yDomain } : {})} />
           <Tooltip
             contentStyle={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border-default)', borderRadius: 8, fontSize: 11 }}
             labelStyle={{ color: 'var(--probex-text-muted)' }}

@@ -676,12 +676,12 @@ export interface PaperStats {
 // stay unknown[] until a non-empty sample confirms the schema.
 
 // ─── /api/positions/history ──────────────────────────────────────────────────
-// Envelope confirmed live; `history[]` empty in every capture so far — item
-// shape unconfirmed, kept unknown[].
+// 2026-07-25: `history[]` now returns real rows. Item shape is IDENTICAL to
+// /api/trades/ledger — see SettledTradeDTO below, which serves both.
 
 export interface PositionsHistoryDTO {
   available: boolean
-  history:   unknown[]
+  history:   SettledTradeDTO[]
   count:     number
   limit:     number
   timestamp: string  // ISO 8601
@@ -689,7 +689,7 @@ export interface PositionsHistoryDTO {
 
 export interface PositionsHistory {
   available: boolean
-  history:   unknown[]
+  history:   SettledTrade[]
   count:     number
   limit:     number
   timestamp: number  // epoch ms
@@ -1314,8 +1314,8 @@ export interface SystemMetrics {
 }
 
 // ─── /api/trades/ledger ───────────────────────────────────────────────────────
-// Envelope confirmed live; `ledger[]` empty in every capture so far — item
-// shape unconfirmed, kept unknown[].
+// 2026-07-25: `ledger[]` now returns real rows (57 observed). Item shape is
+// IDENTICAL to /api/positions/history — both use SettledTradeDTO.
 
 export interface TradesLedgerSummaryDTO {
   total_pnl: number
@@ -1326,7 +1326,7 @@ export interface TradesLedgerSummaryDTO {
 
 export interface TradesLedgerDTO {
   available: boolean
-  ledger:    unknown[]
+  ledger:    SettledTradeDTO[]
   count:     number
   summary:   TradesLedgerSummaryDTO
   timestamp: string  // ISO 8601
@@ -1341,10 +1341,186 @@ export interface TradesLedgerSummary {
 
 export interface TradesLedger {
   available: boolean
-  ledger:    unknown[]
+  ledger:    SettledTrade[]
   count:     number
   summary:   TradesLedgerSummary
   timestamp: number  // epoch ms
+}
+
+// ─── /api/markets/history/summary ─────────────────────────────────────────────
+// Item shape fully confirmed from a live 2026-07-25 capture (100 markets).
+// This is the PRIMARY markets source while GET /api/markets hangs — it carries
+// per-market pricing with min/max/avg, which the plain list never did.
+
+/** current/min/max/avg rollup the summary uses for prices. */
+export interface MarketStatRangeDTO {
+  current: number
+  min:     number
+  max:     number
+  avg:     number
+}
+
+/** Volume uses `total` where the price ranges use min/max. */
+export interface MarketVolumeStatDTO {
+  current: number
+  total:   number
+  avg:     number
+}
+
+export interface MarketSummaryItemDTO {
+  market_id:          string
+  question:           string
+  snapshot_count:     number
+  time_range_seconds: number
+  first_snapshot:     string  // ISO 8601
+  last_snapshot:      string  // ISO 8601
+  yes_price:          MarketStatRangeDTO
+  no_price:           MarketStatRangeDTO
+  btc_price:          MarketStatRangeDTO
+  volume:             MarketVolumeStatDTO
+}
+
+export interface MarketsSummaryDTO {
+  available: boolean
+  markets:   MarketSummaryItemDTO[]
+  count:     number
+  timestamp: string  // ISO 8601
+}
+
+export interface MarketStatRange {
+  current: number
+  min:     number
+  max:     number
+  avg:     number
+}
+
+export interface MarketVolumeStat {
+  current: number
+  total:   number
+  avg:     number
+}
+
+export interface MarketSummaryItem {
+  marketId:         string
+  question:         string
+  snapshotCount:    number
+  timeRangeSeconds: number
+  firstSnapshot:    number  // epoch ms
+  lastSnapshot:     number  // epoch ms
+  yesPrice:         MarketStatRange
+  noPrice:          MarketStatRange
+  btcPrice:         MarketStatRange
+  volume:           MarketVolumeStat
+}
+
+export interface MarketsSummary {
+  available: boolean
+  markets:   MarketSummaryItem[]
+  count:     number
+  timestamp: number  // epoch ms
+}
+
+// ─── /api/markets/:market_id/history ──────────────────────────────────────────
+// Item shape fully confirmed from a live 2026-07-25 capture.
+
+export interface MarketHistoryPointDTO {
+  timestamp:        string        // ISO 8601
+  market_id:        string
+  question:         string
+  yes_price:        number        // 0–1
+  no_price:         number        // 0–1
+  volume:           number
+  btc_price:        number
+  baseline_price:   number        // BTC price the market resolves against
+  edge_pct:         number | null // null when no edge was detected at this snapshot
+  duration_minutes: number
+}
+
+export interface MarketPriceHistoryDTO {
+  available: boolean
+  market_id: string
+  history:   MarketHistoryPointDTO[]
+  count:     number
+  limit:     number
+  timestamp: string  // ISO 8601
+}
+
+export interface MarketHistoryPoint {
+  ts:              number        // epoch ms
+  marketId:        string
+  question:        string
+  yesPrice:        number
+  noPrice:         number
+  volume:          number
+  btcPrice:        number
+  baselinePrice:   number
+  edgePct:         number | null
+  durationMinutes: number
+}
+
+export interface MarketPriceHistory {
+  available: boolean
+  marketId:  string
+  history:   MarketHistoryPoint[]
+  count:     number
+  limit:     number
+  timestamp: number  // epoch ms
+}
+
+// ─── Settled trades (shared by /api/trades/ledger and /api/positions/history) ──
+// Both endpoints return an IDENTICAL item shape — confirmed live 2026-07-25.
+// One domain type serves both; ledger additionally carries a `summary`.
+
+export interface SettledTradeDTO {
+  market_id:         string
+  direction:         string        // 'YES' | 'NO'
+  size:              number        // USD stake (cost basis), not a contract count
+  entry_price:       number        // 0–1
+  exit_price:        number | null // null when the market resolved rather than sold
+  pnl:               number        // USD, signed
+  pnl_percent:       number        // 0–100 scale, signed
+  edge_pct:          number
+  hold_time_seconds: number
+  opened_at:         string        // ISO 8601
+  closed_at:         string        // ISO 8601
+  won:               boolean
+}
+
+export interface SettledTrade {
+  marketId:        string
+  direction:       string   // lowercased
+  size:            number
+  entryPrice:      number   // cents (0–100)
+  exitPrice:       number | null  // cents (0–100)
+  pnl:             number
+  pnlPercent:      number   // 0–1 fraction (normalized)
+  edgePct:         number
+  holdTimeSeconds: number
+  openedAt:        number   // epoch ms
+  closedAt:        number   // epoch ms
+  won:             boolean
+}
+
+// ─── Mutation responses ───────────────────────────────────────────────────────
+// The mutation routes are documented without response samples in the Postman
+// collection, so the envelope is intentionally permissive: the fields we rely
+// on are optional, and the raw body is preserved for display.
+
+export interface MutationResultDTO {
+  success?: boolean
+  status?:  string
+  message?: string
+  detail?:  string
+  [key: string]: unknown
+}
+
+export interface MutationResult {
+  /** True unless the body explicitly says otherwise — a 2xx is the real signal. */
+  success: boolean
+  /** Best available human-readable line from the response, if any. */
+  message: string | null
+  /** Full response body, so a console can show exactly what the engine said. */
+  raw:     Record<string, unknown>
 }
 
 // ─── /api/execution/orders ────────────────────────────────────────────────────

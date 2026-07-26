@@ -10,8 +10,9 @@
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatBtcPrice } from '@/lib/mappers/priceHistory'
-import { survivalStateColor, survivalStateLabel } from '@/lib/display/engine'
+import { survivalStateLabel } from '@/lib/display/engine'
 import { LiveHeartbeat } from '@/components/shared/LiveHeartbeat'
+import { StatusChip, toneForStatus } from '@/components/ui/StatusChip'
 
 export function EngineStatusStrip() {
   const stats    = useApplicationStore((s) => s.engine.stats)
@@ -43,27 +44,25 @@ export function EngineStatusStrip() {
         </span>
       )}
 
+      {/* BTC price is the header's primary figure — the one number an operator
+          glances up for. Given metric weight so it outranks the chips beside
+          it, which previously all competed at similar visual volume. */}
       {currentPrice !== null && (
-        <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>
-          <span className="text-2xs font-semibold uppercase tracking-wider mr-1.5" style={{ color: 'var(--probex-text-muted)' }}>
-            BTC
-          </span>
-          {formatBtcPrice(currentPrice)}
+        <span className="flex items-baseline gap-1.5">
+          <span className="t-label">BTC</span>
+          <span className="t-metric-sm">{formatBtcPrice(currentPrice)}</span>
         </span>
       )}
 
       {state && (
-        <span
-          className="text-2xs font-bold uppercase tracking-wider rounded px-1.5 py-0.5 hidden sm:inline"
-          style={{
-            color:      survivalStateColor(state),
-            background: 'var(--probex-surface-2)',
-            border:     '1px solid var(--probex-border)',
-          }}
+        <StatusChip
+          tone={toneForStatus(state)}
+          live={state === 'CRITICAL' || state === 'DANGER'}
+          className="hidden sm:inline-flex"
           title={`Survival state: ${survivalStateLabel(state)}`}
         >
           {state}
-        </span>
+        </StatusChip>
       )}
 
       {feed && (
@@ -81,18 +80,17 @@ export function EngineStatusStrip() {
         </span>
       )}
 
+      {/* Mode stays safety-weighted: LIVE is loud (real capital at risk),
+          PAPER is informational. Same chip shape either way — only the tone
+          differs, so the distinction is colour rather than a change of form. */}
       {mode && (
-        <span
-          className="text-2xs font-bold uppercase tracking-wider rounded px-1.5 py-0.5"
-          style={
-            mode === 'live'
-              ? { background: 'var(--probex-negative-dim)', color: 'var(--probex-negative)', border: '1px solid var(--probex-negative-border)' }
-              : { background: 'var(--probex-surface-2)', color: 'var(--probex-text-secondary)', border: '1px solid var(--probex-border)' }
-          }
+        <StatusChip
+          tone={mode === 'live' ? 'danger' : 'info'}
+          live={mode === 'live'}
           title={mode === 'live' ? 'LIVE mode — real capital at risk' : 'Paper trading mode'}
         >
           {mode}
-        </span>
+        </StatusChip>
       )}
 
       <LiveHeartbeat />

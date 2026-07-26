@@ -90,7 +90,7 @@ export function PortfolioOverview() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Top Exposure */}
         <div className="rounded-lg p-4 flex flex-col gap-3" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
-          <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>Top Exposure</h3>
+          <h3 className="t-label">Top Exposure</h3>
           {exposure.length === 0 ? (
             <span className="text-xl font-bold" style={{ color: 'var(--probex-text-disabled)' }}>—</span>
           ) : (
@@ -143,7 +143,7 @@ export function PortfolioOverview() {
 
         {/* Performance Snapshot — live open-position performance, not a historical ledger */}
         <div className="rounded-lg p-4 flex flex-col gap-3" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
-          <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>Performance Snapshot</h3>
+          <h3 className="t-label">Performance Snapshot</h3>
           {!snapshot ? (
             <span className="text-xl font-bold" style={{ color: 'var(--probex-text-disabled)' }}>—</span>
           ) : (

@@ -61,12 +61,21 @@ export const ENDPOINTS = {
 
   // ── Markets / positions ──────────────────────────────────────────────────────
   markets: {
-    list:     def('GET', '/markets',       'confirmed', 'Markets page / MarketsView',    'Active Markets'),
+    // 2026-07-25: INTERMITTENT STALL, not an outage. Stalled 4/4 at 30s+ in one
+    // window, then served 12/12 at ~0.47s an hour later. Returns only the
+    // markets being actively scanned right now (count is typically 1–3) — this
+    // is NOT the same dataset as historySummary, which is the historical
+    // archive. Kept 'confirmed'; the 15s client timeout degrades a stall into a
+    // retryable TIMEOUT rather than a hang. Reported to backend as P1.
+    list:     def('GET', '/markets',       'confirmed', 'Actively-scanned markets (intermittent stall — see docs/API_AUDIT.md)', 'Active Markets'),
     history:  def('GET', '/price-history', 'confirmed', 'BTC price feed (global)',       'Price History'),
-    // Deployed but broken (5xx / hang) — do not wire UI; backend bugs.
+    // Still broken: hangs with no response.
     detail:        def('GET', '/markets/:market_id',         'backend-error', 'Market detail page', 'Specific Market Details'),
-    volume:        def('GET', '/markets/:market_id/history', 'backend-error', 'Market detail volume chart', 'Market Price History'),
-    historySummary: def('GET', '/markets/history/summary',   'backend-error', 'Markets history summary', 'Market History Summary'),
+    // 2026-07-25: these two were fixed backend-side and now return rich data.
+    volume:        def('GET', '/markets/:market_id/history', 'confirmed', 'Market detail price/volume chart', 'Market Price History'),
+    // Historical archive (100+ markets with min/max/avg pricing) — a DIFFERENT
+    // dataset from `list` above, which is only what is being scanned right now.
+    historySummary: def('GET', '/markets/history/summary',   'confirmed', 'Historical markets archive', 'Market History Summary'),
     edges:    def('GET', '/edges',         'confirmed', 'Live edge / recommendation',    'Active Edges'),
     related:  def('GET', null, 'awaiting-backend', 'Market detail – related markets'),
     research: def('GET', null, 'awaiting-backend', 'Market detail – research panel'),
@@ -80,23 +89,31 @@ export const ENDPOINTS = {
   // ── Paper-trading control ────────────────────────────────────────────────────
   // status is a confirmed GET. start/stop/reset/resolve are deployed POST
   // mutations (405 on GET), left contract-pending until a mutation layer exists.
+  // 2026-07-25: all four mutations verified live (405 on GET = route registered,
+  // wrong method) and are now wired through the mutation layer in live.ts.
   paper: {
-    status:  def('GET',  '/paper/status',  'confirmed',       'Paper trading status',  'Paper Status'),
-    start:   def('POST', '/paper/start',   'contract-pending', 'Start paper trading',   'Start Paper Trading'),
-    stop:    def('POST', '/paper/stop',    'contract-pending', 'Stop paper trading',    'Stop Paper Trading'),
-    reset:   def('POST', '/paper/reset',   'contract-pending', 'Reset paper trading',   'Reset Paper Trading'),
-    resolve: def('POST', '/paper/resolve', 'contract-pending', 'Resolve paper trades',  'Resolve Paper Trades'),
+    status:  def('GET',  '/paper/status',  'confirmed', 'Paper trading status',  'Paper Status'),
+    start:   def('POST', '/paper/start',   'confirmed', 'Start paper trading',   'Start Paper Trading'),
+    stop:    def('POST', '/paper/stop',    'confirmed', 'Stop paper trading',    'Stop Paper Trading'),
+    reset:   def('POST', '/paper/reset',   'confirmed', 'Reset paper trading (DESTRUCTIVE — clears history)', 'Reset Paper Trading'),
+    resolve: def('POST', '/paper/resolve', 'confirmed', 'Resolve paper trades',  'Resolve Paper Trades'),
   },
 
   // ── Execution mutations ──────────────────────────────────────────────────────
-  // Deployed POST mutations (405 on GET); contract-pending until a mutation
-  // layer + safety UX exists (prioritise emergency-stop when it is built).
+  // 2026-07-25: create + emergency-stop verified live (405 on GET). close/cancel
+  // were not probed (they need a live position/order to be meaningful) but are
+  // the same router family, so they are wired alongside. Every one of these is
+  // gated behind an explicit confirm in the UI — see components/execution.
   executionControl: {
     orders:        def('GET',  '/execution/orders', 'confirmed', 'All orders (active/closed envelope)', 'All Orders'),
-    create:        def('POST', '/execution/create', 'contract-pending', 'Manually create an order', 'Create Order (Manual)'),
-    close:         def('POST', '/execution/close/:market_id', 'contract-pending', 'Manually close a position', 'Close Position (Manual)'),
-    cancel:        def('POST', '/execution/cancel/:order_id', 'contract-pending', 'Cancel a pending order', 'Cancel Order (Manual)'),
-    emergencyStop: def('POST', '/execution/emergency-stop', 'contract-pending', 'Emergency halt — close all positions', 'Emergency Stop'),
+    // Order detail by id — verified 2026-07-25 (clean 404 for unknown id).
+    orderById:       def('GET', '/execution/orders/:order_id',        'confirmed', 'Single order by id', 'Specific Order'),
+    activeOrderById: def('GET', '/execution/orders/active/:order_id', 'confirmed', 'Single active order by id', 'Active Order'),
+    closedOrderById: def('GET', '/execution/orders/closed/:order_id', 'confirmed', 'Single closed order by id', 'Closed Order'),
+    create:        def('POST', '/execution/create', 'confirmed', 'Manually create an order', 'Create Order (Manual)'),
+    close:         def('POST', '/execution/close/:market_id', 'confirmed', 'Manually close a position', 'Close Position (Manual)'),
+    cancel:        def('POST', '/execution/cancel/:order_id', 'confirmed', 'Cancel a pending order', 'Cancel Order (Manual)'),
+    emergencyStop: def('POST', '/execution/emergency-stop', 'confirmed', 'Emergency halt — close all positions', 'Emergency Stop'),
   },
 
   // ── Consensus ────────────────────────────────────────────────────────────────
@@ -109,7 +126,10 @@ export const ENDPOINTS = {
 
   // ── Portfolio ────────────────────────────────────────────────────────────────
   portfolio: {
-    live:        def('GET', '/portfolio',             'confirmed', 'Portfolio live snapshot', 'Full Portfolio'),
+    // 2026-07-25: returns 500 Internal Server Error. Was 'confirmed'.
+    // Composite snapshot — the individual balance/positions/survival/summary
+    // routes all still work, so nothing is lost while this is down.
+    live:        def('GET', '/portfolio',             'backend-error', 'Portfolio live snapshot (500)', 'Full Portfolio'),
     summary:     def('GET', '/portfolio/summary',     'confirmed', 'Portfolio summary', 'Portfolio Summary'),
     history:     def('GET', '/portfolio/history',     'confirmed', 'Portfolio value history chart', 'Portfolio History'),
     performance: def('GET', '/portfolio/performance', 'confirmed', 'Portfolio performance over a lookback window', 'Portfolio Performance'),
@@ -119,7 +139,10 @@ export const ENDPOINTS = {
 
   // ── Research ─────────────────────────────────────────────────────────────────
   research: {
-    reports:    def('GET', '/research/reports', 'confirmed', 'Research reports / library', 'Research Reports'),
+    // 2026-07-25: INTERMITTENT STALL — 3/3 stalls in one window, then 11/12 at
+    // ~0.47s with a single 34s outlier. Same pattern as markets.list. Kept
+    // 'confirmed'; the client timeout turns a stall into a retryable error.
+    reports:    def('GET', '/research/reports', 'confirmed', 'Research reports / library (intermittent stall)', 'Research Reports'),
     get:        def('GET', null, 'awaiting-backend', 'Research reader (single report detail) — no such endpoint exists yet'),
     categories: def('GET', null, 'awaiting-backend', 'Research sidebar categories — no such endpoint exists yet'),
   },
@@ -192,4 +215,30 @@ export function endpointPath(e: EndpointDef): string {
     throw new ServiceException('API_BASE_URL_MISSING', 'NEXT_PUBLIC_API_BASE_URL is not configured', false)
   }
   return e.path
+}
+
+/**
+ * Like endpointPath(), but substitutes `:name` path parameters.
+ *
+ * Throws if a declared `:param` has no value supplied, so a malformed URL can
+ * never be sent (e.g. a literal `/execution/close/:market_id`). Values are
+ * URL-encoded. Market and order ids are 0x-prefixed hex, but encoding keeps
+ * this safe for any future id format.
+ */
+export function endpointPathWith(
+  e: EndpointDef,
+  params: Record<string, string>,
+): string {
+  const path = endpointPath(e)
+  return path.replace(/:([A-Za-z_][A-Za-z0-9_]*)/g, (_match, key: string) => {
+    const value = params[key]
+    if (value === undefined || value === '') {
+      throw new ServiceException(
+        'ENDPOINT_PARAM_MISSING',
+        `Missing path parameter ":${key}" for ${e.feature}`,
+        false,
+      )
+    }
+    return encodeURIComponent(value)
+  })
 }

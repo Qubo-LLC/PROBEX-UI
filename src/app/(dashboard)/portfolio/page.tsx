@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { PortfolioPage } from '@/components/portfolio/PortfolioPage'
+import { PortfolioDomain } from '@/components/portfolio/PortfolioDomain'
 
 export const metadata: Metadata = {
   title: 'Portfolio — Probex',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function PortfolioRoutePage() {
-  return <PortfolioPage />
+  return <PortfolioDomain />
 }

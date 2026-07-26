@@ -17,7 +17,28 @@ import type {
   ResearchReports, Portfolio, Balance, PortfolioHistory, PortfolioSummary, PortfolioPerformance,
   AnalyticsSegments, AnalyticsSignals, AnalyticsSummary, AnalyticsTopSegments, AnalyticsHourly,
   PaperStatus, SystemMetrics, TradesLedger, ExecutionOrders,
+  MarketsSummary, MarketPriceHistory, MutationResult,
 } from '@/types/engine'
+
+// ─── Query-parameter vocabularies ──────────────────────────────────────────────
+// Documented by the backend collection; enumerated here so callers can't send a
+// value the engine will reject.
+
+export type AnalyticsSegmentType = 'edge_bucket' | 'hour' | 'confidence'
+export type AnalyticsMetric      = 'win_rate' | 'total_pnl' | 'total_trades'
+
+// ─── Mutation payloads ─────────────────────────────────────────────────────────
+
+/** Body for POST /api/execution/create (shape from the Postman collection). */
+export interface CreateOrderInput {
+  marketId:     string
+  direction:    'YES' | 'NO'
+  sizeUsd:      number
+  edgePct:      number
+  confidence:   number
+  /** When true the engine validates and reports without placing the order. */
+  previewOnly?: boolean
+}
 
 // ─── Engine ────────────────────────────────────────────────────────────────────
 // Operational endpoints confirmed against the Postman collection.
@@ -33,8 +54,10 @@ export interface IEngineService {
   getPriceHistory():       Promise<ApiResult<PriceHistory>>
   getMarkets():            Promise<ApiResult<EngineMarkets>>
   getPositions():          Promise<ApiResult<EnginePositions>>
-  getEvents():             Promise<ApiResult<EngineEvents>>
-  getEdges():              Promise<ApiResult<EngineEdges>>
+  /** `types` maps to the server-side `type` CSV filter (edge, trade, position,
+   *  health, error, resolution, survival, paper_trading). */
+  getEvents(limit?: number, types?: readonly string[]): Promise<ApiResult<EngineEvents>>
+  getEdges(limit?: number): Promise<ApiResult<EngineEdges>>
   getIdentity():           Promise<ApiResult<EngineIdentity>>
   getExecutionStatus():    Promise<ApiResult<ExecutionStatus>>
   getExecutionPolicy():    Promise<ApiResult<ExecutionPolicy>>
@@ -42,26 +65,47 @@ export interface IEngineService {
   getPaperStats():         Promise<ApiResult<PaperStats>>
 
   // ── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints ────────────────
-  getPositionsHistory():      Promise<ApiResult<PositionsHistory>>
+  getPositionsHistory(limit?: number, direction?: 'YES' | 'NO'): Promise<ApiResult<PositionsHistory>>
   getSurvivalPatterns():      Promise<ApiResult<SurvivalPatterns>>
   getConsensus():             Promise<ApiResult<Consensus>>
   getConsensusBias():         Promise<ApiResult<ConsensusBias>>
-  getConsensusHistory():      Promise<ApiResult<ConsensusHistory>>
+  getConsensusHistory(limit?: number): Promise<ApiResult<ConsensusHistory>>
   getResearchReports():       Promise<ApiResult<ResearchReports>>
   getPortfolio():             Promise<ApiResult<Portfolio>>
   getBalance():               Promise<ApiResult<Balance>>
-  getPortfolioHistory():      Promise<ApiResult<PortfolioHistory>>
+  getPortfolioHistory(limit?: number): Promise<ApiResult<PortfolioHistory>>
   getPortfolioSummary():      Promise<ApiResult<PortfolioSummary>>
-  getPortfolioPerformance():  Promise<ApiResult<PortfolioPerformance>>
-  getAnalyticsSegments():     Promise<ApiResult<AnalyticsSegments>>
+  getPortfolioPerformance(lookbackHours?: number): Promise<ApiResult<PortfolioPerformance>>
+  getAnalyticsSegments(segmentType?: AnalyticsSegmentType): Promise<ApiResult<AnalyticsSegments>>
   getAnalyticsSignals():      Promise<ApiResult<AnalyticsSignals>>
   getAnalyticsSummary():      Promise<ApiResult<AnalyticsSummary>>
-  getAnalyticsTopSegments():  Promise<ApiResult<AnalyticsTopSegments>>
+  /** segment_type and metric are REQUIRED by the backend — omitting them 422s. */
+  getAnalyticsTopSegments(segmentType?: AnalyticsSegmentType, metric?: AnalyticsMetric, limit?: number): Promise<ApiResult<AnalyticsTopSegments>>
   getAnalyticsHourly():       Promise<ApiResult<AnalyticsHourly>>
   getPaperStatus():           Promise<ApiResult<PaperStatus>>
   getSystemMetrics():         Promise<ApiResult<SystemMetrics>>
-  getTradesLedger():          Promise<ApiResult<TradesLedger>>
-  getExecutionOrders():       Promise<ApiResult<ExecutionOrders>>
+  getTradesLedger(limit?: number, direction?: 'YES' | 'NO'): Promise<ApiResult<TradesLedger>>
+  getExecutionOrders(status?: 'active' | 'closed'): Promise<ApiResult<ExecutionOrders>>
+  /** Order lookup by id. `scope` picks the active/closed variant of the route. */
+  getOrderById(orderId: string, scope?: 'any' | 'active' | 'closed'): Promise<ApiResult<unknown>>
+
+  // ── Phase 1 (2026-07-25) — markets recovery + per-market history ───────────
+  /** Primary markets source while GET /api/markets hangs. */
+  getMarketsSummary():        Promise<ApiResult<MarketsSummary>>
+  getMarketPriceHistory(marketId: string, limit?: number): Promise<ApiResult<MarketPriceHistory>>
+
+  // ── Phase 1 (2026-07-25) — mutation layer ──────────────────────────────────
+  // Every one of these changes engine state. Callers must confirm with the
+  // operator first; the services themselves do no gating.
+  createOrder(input: CreateOrderInput): Promise<ApiResult<MutationResult>>
+  closePosition(marketId: string):      Promise<ApiResult<MutationResult>>
+  cancelOrder(orderId: string):         Promise<ApiResult<MutationResult>>
+  emergencyStop():                      Promise<ApiResult<MutationResult>>
+  startPaperTrading():                  Promise<ApiResult<MutationResult>>
+  stopPaperTrading():                   Promise<ApiResult<MutationResult>>
+  /** DESTRUCTIVE — clears all paper trading history. */
+  resetPaperTrading():                  Promise<ApiResult<MutationResult>>
+  resolvePaperTrades():                 Promise<ApiResult<MutationResult>>
 
   peekHealth?():           EngineHealth | null
   peekRuntime?():          EngineRuntime | null
@@ -99,6 +143,7 @@ export interface IEngineService {
   peekSystemMetrics?():        SystemMetrics | null
   peekTradesLedger?():         TradesLedger | null
   peekExecutionOrders?():      ExecutionOrders | null
+  peekMarketsSummary?():       MarketsSummary | null
 }
 
 // ─── Registry shape ────────────────────────────────────────────────────────────

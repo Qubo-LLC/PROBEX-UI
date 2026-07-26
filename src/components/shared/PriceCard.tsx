@@ -60,7 +60,7 @@ export function PriceCard({ chart, feed, size = 'default' }: PriceCardProps) {
       {pulseN > 0 && <span key={pulseN} className="pulse-ring" aria-hidden="true" />}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex flex-col gap-1">
-          <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+          <span className="t-label">
             BTC / USD
           </span>
           <div className="flex items-baseline gap-2.5">

@@ -97,6 +97,19 @@ export const COMPACT_CURRENCY_FORMAT: Intl.NumberFormatOptions = {
 
 // ─── Routes ───────────────────────────────────────────────────────────────
 
+/**
+ * The app's basePath. MUST match `basePath` in next.config.ts.
+ *
+ * Next.js applies basePath automatically to `<Link>`, router navigation, and
+ * `metadata.manifest` — but NOT to `metadata.icons`, nor to any path inside the
+ * web-app manifest body (start_url, scope, icon src, shortcut urls). Those are
+ * emitted verbatim, so they need this prefix applied by hand.
+ *
+ * Getting that wrong is not cosmetic: with `scope: '/'` the dashboard manifest
+ * claimed the whole origin and Chrome redirected users to the marketing site.
+ */
+export const BASE_PATH = '/dashboard'
+
 export const ROUTES = {
   // Auth
   LOGIN:           '/auth/login',

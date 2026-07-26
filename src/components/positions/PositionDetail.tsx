@@ -8,14 +8,17 @@
 // the same real signal used throughout Positions/Portfolio/Consensus.
 
 import { useRouter } from 'next/navigation'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatSignedCurrency } from '@/lib/utils'
 import type { PositionRow } from '@/lib/mappers/positions'
 import type { EdgeRow } from '@/lib/mappers/edges'
 import { MARKET_DETAIL_PATH } from '@/config/constants'
 import { segmentLabel } from '@/lib/display/market'
+import { useClosePosition, MUTATIONS } from '@/config/hooks/useMutation'
+import { MutationButton } from '@/components/execution/MutationButton'
 
 export function PositionDetail({ position, edge, onClose }: { position: PositionRow; edge: EdgeRow | undefined; onClose: () => void }) {
   const router = useRouter()
+  const closeMutation = useClosePosition(position.marketId)
   const isYes = position.side === 'yes'
   const sideColor = isYes ? 'var(--probex-yes)' : 'var(--probex-no)'
   const isProfit = (position.unrealizedPnl ?? 0) >= 0
@@ -96,20 +99,47 @@ export function PositionDetail({ position, edge, onClose }: { position: Position
             </div>
           </section>
         )}
+
+        <section className="pt-3.5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+          <SectionLabel>Manual Control</SectionLabel>
+          <MutationButton
+            mutation={closeMutation}
+            label="Close Position"
+            tone="danger"
+            size="sm"
+            disabled={position.marketId === null}
+            disabledReason="This position has no market id, so it cannot be closed from here."
+            confirmTitle="Close this position now?"
+            confirmDescription={
+              `Closes the ${position.side.toUpperCase()} position on "${position.marketTitle ?? position.id}" at the current market price` +
+              (position.unrealizedPnl !== null
+                ? `, realizing ${formatSignedCurrency(position.unrealizedPnl)} of currently unrealized P&L`
+                : '') +
+              `. The engine will stop managing it.`
+            }
+            endpoint={MUTATIONS.closePosition.endpoint}
+          />
+        </section>
       </div>
     </div>
   )
 }
 
 function SectionLabel({ children }: { children: string }) {
-  return <h3 className="text-2xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--probex-text-muted)' }}>{children}</h3>
+  return <h3 className="t-label mb-2">{children}</h3>
 }
 
+/** A single figure in the detail grid. The inline colour, when supplied, is a
+ *  semantic one (P&L direction, side) and must win over the token's default —
+ *  which it does, since an inline style beats a class. */
 function MetricCell({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
   return (
-    <div className="flex flex-col gap-0.5 p-2 rounded-lg" style={{ background: 'var(--probex-surface-2)' }}>
-      <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>{label}</span>
-      <span className="text-sm font-bold tabular-nums" style={{ color: valueColor ?? 'var(--probex-text-primary)' }}>{value}</span>
+    <div
+      className="flex flex-col gap-1.5 p-3 rounded-md"
+      style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}
+    >
+      <span className="t-label">{label}</span>
+      <span className="t-metric-sm" style={valueColor ? { color: valueColor } : undefined}>{value}</span>
     </div>
   )
 }

@@ -33,13 +33,19 @@ const Icons = {
 /**
  * Sidebar
  * ───────
- * Cockpit navigation organized by operational workflow
- * (PROBEX_PRODUCT_SPEC.md §3):
+ * Cockpit navigation, one entry per domain page. The IA consolidation collapsed
+ * 16 destinations into 9, each aligned to a backend API group; the views that
+ * were absorbed are now URL-addressable tabs (e.g. /markets?view=watchlist) and
+ * their old routes redirect, so nothing became unreachable.
  *
- *   Operate   — watch the engine (Overview, Consensus, Markets, Live Feed)
- *   Trading   — what it is doing (Portfolio, Positions, Wallet, Strategy, Execution)
- *   Insights  — deeper analysis and curation (Analytics, Research, Watchlist)
- *   Engine    — how it is doing (Survival, Events, System)
+ *   Observe      — what is happening (Overview, Live Feed, Markets)
+ *   Capital      — what the engine is doing with money (Positions, Portfolio, Execution)
+ *   Intelligence — what it believes and how it has performed (Strategy, Analytics)
+ *   Engine       — how it is running (System)
+ *
+ * "Trading" was retired as a group label: the operator oversees an autonomous
+ * engine rather than trading directly, and the manual controls that do exist
+ * live inside Execution.
  *
  * Widths: expanded 200px, collapsed 52px (animated via CSS).
  * No role gating — single-operator cockpit. AuthGate is the future guard
@@ -65,95 +71,60 @@ export function Sidebar() {
       {/* Dedicated navigation rail */}
       <div className="sidebar-rail flex-1 overflow-y-auto overflow-x-hidden py-2">
 
-        {/* ── Operate ─────────────────────────────────────── */}
-        <SidebarSection label="Operate">
+        {/* ── Observe ─────────────────────────────────────── */}
+        <SidebarSection label="Observe">
           <SidebarItem
             href={ROUTES.HOME}
             icon={<Icons.Overview />}
             label="Overview"
           />
           <SidebarItem
-            href={ROUTES.CONSENSUS}
-            icon={<Icons.Consensus />}
-            label="Consensus"
+            href={ROUTES.LIVE}
+            icon={<Icons.Live />}
+            label="Live Feed"
           />
           <SidebarItem
             href={ROUTES.MARKETS}
             icon={<Icons.Markets />}
             label="Markets"
           />
-          <SidebarItem
-            href={ROUTES.LIVE}
-            icon={<Icons.Live />}
-            label="Live Feed"
-          />
         </SidebarSection>
 
-        {/* ── Trading ─────────────────────────────────────── */}
-        <SidebarSection label="Trading">
-          <SidebarItem
-            href={ROUTES.PORTFOLIO}
-            icon={<Icons.Portfolio />}
-            label="Portfolio"
-          />
+        {/* ── Capital ─────────────────────────────────────── */}
+        <SidebarSection label="Capital">
           <SidebarItem
             href={ROUTES.POSITIONS}
             icon={<Icons.Positions />}
             label="Positions"
           />
           <SidebarItem
-            href={ROUTES.WALLET}
-            icon={<Icons.Wallet />}
-            label="Wallet"
-          />
-          <SidebarItem
-            href={ROUTES.STRATEGY}
-            icon={<Icons.Strategy />}
-            label="Strategy"
+            href={ROUTES.PORTFOLIO}
+            icon={<Icons.Portfolio />}
+            label="Portfolio"
           />
           <SidebarItem
             href={ROUTES.EXECUTION}
             icon={<Icons.Execution />}
             label="Execution"
           />
-          <SidebarItem
-            href={ROUTES.PAPER}
-            icon={<Icons.Paper />}
-            label="Paper Trading"
-          />
         </SidebarSection>
 
-        {/* ── Insights ────────────────────────────────────── */}
-        <SidebarSection label="Insights">
+        {/* ── Intelligence ────────────────────────────────── */}
+        <SidebarSection label="Intelligence">
+          <SidebarItem
+            href={ROUTES.STRATEGY}
+            icon={<Icons.Strategy />}
+            label="Strategy"
+          />
           <SidebarItem
             href={ROUTES.ANALYTICS}
             icon={<Icons.Analytics />}
             label="Analytics"
           />
-          <SidebarItem
-            href={ROUTES.RESEARCH}
-            icon={<Icons.Research />}
-            label="Research"
-          />
-          <SidebarItem
-            href={ROUTES.WATCHLIST}
-            icon={<Icons.Watchlist />}
-            label="Watchlist"
-          />
         </SidebarSection>
 
         {/* ── Engine ──────────────────────────────────────── */}
         <SidebarSection label="Engine">
-          <SidebarItem
-            href={ROUTES.SURVIVAL}
-            icon={<Icons.Survival />}
-            label="Survival"
-          />
-          <SidebarItem
-            href={ROUTES.EVENTS}
-            icon={<Icons.Events />}
-            label="Events"
-          />
           <SidebarItem
             href={ROUTES.SYSTEM}
             icon={<Icons.System />}

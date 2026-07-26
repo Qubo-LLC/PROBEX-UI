@@ -18,14 +18,17 @@ import { RuntimePanel }      from './RuntimePanel'
 import { ConfigPanel }       from './ConfigPanel'
 import { DiagnosticsPanel }  from './DiagnosticsPanel'
 import { SystemMetricsPanel } from './SystemMetricsPanel'
+import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
-export function SystemConsole() {
+export function SystemConsole({ embedded = false }: EmbeddableProps = {}) {
   return (
-    <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
-      <PageHeader
-        title="System"
-        subtitle="Engine health, runtime components, connectivity diagnostics, and configuration"
-      />
+    <div className={pageShell(embedded, 'gap-4')}>
+      {!embedded && (
+        <PageHeader
+          title="System"
+          subtitle="Engine health, runtime components, connectivity diagnostics, and configuration"
+        />
+      )}
 
       <HealthPanel />
       <RuntimePanel />

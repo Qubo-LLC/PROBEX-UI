@@ -22,6 +22,7 @@ import { PageHeader }     from '@/components/ui/PageHeader'
 import { ErrorState }     from '@/components/ui/ErrorState'
 import { TargetProgress } from '@/components/shared/TargetProgress'
 import type { SurvivalState } from '@/types/engine'
+import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
 const STATES: SurvivalState[] = ['HEALTHY', 'CAUTION', 'DANGER', 'CRITICAL']
 
@@ -32,16 +33,18 @@ const STATE_DESCRIPTIONS: Record<SurvivalState, string> = {
   CRITICAL: 'Capital preservation mode — trading effectively halted until recovery.',
 }
 
-export function SurvivalConsole() {
+export function SurvivalConsole({ embedded = false }: EmbeddableProps = {}) {
   const slice   = useApplicationStore((s) => s.engine.survival)
   const sv      = slice.data
 
   return (
-    <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
-      <PageHeader
-        title="Survival"
-        subtitle="Capital protection — state machine, burn rate, runway, and targets"
-      />
+    <div className={pageShell(embedded, 'gap-4')}>
+      {!embedded && (
+        <PageHeader
+          title="Survival"
+          subtitle="Capital protection — state machine, burn rate, runway, and targets"
+        />
+      )}
 
       {slice.status === 'loading' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -64,7 +67,7 @@ export function SurvivalConsole() {
           {/* 1 · State machine */}
           <Card className="flex flex-col gap-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+              <h3 className="t-label">
                 Survival State
               </h3>
               <span className="text-xs" style={{ color: 'var(--probex-text-muted)' }}>
@@ -156,7 +159,7 @@ export function SurvivalConsole() {
             }} />
 
             <Card className="flex flex-col gap-3">
-              <h3 className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+              <h3 className="t-label">
                 Brain Response
               </h3>
               <SizingRow

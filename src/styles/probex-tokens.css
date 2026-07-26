@@ -47,17 +47,24 @@
 ───────────────────────────────────────────────────────────────────────── */
 :root,
 [data-theme="aurora"] {
-  /* Backgrounds */
-  --probex-bg:        #050816;
-  --probex-surface:   #0B1120;
-  --probex-surface-2: #0F1A2E;
-  --probex-surface-3: #142038;
+  /* Backgrounds — institutional refinement pass.
+     The page plate was dropped and the surfaces lifted to widen the step
+     between each layer. Previously bg #050816 → surface #0B1120 was a ~6%
+     luminance delta, which is why cards visually dissolved into the page. The
+     ladder below is deliberately uneven: the bg→surface jump is the largest,
+     because that is the one the eye uses to identify "this is a card". */
+  --probex-bg:        #03050D;
+  --probex-surface:   #0C1424;
+  --probex-surface-2: #131E33;
+  --probex-surface-3: #1B2842;
 
-  /* Borders */
-  --probex-border:         rgba(255, 255, 255, 0.07);
-  --probex-border-default: rgba(255, 255, 255, 0.09);
-  --probex-border-strong:  rgba(255, 255, 255, 0.14);
-  --probex-border-active:  rgba(0, 212, 255, 0.35);
+  /* Borders — raised from 7/9/14% to give cards a defined edge. At the old
+     values the border was below the perceptual threshold on most displays, so
+     separation depended entirely on fill. */
+  --probex-border:         rgba(255, 255, 255, 0.10);
+  --probex-border-default: rgba(255, 255, 255, 0.14);
+  --probex-border-strong:  rgba(255, 255, 255, 0.22);
+  --probex-border-active:  rgba(0, 212, 255, 0.40);
 
   /* Accent */
   --probex-primary:   #00D4FF;
@@ -115,6 +122,46 @@
      inherited by every theme. */
   --probex-shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.10);
   --probex-shadow-lift: 0 8px 24px rgba(0, 0, 0, 0.16);
+
+  /* ── Elevation scale (institutional refinement) ──────────────────────────
+     A card reads as a physical object when three things agree: a shadow below
+     it, a defined edge, and a highlight on its top lip catching the light.
+     Shadow alone just looks like a blur. Every level below therefore pairs a
+     drop shadow with an inset top highlight, which is the detail that makes
+     surfaces feel milled rather than pasted on.
+
+     elev-1  resting card / panel
+     elev-2  raised — primary cards, focused instruments
+     elev-3  hover
+     elev-4  overlays: dialogs, popovers, command palette                    */
+  --probex-elev-1:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  --probex-elev-2:
+    0 2px 4px rgba(0, 0, 0, 0.30),
+    0 8px 20px -8px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --probex-elev-3:
+    0 4px 8px rgba(0, 0, 0, 0.32),
+    0 16px 36px -12px rgba(0, 0, 0, 0.50),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --probex-elev-4:
+    0 8px 16px rgba(0, 0, 0, 0.38),
+    0 32px 64px -16px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
+
+  /* ── Interaction state tokens ────────────────────────────────────────────
+     Hover/active are expressed as translucent white washes rather than as
+     separate surface colours, so any element on any tier lightens by the same
+     perceptual amount instead of jumping to a fixed colour. */
+  --probex-state-hover:    rgba(255, 255, 255, 0.04);
+  --probex-state-active:   rgba(255, 255, 255, 0.07);
+  --probex-state-selected: color-mix(in srgb, var(--probex-primary) 12%, transparent);
+
+  /* ── Motion ──────────────────────────────────────────────────────────────
+     150–250ms band. Anything slower reads as sluggish on a data surface that
+     updates every two seconds. */
+  --motion-slow: 240ms;
 
   /* Motion language (UX polish) — one easing voice for the whole product.
      A soft "settle" curve (fast start, long gentle landing): intentional and
@@ -455,4 +502,72 @@
 
   --probex-scrollbar-thumb: rgba(255, 236, 214, 0.12);
   --probex-scrollbar-track: transparent;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   INSTITUTIONAL REFINEMENT LAYER
+   ═════════════════════════════════════════════════════════════════════════
+   Structural overrides applied AFTER every theme block, so they reach all six
+   palettes rather than only the default one.
+
+   This exists because the surface and border ladders were tuned per theme and
+   drifted apart: midnight shipped a 5% border and a ~3% luminance step from
+   page to card, which is below the threshold at which a card reads as a
+   separate object. Refining only the default theme would have left whichever
+   theme the operator actually uses untouched — the flatness the redesign brief
+   describes was being seen on midnight, not aurora.
+
+   Two rules:
+     1. BORDERS are structural, not palette. Every dark theme gets the same
+        opacity ladder (10 / 14 / 22%), tinted to the theme's own hue where the
+        theme already established one (ember is warm, not neutral white).
+     2. SURFACES stay per-theme because the hues genuinely differ, but each
+        ladder is widened so bg → surface is the largest step in the stack.
+        That first step is the one the eye uses to identify a card.
+
+   Institutional is deliberately excluded: it is the light theme, where dark
+   borders on white already clear the contrast threshold.
+───────────────────────────────────────────────────────────────────────── */
+
+:root,
+[data-theme="aurora"],
+[data-theme="midnight"],
+[data-theme="quantum"],
+[data-theme="emerald"] {
+  --probex-border:         rgba(255, 255, 255, 0.10);
+  --probex-border-default: rgba(255, 255, 255, 0.14);
+  --probex-border-strong:  rgba(255, 255, 255, 0.22);
+}
+
+[data-theme="ember"] {
+  --probex-border:         rgba(255, 236, 214, 0.11);
+  --probex-border-default: rgba(255, 236, 214, 0.15);
+  --probex-border-strong:  rgba(255, 236, 214, 0.23);
+}
+
+/* Midnight — the deepest theme and the one that needed this most. The page
+   plate stays near-black (that is the theme's identity); the surfaces above it
+   are lifted so cards separate. */
+[data-theme="midnight"] {
+  --probex-surface:   #0A1220;
+  --probex-surface-2: #101A2B;
+  --probex-surface-3: #18243A;
+}
+
+[data-theme="quantum"] {
+  --probex-surface:   #0B1E18;
+  --probex-surface-2: #112A22;
+  --probex-surface-3: #17362C;
+}
+
+[data-theme="emerald"] {
+  --probex-surface:   #0B2E20;
+  --probex-surface-2: #113A2A;
+  --probex-surface-3: #184A36;
+}
+
+[data-theme="ember"] {
+  --probex-surface:   #1B1310;
+  --probex-surface-2: #261A13;
+  --probex-surface-3: #33251A;
 }
