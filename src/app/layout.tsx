@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
+import { RUNTIME_GLOBAL_KEY } from '@/config/runtime'
+import { resolveRuntimeConfig } from '@/config/runtime.server'
 import { AppProviders } from '@/providers'
 import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION, BASE_PATH, SITE_ORIGIN, SITE_URL } from '@/config/constants'
 import { validateEnv } from '@/config/env'
@@ -141,6 +143,23 @@ export const viewport: Viewport = {
 // Reads the persisted theme from the request cookie so the server can set
 // data-theme before first paint (no theme flash). Cookie "probex-theme" is
 // written by the Zustand persist middleware as { state: { theme } }.
+/**
+ * Public origin of the current request, used to turn a relative API base
+ * ('/api') into something the server can probe. nginx sets both headers; the
+ * X-Forwarded-* variants win because they carry the external scheme/host rather
+ * than the loopback the proxy connected to.
+ */
+async function resolveRequestOrigin(): Promise<string | null> {
+  try {
+    const h     = await headers()
+    const host  = h.get('x-forwarded-host') ?? h.get('host')
+    const proto = h.get('x-forwarded-proto') ?? 'http'
+    return host ? `${proto}://${host}` : null
+  } catch {
+    return null
+  }
+}
+
 async function resolveInitialTheme(): Promise<ThemeName> {
   try {
     const cookieStore = await cookies()
@@ -168,6 +187,16 @@ interface RootLayoutProps {
 export default async function RootLayout({ children }: RootLayoutProps) {
   const initialTheme = await resolveInitialTheme()
 
+  // Resolve the engine configuration for THIS request (including the backend
+  // probe when API mode is 'auto') and hand the result to the browser. This is
+  // what makes one build portable across dev/staging/production: the decision
+  // is made from server environment at request time, never inlined at build.
+  const runtimeConfig = await resolveRuntimeConfig(await resolveRequestOrigin())
+
+  // `</script>` inside JSON would close the tag early; escaping `<` is the
+  // standard mitigation for injecting server state into an inline script.
+  const runtimeConfigJson = JSON.stringify(runtimeConfig).replace(/</g, '\\u003c')
+
   return (
     <html
       lang="en"
@@ -181,6 +210,21 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       suppressHydrationWarning
     >
       <head>
+        {/*
+          Runtime engine config. MUST come before the app bundle executes —
+          services/index.ts reads window.__PROBEX_RUNTIME__ at module scope to
+          pick live / mock / offline. An inline <head> script is evaluated
+          during HTML parse, so it always wins that race.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            // Frozen on the client too: Object.freeze() does not survive JSON
+            // serialisation, so freezing server-side alone would leave a
+            // mutable global that any script could rewrite to flip the app into
+            // mock mode. Config is a fact about the deployment, not app state.
+            __html: `window.${RUNTIME_GLOBAL_KEY}=Object.freeze(${runtimeConfigJson});`,
+          }}
+        />
         {/*
           Inline script: sets data-theme BEFORE React hydrates.
           This eliminates any remaining theme flash for users with JS enabled.
@@ -202,7 +246,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         />
       </head>
       <body>
-        <AppProviders initialTheme={initialTheme}>
+        <AppProviders initialTheme={initialTheme} runtimeConfig={runtimeConfig}>
           {children}
         </AppProviders>
       </body>

@@ -14,22 +14,28 @@
 import type { ReactNode } from 'react'
 import { ThemeProvider } from './ThemeProvider'
 import { StoreProvider } from './StoreProvider'
+import { RuntimeConfigProvider } from './RuntimeConfigProvider'
 import { TooltipProvider } from '@/components/ui/Tooltip'
+import type { RuntimeConfig } from '@/config/runtime'
 
 interface AppProvidersProps {
   children:      ReactNode
   initialTheme?: string
+  /** Server-resolved engine config, threaded down to avoid a hydration mismatch. */
+  runtimeConfig: RuntimeConfig
 }
 
-export function AppProviders({ children, initialTheme }: AppProvidersProps) {
+export function AppProviders({ children, initialTheme, runtimeConfig }: AppProvidersProps) {
   return (
-    <ThemeProvider initialTheme={initialTheme}>
-      <StoreProvider>
-        <TooltipProvider delayDuration={250} skipDelayDuration={300}>
-          {children}
-        </TooltipProvider>
-      </StoreProvider>
-    </ThemeProvider>
+    <RuntimeConfigProvider value={runtimeConfig}>
+      <ThemeProvider initialTheme={initialTheme}>
+        <StoreProvider>
+          <TooltipProvider delayDuration={250} skipDelayDuration={300}>
+            {children}
+          </TooltipProvider>
+        </StoreProvider>
+      </ThemeProvider>
+    </RuntimeConfigProvider>
   )
 }
 

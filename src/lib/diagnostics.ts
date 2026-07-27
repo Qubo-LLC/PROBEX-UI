@@ -29,10 +29,13 @@ export interface EndpointRecord {
   errorCount:     number          // network failures + non-2xx responses
 }
 
+/** Resolved engine implementations the registry can install. */
+export type RegistryImpl = 'MockEngineService' | 'LiveEngineService' | 'OfflineEngineService'
+
 export interface DiagnosticsSnapshot {
-  apiMode:                'mock' | 'live'
+  apiMode:                'mock' | 'live' | 'offline'
   apiBaseUrl:             string
-  registryImpl:           'MockEngineService' | 'LiveEngineService'
+  registryImpl:           RegistryImpl
   liveEngineInstantiated: boolean
   requestCount:           number
   lastRequest:            RequestRecord | null
@@ -54,12 +57,12 @@ let _snap: DiagnosticsSnapshot = { ..._blank }
 
 export const diagnostics = {
   /** Called by services/index.ts at module init. */
-  init(mode: 'mock' | 'live', baseUrl: string): void {
+  init(mode: 'mock' | 'live' | 'offline', baseUrl: string): void {
     _snap = { ..._snap, apiMode: mode, apiBaseUrl: baseUrl }
   },
 
   /** Called by services/index.ts after resolveServices() picks an impl. */
-  setRegistry(impl: 'MockEngineService' | 'LiveEngineService'): void {
+  setRegistry(impl: RegistryImpl): void {
     _snap = {
       ..._snap,
       registryImpl:           impl,

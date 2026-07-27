@@ -19,6 +19,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios'
 import { env } from '@/config/env'
+import { readRuntimeConfig } from '@/config/runtime'
 import { ServiceException } from '@/lib/services/response'
 import { diagnostics } from '@/lib/diagnostics'
 
@@ -97,8 +98,15 @@ function attachResponseInterceptor(client: AxiosInstance, label: string): void {
 
 // ─── /api client ─────────────────────────────────────────────────────────────
 
+// Base URL comes from the RUNTIME config (server-resolved, injected per
+// deployment) rather than a build-time constant, so one artifact can be pointed
+// at dev / staging / production without rebuilding. Defaults to the relative
+// '/api', which is correct for any reverse proxy that serves the API alongside
+// the app — no environment knowledge required.
+const apiBaseURL = readRuntimeConfig().baseUrl
+
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: env.API_BASE_URL, // '' until NEXT_PUBLIC_API_BASE_URL is provided
+  baseURL: apiBaseURL,
   timeout: DEFAULT_TIMEOUT_MS,
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
 })
@@ -129,7 +137,7 @@ function toServiceException(error: AxiosError): ServiceException {
 // ─── Host-root client ────────────────────────────────────────────────────────
 // Strips the /api suffix so /health and / resolve against the bare host.
 
-const hostBaseURL = env.API_BASE_URL.replace(/\/api\/?$/, '')
+const hostBaseURL = apiBaseURL.replace(/\/api\/?$/, '')
 
 export const hostClient: AxiosInstance = axios.create({
   baseURL: hostBaseURL,

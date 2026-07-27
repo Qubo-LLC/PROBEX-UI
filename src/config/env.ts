@@ -8,8 +8,13 @@ export const env = {
   /** 'development' | 'production' | 'test' */
   NODE_ENV: process.env.NODE_ENV as 'development' | 'production' | 'test',
 
-  /** 'mock' | 'live' — controls which service implementation is used */
-  API_MODE: (process.env.NEXT_PUBLIC_API_MODE ?? 'mock') as 'mock' | 'live',
+  /**
+   * @deprecated Build-time mirror of the legacy NEXT_PUBLIC_API_MODE.
+   * Service selection now comes from the runtime config (config/runtime.ts),
+   * which supports 'auto' and is resolved per request. Kept only so existing
+   * deployments that still set the NEXT_PUBLIC_* names keep working.
+   */
+  API_MODE: (process.env.NEXT_PUBLIC_API_MODE ?? 'auto') as 'mock' | 'live' | 'auto',
 
   /**
    * Single source of truth for the backend base URL (shared API client + live
@@ -77,90 +82,49 @@ export function getServerEnv() {
 
 // ─── Build-time validation ───────────────────────────────────────────────
 
-interface EnvRequirement {
-  key: string
-  serverOnly: boolean
-  required: boolean
-  description: string
-}
-
-const ENV_REQUIREMENTS: EnvRequirement[] = [
-  // The engine API base is the only variable live mode cannot run without.
-  // Consensus/WS/auth/database vars return to this list when those layers
-  // actually ship — requiring them today would fail production builds for
-  // features the app does not yet consume.
-  {
-    key: 'NEXT_PUBLIC_API_BASE_URL',
-    serverOnly: false,
-    required: env.API_MODE === 'live',
-    description: 'Probex backend API base URL',
-  },
-]
-
 /**
- * Validate env at startup. Runs at module scope in the root layout, so in a
- * production build (`next build`, NODE_ENV=production) it executes during static
- * generation — a thrown error there FAILS THE BUILD. That is intentional: it
- * turns silent misconfiguration into a loud, early failure.
+ * Startup environment sanity check. Runs at module scope in the root layout.
  *
- * Fatal (throw in production, warn in dev):
- *   • a required var is missing
- *   • production build with NEXT_PUBLIC_API_MODE unset — the exact bug that
- *     shipped the DuckDNS deploy in MOCK mode, because the code defaults an
- *     unset mode to 'mock' and nothing caught it. Explicit `mock` is allowed
- *     (for intentional demo builds); only the *unset* case fails.
+ * This deliberately no longer THROWS on a missing API variable. It used to, as
+ * a guard against a production build silently defaulting to mock data — but a
+ * build-time guard cannot protect a deployment that never runs a build (the
+ * production incident was a `next dev` host, where NODE_ENV is 'development'
+ * and the guard was skipped entirely).
  *
- * Non-fatal (always warn):
- *   • live mode with an http:// base URL — an HTTPS page blocks it as mixed
- *     content, which looks exactly like "no data".
+ * That failure mode is now structurally impossible rather than merely policed:
+ * service selection happens at runtime, and in production an unreachable
+ * backend resolves to the Engine Offline state, never to mock
+ * (config/runtime.server.ts). With no silent-mock path left to guard, a hard
+ * build failure would only block the very portability this design provides —
+ * an artifact must be buildable without knowing where it will be deployed.
+ *
+ * What remains are warnings for configurations that are legal but likely wrong.
  */
 export function validateEnv(): void {
-  const problems: string[] = []
   const warnings: string[] = []
 
-  for (const req of ENV_REQUIREMENTS) {
-    if (!req.required) continue
-    const value = process.env[req.key]
-    if (!value || value.trim() === '') {
-      problems.push(`  ${req.key} — ${req.description}`)
-    }
-  }
+  const legacyMode = process.env.NEXT_PUBLIC_API_MODE
+  const legacyBase = process.env.NEXT_PUBLIC_API_BASE_URL
 
-  // Guard against the silent mock fallback in a production build.
-  if (env.NODE_ENV === 'production') {
-    const rawMode = process.env.NEXT_PUBLIC_API_MODE
-    if (!rawMode || rawMode.trim() === '') {
-      problems.push(
-        '  NEXT_PUBLIC_API_MODE — must be set explicitly for a production build ' +
-        '(unset defaults to "mock", which ships fake data). Set NEXT_PUBLIC_API_MODE=live.',
-      )
-    }
-  }
-
-  if (env.API_MODE === 'live' && env.API_BASE_URL.startsWith('http://')) {
+  if ((legacyMode ?? '') !== '' || (legacyBase ?? '') !== '') {
     warnings.push(
-      `  NEXT_PUBLIC_API_BASE_URL is http:// (${env.API_BASE_URL}). An HTTPS deployment ` +
-      'blocks these requests as mixed content — use https:// or a same-origin /api path.',
+      '  NEXT_PUBLIC_API_MODE / NEXT_PUBLIC_API_BASE_URL are set. These are inlined ' +
+      'at BUILD time, which welds the artifact to one environment. Prefer the ' +
+      'runtime equivalents PROBEX_API_MODE / PROBEX_API_BASE_URL, which are read ' +
+      'per request and let one build serve dev, staging and production.',
+    )
+  }
+
+  const base = process.env.PROBEX_API_BASE_URL ?? legacyBase ?? ''
+  if (env.NODE_ENV === 'production' && base.startsWith('http://')) {
+    warnings.push(
+      `  API base URL is http:// (${base}). An HTTPS deployment blocks these requests ` +
+      'as mixed content, which presents exactly like "no data". Use https://, or the ' +
+      'default same-origin "/api" path.',
     )
   }
 
   if (warnings.length > 0) {
     console.warn(['[Probex] Environment warnings:', ...warnings].join('\n'))
-  }
-
-  if (problems.length > 0) {
-    const message = [
-      '[Probex] Environment misconfiguration:',
-      ...problems,
-      '',
-      'Set these in the build environment (NEXT_PUBLIC_* are inlined at build time, ' +
-      'not at runtime). See .env.example and docs/DEPLOYMENT.md.',
-    ].join('\n')
-
-    if (env.NODE_ENV === 'production') {
-      throw new Error(message)
-    } else {
-      console.warn(message)
-    }
   }
 }

@@ -10,8 +10,11 @@
 //   'placeholder'      — in the collection, exact path unconfirmed → path null.
 //   'awaiting-backend' — no backend endpoint exists for this feature.
 
-import { env } from '@/config/env'
+import { readRuntimeConfig } from '@/config/runtime'
 import { ServiceException } from '@/lib/services/response'
+
+/** Runtime-resolved API base (see config/runtime.ts). Defaults to '/api'. */
+const apiBaseUrl = readRuntimeConfig().baseUrl
 
 export type EndpointStatus = 'confirmed' | 'backend-error' | 'contract-pending' | 'placeholder' | 'awaiting-backend'
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
@@ -198,7 +201,7 @@ export const ENDPOINTS = {
 
 /** True when an endpoint is safe to call (confirmed, has a path, base configured). */
 export function isEndpointReady(e: EndpointDef): boolean {
-  return e.status === 'confirmed' && e.path !== null && env.API_BASE_URL !== ''
+  return e.status === 'confirmed' && e.path !== null && apiBaseUrl !== ''
 }
 
 /**
@@ -211,7 +214,7 @@ export function endpointPath(e: EndpointDef): string {
   if (e.status !== 'confirmed' || e.path === null) {
     throw new ServiceException('ENDPOINT_NOT_CONFIGURED', `Endpoint not configured: ${e.feature}`, false)
   }
-  if (env.API_BASE_URL === '') {
+  if (apiBaseUrl === '') {
     throw new ServiceException('API_BASE_URL_MISSING', 'NEXT_PUBLIC_API_BASE_URL is not configured', false)
   }
   return e.path

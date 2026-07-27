@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { StoreProvider } from '@/providers/StoreProvider'
 import { DashboardLayout } from './DashboardLayout'
+import { EngineModeBanner } from '@/components/system/EngineModeBanner'
 
 interface AppShellProps {
   children: ReactNode
@@ -27,6 +28,9 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   return (
     <StoreProvider>
+      {/* Above the layout, not inside it: data provenance outranks navigation
+          chrome, and it must be visible on every route without exception. */}
+      <EngineModeBanner />
       <DashboardLayout>
         {children}
       </DashboardLayout>
