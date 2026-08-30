@@ -33,21 +33,36 @@ export function EmergencyStopPanel() {
   const positions = positionsSlice.status === 'success' ? positionsSlice.data : null
   const parsed    = positions ? parsePositionRows(positions) : null
   const rows      = parsed?.kind === 'rows' ? parsed.rows : []
-  const openCount = positions?.count ?? 0
   const atRisk    = rows.reduce((sum, r) => sum + (r.costBasis ?? 0), 0)
   const mode      = executionSlice.status === 'success' ? (executionSlice.data?.mode ?? null) : null
 
-  const nothingToStop = openCount === 0
+  // ⚠️ null means UNKNOWN, and unknown is not zero.
+  //
+  // This was `positions?.count ?? 0`, which collapsed "the engine reports no
+  // open positions" into "we could not reach the engine". On this panel that
+  // collapse produced an actively dangerous sentence: with the backend
+  // unreachable, the emergency stop told the operator "the engine currently
+  // holds no open positions, so there is nothing to close" — a confident
+  // all-clear derived from having no information at all. Of every place the
+  // codebase blurred zero and unknown, this is the one where an operator might
+  // act on it.
+  const openCount: number | null = positions?.count ?? null
 
-  const blastRadius = nothingToStop
-    ? 'The engine currently holds no open positions, so there is nothing to close.'
-    : `This will close ${openCount} open position${openCount === 1 ? '' : 's'}` +
-      (atRisk > 0 ? ` representing ${formatCurrency(atRisk)} of deployed capital` : '') +
-      `, and halt further trading. ${mode === 'live' ? 'The engine is in LIVE mode — these are real orders.' : 'The engine is in paper mode.'}`
+  const nothingToStop = openCount === 0
+  const countUnknown  = openCount === null
+
+  const blastRadius = countUnknown
+    ? 'The engine is not reporting its positions right now, so the blast radius of this action is unknown. ' +
+      'The stop can still be sent — it will close whatever is actually open.'
+    : nothingToStop
+      ? 'The engine currently holds no open positions, so there is nothing to close.'
+      : `This will close ${openCount} open position${openCount === 1 ? '' : 's'}` +
+        (atRisk > 0 ? ` representing ${formatCurrency(atRisk)} of deployed capital` : '') +
+        `, and halt further trading. ${mode === 'live' ? 'The engine is in LIVE mode — these are real orders.' : 'The engine is in paper mode.'}`
 
   return (
     <div
-      className="rounded-xl overflow-hidden"
+      className="rounded-lg overflow-hidden"
       style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-negative)' }}
     >
       <div
@@ -76,16 +91,36 @@ export function EmergencyStopPanel() {
       </div>
 
       <div className="p-4 flex flex-col gap-3">
+        {/* Both figures withhold rather than read zero when the engine has not
+            reported. "$0.00 at risk" from an unreachable engine is the same
+            false all-clear as "0 open". */}
         <div className="flex items-center gap-5">
           <div className="flex flex-col">
-            <span className="text-lg font-bold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{openCount}</span>
+            <span
+              className="text-lg font-bold tabular-nums"
+              style={{ color: countUnknown ? 'var(--probex-text-disabled)' : 'var(--probex-text-primary)' }}
+            >
+              {countUnknown ? '—' : openCount}
+            </span>
             <span className="text-2xs uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>open</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{formatCurrency(atRisk)}</span>
+            <span
+              className="text-lg font-bold tabular-nums"
+              style={{ color: countUnknown ? 'var(--probex-text-disabled)' : 'var(--probex-text-primary)' }}
+            >
+              {countUnknown ? '—' : formatCurrency(atRisk)}
+            </span>
             <span className="text-2xs uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>at risk</span>
           </div>
         </div>
+
+        {countUnknown && (
+          <p className="t-helper">
+            Position state unavailable — the stop remains enabled because the engine may
+            still be holding capital.
+          </p>
+        )}
 
         <MutationButton
           mutation={mutation}

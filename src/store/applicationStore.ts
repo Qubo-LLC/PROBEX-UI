@@ -42,6 +42,11 @@ import type {
   TradesLedger,
   ExecutionOrders,
 } from '@/types/engine'
+import type {
+  MathLayersStatus,
+  MathRecommendationsEnvelope,
+  PerformanceBuckets,
+} from '@/types/quant'
 
 // ─── Per-endpoint state map ───────────────────────────────────────────────────
 
@@ -79,6 +84,14 @@ export interface EngineEndpoints {
   systemMetrics:        ServiceState<SystemMetrics>
   tradesLedger:         ServiceState<TradesLedger>
   executionOrders:      ServiceState<ExecutionOrders>
+
+  // Quant surface (2026-08-20). `mathLayersStatus` is the composite of all five
+  // layers, so the per-layer routes are deliberately NOT stored — a page that
+  // needs one layer alone fetches it directly (see useServices.ts).
+  mathLayersStatus:     ServiceState<MathLayersStatus>
+  mathRecommendations:  ServiceState<MathRecommendationsEnvelope>
+  performanceByCategory: ServiceState<PerformanceBuckets>
+  performanceByAsset:   ServiceState<PerformanceBuckets>
 }
 
 // ─── Store shape ─────────────────────────────────────────────────────────────
@@ -127,6 +140,11 @@ const initialEndpoints: EngineEndpoints = {
   systemMetrics:        loadingState<SystemMetrics>(),
   tradesLedger:         loadingState<TradesLedger>(),
   executionOrders:      loadingState<ExecutionOrders>(),
+
+  mathLayersStatus:      loadingState<MathLayersStatus>(),
+  mathRecommendations:   loadingState<MathRecommendationsEnvelope>(),
+  performanceByCategory: loadingState<PerformanceBuckets>(),
+  performanceByAsset:    loadingState<PerformanceBuckets>(),
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────

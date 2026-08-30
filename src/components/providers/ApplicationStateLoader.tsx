@@ -52,6 +52,10 @@ import {
   useEngineSystemMetrics,
   useEngineTradesLedger,
   useEngineExecutionOrders,
+  useMathLayersStatus,
+  useMathRecommendations,
+  usePerformanceByCategory,
+  usePerformanceByAsset,
 } from '@/config/hooks/useServices'
 
 const FAST_MS   =  2_000  // live price + cockpit vitals
@@ -61,6 +65,12 @@ const SLOW_MS   = 30_000  // /health takes ~5s server-side; config rarely change
 // (~96% wait); polling slower than MEDIUM avoids catching it mid-throttle
 // (the Markets "tap out, tap in" flicker).
 const MARKET_POLL_MS = 8_000
+// Quant surface: heaviest reads in the product, slowest-changing data. Kept
+// well clear of the other tiers so the mathematical layers never compete with
+// the price feed for the backend's very limited concurrency (2026-08-20: the
+// engine wedged entirely under ~50 sequential reads — see the circuit breaker
+// in lib/api/client.ts).
+const QUANT_MS = 60_000
 
 export function ApplicationStateLoader() {
   const updateEngine = useApplicationStore((s) => s.updateEngine)
@@ -102,6 +112,17 @@ export function ApplicationStateLoader() {
   const analyticsHourly      = useEngineAnalyticsHourly(SLOW_MS)
   const systemMetrics        = useEngineSystemMetrics(SLOW_MS)
 
+  // QUANT tier: the five mathematical layers and multi-asset performance.
+  // Polled slower than everything else on purpose — /math-layers/status is the
+  // heaviest read in the product (~3.9KB, ~2.5s server-side) and all four of
+  // these only change when the engine trades, which is a cadence measured in
+  // minutes at best. Four polls, not nine: `status` already carries every
+  // layer, so the per-layer routes stay opt-in and unpolled.
+  const mathLayersStatus      = useMathLayersStatus(QUANT_MS)
+  const mathRecommendations   = useMathRecommendations(QUANT_MS)
+  const performanceByCategory = usePerformanceByCategory(QUANT_MS)
+  const performanceByAsset    = usePerformanceByAsset(QUANT_MS)
+
   // Each effect syncs one endpoint state into the store whenever it settles.
   useEffect(() => { updateEngine({ health }) },          [health,          updateEngine])
   useEffect(() => { updateEngine({ runtime }) },         [runtime,         updateEngine])
@@ -135,6 +156,10 @@ export function ApplicationStateLoader() {
   useEffect(() => { updateEngine({ analyticsTopSegments }) }, [analyticsTopSegments, updateEngine])
   useEffect(() => { updateEngine({ analyticsHourly }) },      [analyticsHourly,      updateEngine])
   useEffect(() => { updateEngine({ systemMetrics }) },        [systemMetrics,        updateEngine])
+  useEffect(() => { updateEngine({ mathLayersStatus }) },     [mathLayersStatus,     updateEngine])
+  useEffect(() => { updateEngine({ mathRecommendations }) },  [mathRecommendations,  updateEngine])
+  useEffect(() => { updateEngine({ performanceByCategory }) },[performanceByCategory, updateEngine])
+  useEffect(() => { updateEngine({ performanceByAsset }) },   [performanceByAsset,   updateEngine])
 
   return null
 }

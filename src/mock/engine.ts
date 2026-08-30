@@ -16,6 +16,12 @@ import type {
   MarketsSummary, MarketPriceHistory, MarketHistoryPoint,
 } from '@/types/engine'
 
+import type {
+  MarketMakerMetrics, KalmanAssetState, KalmanLayer,
+  KellyKalmanLayer, BayesianLayer, BrierLayer, ShapleyLayer,
+  MathLayersStatus, MathRecommendationsEnvelope, PerformanceBuckets,
+} from '@/types/quant'
+
 const NOW = Date.now()
 const UPTIME_MS = 6_036_291
 
@@ -38,6 +44,9 @@ const MOCK_COMPONENTS = {
 
 export const MOCK_ENGINE_HEALTH: EngineHealth = {
   status: 'online',
+  // The mock returns domain shapes directly (no DTO round-trip), so it states
+  // its own label rather than borrowing the live engine's "healthy" wording.
+  statusLabel: 'online',
   components: [
     { name: 'price_feed', healthy: true,  message: 'Connected and receiving data',      latencyMs: 19.3, checkedAt: NOW },
     { name: 'main_loop',  healthy: true,  message: 'Running (last heartbeat 2.1s ago)', latencyMs: null, checkedAt: NOW },
@@ -245,16 +254,23 @@ export const MOCK_SURVIVAL_PATTERNS: SurvivalPatterns = {
 }
 
 export const MOCK_CONSENSUS: Consensus = {
-  available: true, scoreTimestamp: NOW, score: -0.125, confidence: 0.333, signalCount: 5,
-  signals: { edgeDirection: -0.306, edgeConfidence: 0.36, rsiMomentum: -0.5, macdTrend: 0.0, priceMomentum: 0.0 },
-  btcPrice: 65590.2, interpretation: 'NEUTRAL', timestamp: NOW,
+  available: true, message: null,
+  reading: {
+    scoreTimestamp: NOW, score: -0.125, confidence: 0.333, signalCount: 5,
+    signals: { edgeDirection: -0.306, edgeConfidence: 0.36, rsiMomentum: -0.5, macdTrend: 0.0, priceMomentum: 0.0 },
+    btcPrice: 65590.2, interpretation: 'NEUTRAL',
+  },
+  timestamp: NOW,
 }
 
 export const MOCK_CONSENSUS_BIAS: ConsensusBias = {
-  available: true, totalEdges: 2,
-  bias: { yesCount: 1, noCount: 1, yesPercent: 50.0, noPercent: 50.0 },
-  confidence: { average: 0.36, p50: 0.47, p75: 0.47, p90: 0.47, min: 0.25, max: 0.47 },
-  recentTrend: { last10Edges: 2, yesCount: 1, noCount: 1, bias: 'NEUTRAL' },
+  available: true, message: null,
+  detail: {
+    totalEdges: 2,
+    bias: { yesCount: 1, noCount: 1, yesPercent: 50.0, noPercent: 50.0 },
+    confidence: { average: 0.36, p50: 0.47, p75: 0.47, p90: 0.47, min: 0.25, max: 0.47 },
+    recentTrend: { last10Edges: 2, yesCount: 1, noCount: 1, bias: 'NEUTRAL' },
+  },
   timestamp: NOW,
 }
 
@@ -294,7 +310,7 @@ export const MOCK_PORTFOLIO_HISTORY: PortfolioHistory = (() => {
 })()
 
 export const MOCK_PORTFOLIO_SUMMARY: PortfolioSummary = {
-  available: true,
+  available: true, message: null,
   summary: {
     currentValue: 46.27, initialValue: 100.0, peakValue: 100.0, totalReturnPct: -53.73, currentDrawdownPct: 53.73,
     snapshotCount: 107, timeRangeSeconds: 7994.1, firstSnapshot: NOW - 7_994_100, lastSnapshot: NOW,
@@ -304,9 +320,9 @@ export const MOCK_PORTFOLIO_SUMMARY: PortfolioSummary = {
 }
 
 export const MOCK_PORTFOLIO_PERFORMANCE: PortfolioPerformance = {
-  available: true,
+  available: true, message: null,
   performance: {
-    available: true, periodHours: 24, startValue: 100.0, endValue: 46.27, valueChange: -53.73,
+    periodHours: 24, startValue: 100.0, endValue: 46.27, valueChange: -53.73,
     returnPct: -53.73, maxDrawdownPct: 54.54, tradesInPeriod: 21, snapshotCount: 107,
   },
   lookbackHours: 24, timestamp: NOW,
@@ -421,4 +437,141 @@ export function mockMarketPriceHistory(marketId: string, limit = 100): MarketPri
     }
   })
   return { available: true, marketId, history, count: history.length, limit, timestamp: NOW }
+}
+
+// ─── Quant surface (2026-08-20) ───────────────────────────────────────────────
+// Shaped from the real captured payloads so mock mode exercises the SAME code
+// paths as live — including the "engine has learned nothing" branches, which is
+// the state the live engine has actually been in. `MOCK_MATH_LAYERS_STATUS`
+// deliberately keeps `regime: 'unknown'` and zero sample counts on some layers:
+// a mock that pretends every layer is fitted would hide exactly the honesty
+// gates (`initialised`, `hasPosterior`, `hasPredictions`, `hasAttribution`)
+// these adapters exist to enforce.
+
+const mockMarketMaker: MarketMakerMetrics = {
+  overreactionCount: 0, underreactionCount: 0, overreactionRatio: 0,
+  underreactionRatio: 0, meanReversionOpportunities: 0,
+}
+
+function mockKalmanAsset(symbol: string, price: number, regime: string): KalmanAssetState {
+  return {
+    symbol,
+    priceEstimate:            price,
+    priceUncertainty:         10,
+    velocityEstimate:         regime === 'unknown' ? 0 : 1.4,
+    velocityUncertainty:      3.16,
+    regime,
+    probabilityYes:           0.5,
+    probabilityNo:            0.5,
+    uncertainty:              0.003,
+    meanReversionOpportunity: false,
+    meanReversionStrength:    0,
+    marketMaker:              mockMarketMaker,
+    timestamp:                NOW,
+    initialised:              regime !== 'unknown',
+  }
+}
+
+/** BTC fitted, ETH/SOL still on their seeds — covers both display branches. */
+export const MOCK_KALMAN_LAYER: KalmanLayer = {
+  available: true, multiAsset: true, activeFilters: 3, timestamp: NOW,
+  assets: [
+    mockKalmanAsset('BTC', 65590.2, 'sideways'),
+    mockKalmanAsset('ETH', 3500, 'unknown'),
+    mockKalmanAsset('SOL', 150, 'unknown'),
+  ],
+}
+
+export const MOCK_BAYESIAN_LAYER: BayesianLayer = {
+  regimeProbs: { bull: 0.33, bear: 0.33, sideways: 0.34 },
+  mostLikelyRegime: 'sideways', regimeUncertainty: 1.585,
+  edgeThresholdMean: 5, edgeThresholdStd: 2,
+  positionSizeMean: 0.1, positionSizeStd: 0.05,
+  parameterUncertainty: 0.447, winRateMean: 0.5, winRateStd: 0.289,
+  totalTrades: 0, timestamp: NOW, hasPosterior: false,
+}
+
+export const MOCK_BRIER_LAYER: BrierLayer = {
+  brierScore: 0, brierSkillScore: 0, calibrationStatus: 'excellent',
+  totalPredictions: 0, isOverconfident: false, overconfidenceRatio: 1,
+  isUnderconfident: false, underconfidenceRatio: 1, calibrationCurve: [],
+  timestamp: NOW, hasPredictions: false,
+}
+
+const MOCK_SIGNALS = [
+  'rsi_oversold', 'rsi_overbought', 'macd_bullish', 'macd_bearish',
+  'momentum_up', 'momentum_down', 'mean_reversion', 'trend_following',
+  'regime_bull', 'regime_bear',
+]
+
+export const MOCK_SHAPLEY_LAYER: ShapleyLayer = {
+  totalTrades: 0, totalSignals: MOCK_SIGNALS.length,
+  bestSignals: [], worstSignals: [],
+  recommendations: { keep: [], remove: [], monitor: MOCK_SIGNALS },
+  attributions: MOCK_SIGNALS.map((signal) => ({
+    signal, shapleyValue: 0, sampleSize: 0, confidence: 0,
+    isPositive: false, isSignificant: false,
+  })),
+  timestamp: NOW, hasAttribution: false,
+}
+
+export const MOCK_KELLY_KALMAN_LAYER: KellyKalmanLayer = {
+  totalDecisions: 0, avgPositionSize: 0, avgKellyFraction: 0,
+  avgUncertaintyPenalty: 0, minPositionSize: 0, maxPositionSize: 0,
+  recentDecisions: [], message: 'No sizing history yet', hasDecisions: false,
+}
+
+export const MOCK_MATH_LAYERS_STATUS: MathLayersStatus = {
+  available: true, message: null,
+  kalman:   MOCK_KALMAN_LAYER,
+  kelly:    MOCK_KELLY_KALMAN_LAYER,
+  bayesian: MOCK_BAYESIAN_LAYER,
+  brier:    MOCK_BRIER_LAYER,
+  shapley:  MOCK_SHAPLEY_LAYER,
+  timestamp: NOW,
+}
+
+export const MOCK_MATH_RECOMMENDATIONS: MathRecommendationsEnvelope = {
+  available: true, message: null, timestamp: NOW,
+  recommendations: {
+    currentBtcPrice: 65590.2,
+    assetRegimes: [
+      { symbol: 'BTC', regime: 'sideways', priceUncertainty: 10, velocityEstimate: 1.4, probabilityYes: 0.5, probabilityNo: 0.5 },
+      { symbol: 'ETH', regime: 'unknown',  priceUncertainty: 10, velocityEstimate: 0,   probabilityYes: 0.5, probabilityNo: 0.5 },
+      { symbol: 'SOL', regime: 'unknown',  priceUncertainty: 10, velocityEstimate: 0,   probabilityYes: 0.5, probabilityNo: 0.5 },
+    ],
+    marketRegime: 'sideways', priceUncertainty: 10, velocityEstimate: 1.4,
+    kalmanProbYes: 0.5, kalmanProbNo: 0.5,
+    baseKellyFraction: 0.5, maxPositionPct: 0.15, minPositionPct: 0.01,
+    bayesianWinRate: 0.5, bayesianEdgeThreshold: 5, bayesianPositionSize: 0.1,
+    bayesianRegimeProbs: { bull: 0.33, bear: 0.33, sideways: 0.34 },
+    brierScore: 0, calibrationStatus: 'excellent',
+    isOverconfident: false, isUnderconfident: false,
+    bestSignals: [], worstSignals: [],
+    signalRecommendations: { keep: [], remove: [], monitor: MOCK_SIGNALS },
+    overallRecommendation: 'SKIP', confidence: 'low',
+  },
+}
+
+const MOCK_CATEGORIES = ['crypto', 'macro', 'politics', 'sports', 'entertainment', 'science_tech']
+
+export const MOCK_PERFORMANCE_BY_CATEGORY: PerformanceBuckets = {
+  available: true, message: null, timestamp: NOW,
+  buckets: MOCK_CATEGORIES.map((key) => ({
+    key,
+    edgesDetected: key === 'crypto' ? 2 : 0,
+    tradesTaken:   key === 'crypto' ? 1 : 0,
+    wins: 0, losses: key === 'crypto' ? 1 : 0,
+    totalPnl: key === 'crypto' ? -1.73 : 0,
+    winRate: 0, avgEdgePct: key === 'crypto' ? 4.0 : 0,
+    activePositions: 0, closedPositions: key === 'crypto' ? 1 : 0,
+    hasActivity: key === 'crypto',
+  })),
+  anyActivity: true,
+}
+
+/** Empty on purpose — matches the live engine, which only materialises an asset
+ *  bucket once that asset has actually traded. */
+export const MOCK_PERFORMANCE_BY_ASSET: PerformanceBuckets = {
+  available: true, message: null, buckets: [], anyActivity: false, timestamp: NOW,
 }

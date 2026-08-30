@@ -20,6 +20,11 @@ import type {
   MarketsSummary, MarketPriceHistory, MutationResult,
 } from '@/types/engine'
 
+import type {
+  MathLayersStatus, MathRecommendationsEnvelope, KalmanLayer,
+  BayesianLayer, BrierLayer, ShapleyLayer, PerformanceBuckets,
+} from '@/types/quant'
+
 // ─── Query-parameter vocabularies ──────────────────────────────────────────────
 // Documented by the backend collection; enumerated here so callers can't send a
 // value the engine will reject.
@@ -144,6 +149,31 @@ export interface IEngineService {
   peekTradesLedger?():         TradesLedger | null
   peekExecutionOrders?():      ExecutionOrders | null
   peekMarketsSummary?():       MarketsSummary | null
+
+  // ── Phase 2 (2026-08-20) — quant surface ───────────────────────────────────
+  // The five mathematical layers plus the multi-asset performance endpoints,
+  // discovered in the attached collection and verified live. Every one of these
+  // returns numbers even when the engine has learned nothing, so the domain
+  // models carry explicit `has*`/`initialised` flags — see types/quant.ts.
+  getMathLayersStatus():          Promise<ApiResult<MathLayersStatus>>
+  getMathRecommendations():       Promise<ApiResult<MathRecommendationsEnvelope>>
+  getMathKalman():                Promise<ApiResult<KalmanLayer>>
+  getMathBayesian():              Promise<ApiResult<BayesianLayer>>
+  getMathBrier():                 Promise<ApiResult<BrierLayer>>
+  getMathShapley():               Promise<ApiResult<ShapleyLayer>>
+  getPerformanceByCategory():     Promise<ApiResult<PerformanceBuckets>>
+  getPerformanceByAsset():        Promise<ApiResult<PerformanceBuckets>>
+  getKalmanMultiAsset():          Promise<ApiResult<KalmanLayer>>
+
+  peekMathLayersStatus?():        MathLayersStatus | null
+  peekMathRecommendations?():     MathRecommendationsEnvelope | null
+  peekMathKalman?():              KalmanLayer | null
+  peekMathBayesian?():            BayesianLayer | null
+  peekMathBrier?():               BrierLayer | null
+  peekMathShapley?():             ShapleyLayer | null
+  peekPerformanceByCategory?():   PerformanceBuckets | null
+  peekPerformanceByAsset?():      PerformanceBuckets | null
+  peekKalmanMultiAsset?():        KalmanLayer | null
 }
 
 // ─── Registry shape ────────────────────────────────────────────────────────────

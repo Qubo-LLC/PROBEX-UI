@@ -74,7 +74,7 @@ export function ManualOrderPanel() {
     undefined
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+    <div className="rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
       <div className="px-4 py-3 flex items-center justify-between gap-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <div className="flex flex-col gap-0.5">
           <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>
@@ -84,7 +84,15 @@ export function ManualOrderPanel() {
             Override the engine and place an order against a detected edge
           </p>
         </div>
-        <ProvenanceBadge provenance="live" detail="/api/execution/create" />
+        {/* Lineage describes where this panel's DATA comes from — the edge list
+            that populates the market picker. It previously named
+            POST /api/execution/create, which is the panel's write TARGET, not a
+            source: provenance answers "where did this reading come from", and a
+            mutation endpoint has produced no reading. Labelling one "Live"
+            asserted a data feed that does not exist and weakened the badge
+            everywhere else it appears. The write target is still disclosed —
+            MutationButton prints it beside the engine's own response. */}
+        <ProvenanceBadge provenance="live" detail="/api/edges" />
       </div>
 
       <div className="p-4 flex flex-col gap-3.5">

@@ -22,6 +22,10 @@ import { env } from '@/config/env'
 import { readRuntimeConfig } from '@/config/runtime'
 import { ServiceException } from '@/lib/services/response'
 import { diagnostics } from '@/lib/diagnostics'
+import {
+  circuitKey, isCircuitOpen, circuitCooldownSeconds,
+  recordSuccess, recordFailure, recordAnswered,
+} from './circuitBreaker'
 
 // ─── Request timing metadata ─────────────────────────────────────────────────
 // Attached to each outgoing request so the response interceptor can compute
@@ -47,6 +51,24 @@ function attachRequestInterceptor(client: AxiosInstance, label: string): void {
       const endpoint = config.url ?? ''
       config._reqMeta = { method, endpoint, startTime: Date.now() }
 
+      // Refuse to send while this endpoint's circuit is open. A hanging engine
+      // route costs a backend worker for the full timeout, and the polling
+      // loader would otherwise keep one parked on it indefinitely — see
+      // circuitBreaker.ts for the incident this prevents.
+      const key = circuitKey(method, endpoint, config.baseURL)
+      if (isCircuitOpen(key)) {
+        const seconds = circuitCooldownSeconds(key)
+        diagnostics.recordRequest(method, endpoint)
+        diagnostics.recordCompleted(method, endpoint, 0, 0)
+        return Promise.reject(
+          new ServiceException(
+            'CIRCUIT_OPEN',
+            `${endpoint} stopped responding — pausing requests for ${seconds}s`,
+            true,
+          ),
+        )
+      }
+
       // Diagnostics recording is always on — it feeds the System console
       // Diagnostics panel in production. Console logging stays dev-only.
       diagnostics.recordRequest(method, endpoint)
@@ -71,6 +93,7 @@ function attachResponseInterceptor(client: AxiosInstance, label: string): void {
       const status     = response.status
 
       diagnostics.recordCompleted(method, endpoint, status, durationMs)
+      recordSuccess(circuitKey(method, endpoint, response.config.baseURL))
       if (process.env.NODE_ENV === 'development') {
         console.debug(
           `[${label}] ${method} ${endpoint} | Status:${status} | Duration:${durationMs}ms`,
@@ -79,6 +102,14 @@ function attachResponseInterceptor(client: AxiosInstance, label: string): void {
       return response
     },
     (error: AxiosError) => {
+      // A CIRCUIT_OPEN rejection is raised by the REQUEST interceptor and never
+      // reaches the network, so it arrives here already normalised — and
+      // already recorded in diagnostics. Returning early avoids both a
+      // duplicate diagnostics entry under an empty endpoint (it carries no
+      // Axios config) and the normaliser relabelling it as a generic network
+      // error, which would erase the reason the request was refused.
+      if (error instanceof ServiceException) return Promise.reject(error)
+
       const meta       = error.config?._reqMeta
       const durationMs = meta ? Date.now() - meta.startTime : 0
       const method     = meta?.method ?? (error.config?.method ?? 'GET').toUpperCase()
@@ -86,6 +117,13 @@ function attachResponseInterceptor(client: AxiosInstance, label: string): void {
       const status     = error.response?.status ?? 0
 
       diagnostics.recordCompleted(method, endpoint, status, durationMs)
+
+      // Only the failure modes that COST the backend a worker feed the breaker.
+      // A 4xx/5xx is a fast answer and merely clears the streak.
+      const key = circuitKey(method, endpoint, error.config?.baseURL)
+      if (error.response === undefined) recordFailure(key)
+      else                              recordAnswered(key)
+
       if (process.env.NODE_ENV === 'development') {
         console.warn(
           `[${label}] ${method} ${endpoint} | Status:${status || 'ERR'} | Duration:${durationMs}ms`,

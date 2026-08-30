@@ -14,9 +14,10 @@
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'
-import { StatCard }   from '@/components/ui/StatCard'
 import { Card }       from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { StatusChip } from '@/components/ui/StatusChip'
+import { Panel, Focal, Row, RowGroup, Meter, PanelPending } from '@/components/ui/Panel'
 import { EmergencyStopPanel } from './EmergencyStopPanel'
 import { ManualOrderPanel } from './ManualOrderPanel'
 import { OrdersTable } from './OrdersTable'
@@ -55,9 +56,11 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
       <OrdersTable />
 
       {slice.status === 'loading' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-          {['Balance', 'Total Trades', 'Win Rate', 'Total P&L', 'Positions'].map((label) => (
-            <StatCard key={label} label={label} value="" isLoading />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {['Trading Record', 'Account', 'Throughput'].map((label) => (
+            <Panel key={label} title={label}>
+              <PanelPending note="Awaiting the execution engine." />
+            </Panel>
           ))}
         </div>
       )}
@@ -80,49 +83,95 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
             </Card>
           )}
 
-          {/* 1 · Trading record */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-            <StatCard
-              label="Balance"
-              value={formatCurrency(ex.balance)}
-              deltaLabel={ex.mode === 'paper' ? 'Paper account' : 'Live account'}
-            />
-            <StatCard
-              label="Total Trades"
-              value={String(ex.totalTrades)}
-              deltaLabel={
-                ex.totalTrades > 0
-                  ? `${ex.wins}W / ${ex.losses}L`
-                  : 'No trades this session'
-              }
-            />
-            {ex.totalTrades > 0 && (
-              <StatCard
-                label="Win Rate"
-                value={formatPercent(ex.winRate)}
-                valueColor={ex.winRate >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-warning)'}
-                deltaLabel={`${ex.wins}W / ${ex.losses}L`}
+          {/* 1 · Trading record.
+              Was five StatCards; Win Rate additionally disappeared entirely
+              before the first trade, so the row silently changed from five
+              columns to four and every card shifted. Panels keep their frame
+              and withhold the figure instead. */}
+          <section aria-label="Trading record" className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Panel title="Trading Record" provenance="live" source="/api/execution/status">
+              <Focal
+                value={formatSignedCurrency(ex.totalPnl)}
+                unit="total P&L"
+                color={
+                  ex.totalPnl > 0 ? 'var(--probex-positive)'
+                  : ex.totalPnl < 0 ? 'var(--probex-negative)' : undefined
+                }
+                caption={
+                  ex.totalTrades === 0
+                    ? <span className="t-helper">No trades executed this session.</span>
+                    : undefined
+                }
               />
-            )}
-            <StatCard
-              label="Total P&L"
-              value={formatSignedCurrency(ex.totalPnl)}
-              valueColor={
-                ex.totalPnl > 0 ? 'var(--probex-positive)'
-                : ex.totalPnl < 0 ? 'var(--probex-negative)' : undefined
+              {ex.totalTrades > 0 && (
+                <Meter
+                  value={Math.max(0, Math.min(1, ex.winRate))}
+                  color={ex.winRate >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-warning)'}
+                  ariaLabel="Win rate"
+                />
+              )}
+              <RowGroup>
+                <Row label="Trades" value={`${ex.totalTrades}`} />
+                <Row
+                  label="Win rate"
+                  value={ex.totalTrades > 0 ? formatPercent(ex.winRate) : '—'}
+                  color={ex.totalTrades > 0 && ex.winRate >= 0.5 ? 'var(--probex-positive)' : undefined}
+                />
+                <Row label="Record" value={ex.totalTrades > 0 ? `${ex.wins}W · ${ex.losses}L` : '—'} />
+              </RowGroup>
+            </Panel>
+
+            <Panel
+              title="Account"
+              provenance="live"
+              source="/api/execution/status"
+              action={
+                <StatusChip tone={ex.mode === 'live' ? 'danger' : 'info'} dot={false}>
+                  {ex.mode}
+                </StatusChip>
               }
-            />
-            <StatCard
-              label="Positions"
-              value={String(ex.activePositions)}
-              deltaLabel={`active · ${ex.closedPositions} closed`}
-            />
-          </div>
+            >
+              <Focal
+                value={formatCurrency(ex.balance)}
+                unit={ex.mode === 'paper' ? 'paper balance' : 'live balance'}
+              />
+              <RowGroup>
+                <Row label="Open positions" value={`${ex.activePositions}`} />
+                <Row label="Closed" value={`${ex.closedPositions}`} />
+                <Row
+                  label="Balance age"
+                  value={`${Math.round(ex.balanceCacheAgeSec)}s`}
+                  title="How stale the cached balance figure is"
+                />
+              </RowGroup>
+            </Panel>
+
+            <Panel title="Throughput" provenance="live" source="/api/execution/status">
+              <Focal
+                value={ex.totalTrades > 0 ? `${Math.round(ex.avgExecutionMs)}` : '—'}
+                unit={ex.totalTrades > 0 ? 'ms average fill' : 'no fills yet'}
+                caption={
+                  ex.totalTrades === 0
+                    ? <span className="t-helper">Latency is measured per trade.</span>
+                    : undefined
+                }
+              />
+              <RowGroup>
+                <Row label="Fastest" value={ex.totalTrades > 0 ? `${Math.round(ex.fastestTradeMs)}ms` : '—'} />
+                <Row label="Slowest" value={ex.totalTrades > 0 ? `${Math.round(ex.slowestTradeMs)}ms` : '—'} />
+                <Row
+                  label="Retries"
+                  value={`${ex.retryStats.totalRetries}`}
+                  color={ex.retryStats.totalRetries > 0 ? 'var(--probex-warning)' : undefined}
+                />
+              </RowGroup>
+            </Panel>
+          </section>
 
           {/* 2 · Latency + reliability */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
             <Card className="flex flex-col gap-3">
-              <h3 className="t-label">
+              <h3 className="t-card-title">
                 Execution Latency
               </h3>
               {ex.totalTrades > 0 ? (
@@ -140,7 +189,7 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
             </Card>
 
             <Card className="flex flex-col gap-3">
-              <h3 className="t-label">
+              <h3 className="t-card-title">
                 Order Reliability
               </h3>
               {ex.retryStats.totalRetries > 0 ? (
@@ -165,7 +214,7 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
           {/* 3 · Rate limiters + backoff */}
           <Card className="flex flex-col gap-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="t-label">
+              <h3 className="t-card-title">
                 Rate Limiters
               </h3>
               <span
@@ -187,7 +236,7 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
           {/* 4 · Resolution tracker */}
           <Card className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
-              <h3 className="t-label">
+              <h3 className="t-card-title">
                 Resolution Tracker
               </h3>
               <span
@@ -308,42 +357,46 @@ function PaperSessionCard({ paper, paperStatus }: { paper: PaperStats; paperStat
   const p = paper.paperTrading
   const net = p.currentCapital - p.initialCapital
   return (
-    <Card className="flex flex-col gap-3">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="t-label">
-          Paper Session
-        </h3>
+    <Panel
+      title="Paper Session"
+      provenance="live"
+      source="/api/paper-stats"
+      action={
         <span className="text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
           started {new Date(p.sessionStart).toLocaleString()}
         </span>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard
-          label="Capital"
-          value={formatCurrency(p.currentCapital)}
-          deltaLabel={`${formatSignedCurrency(net)} vs start`}
-          valueColor={net > 0 ? 'var(--probex-positive)' : net < 0 ? 'var(--probex-negative)' : undefined}
-        />
-        <StatCard
-          label="Session P&L"
-          value={formatSignedCurrency(p.totalPnl)}
-          valueColor={p.totalPnl > 0 ? 'var(--probex-positive)' : p.totalPnl < 0 ? 'var(--probex-negative)' : undefined}
-        />
-        <StatCard
-          label="Trades"
-          value={String(p.totalTrades)}
-          deltaLabel={p.totalTrades > 0 ? `${p.wins}W / ${p.losses}L` : 'none yet'}
-        />
-        <StatCard
-          label="Win Rate"
-          value={p.totalTrades > 0 ? formatPercent(p.winRate) : '—'}
-          valueColor={p.totalTrades > 0 ? (p.winRate >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-warning)') : undefined}
-          {...(p.pending > 0
-            ? { deltaLabel: `${p.pending} pending` }
-            : p.pushes > 0
-              ? { deltaLabel: `${p.pushes} pushes` }
-              : {})}
-        />
+      }
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+        <div className="flex flex-col gap-3">
+          <Focal
+            value={formatCurrency(p.currentCapital)}
+            unit={`${formatSignedCurrency(net)} vs start`}
+            color={net > 0 ? 'var(--probex-positive)' : net < 0 ? 'var(--probex-negative)' : undefined}
+          />
+          {p.totalTrades > 0 && (
+            <Meter
+              value={Math.max(0, Math.min(1, p.winRate))}
+              color={p.winRate >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-warning)'}
+              ariaLabel="Paper session win rate"
+            />
+          )}
+        </div>
+        <RowGroup>
+          <Row
+            label="Session P&L"
+            value={formatSignedCurrency(p.totalPnl)}
+            color={p.totalPnl > 0 ? 'var(--probex-positive)' : p.totalPnl < 0 ? 'var(--probex-negative)' : undefined}
+          />
+          <Row label="Trades" value={p.totalTrades > 0 ? `${p.totalTrades} · ${p.wins}W ${p.losses}L` : '0'} />
+          <Row
+            label="Win rate"
+            value={p.totalTrades > 0 ? formatPercent(p.winRate) : '—'}
+            color={p.totalTrades > 0 && p.winRate >= 0.5 ? 'var(--probex-positive)' : undefined}
+          />
+          {p.pending > 0 && <Row label="Pending" value={`${p.pending}`} />}
+          {p.pushes > 0 && <Row label="Pushes" value={`${p.pushes}`} />}
+        </RowGroup>
       </div>
       {p.totalTrades === 0 && (
         <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
@@ -363,7 +416,7 @@ function PaperSessionCard({ paper, paperStatus }: { paper: PaperStats; paperStat
           )}
         </div>
       )}
-    </Card>
+    </Panel>
   )
 }
 
@@ -377,7 +430,7 @@ function ExecutionPolicyCard({ policy }: { policy: ExecutionPolicy }) {
   return (
     <Card className="flex flex-col gap-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="t-label">
+        <h3 className="t-card-title">
           Execution Policy
         </h3>
         <span

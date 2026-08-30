@@ -42,6 +42,20 @@ import type {
   MarketsSummaryDTO, MarketsSummary, MarketPriceHistoryDTO, MarketPriceHistory,
   MutationResultDTO, MutationResult,
 } from '@/types/engine'
+import {
+  toMathLayersStatus, toMathRecommendations, toKalmanLayer, toKalmanMultiAsset,
+  toBayesianLayer, toBrierLayer, toShapleyLayer,
+  toPerformanceByCategory, toPerformanceByAsset,
+} from './quantDto'
+import type {
+  MathLayersStatusDTO, MathLayersStatus,
+  MathRecommendationsDTO, MathRecommendationsEnvelope,
+  KalmanLayerDTO, KalmanMultiAssetDTO, KalmanLayer,
+  BayesianLayerDTO, BayesianLayer,
+  BrierLayerDTO, BrierLayer,
+  ShapleyLayerDTO, ShapleyLayer,
+  PerformanceByCategoryDTO, PerformanceByAssetDTO, PerformanceBuckets,
+} from '@/types/quant'
 
 export class LiveEngineService implements IEngineService {
   async getHealth(): Promise<ApiResult<EngineHealth>> {
@@ -379,5 +393,64 @@ export class LiveEngineService implements IEngineService {
   async resolvePaperTrades(): Promise<ApiResult<MutationResult>> {
     const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.paper.resolve))
     return ok(toMutationResult(dto))
+  }
+
+  // ── Phase 2 (2026-08-20) — quant surface ───────────────────────────────────
+  // Six math-layer routes and three performance routes, all verified live on
+  // 2026-08-20. `/math-layers/status` is the composite of the other five, so
+  // prefer it when a page wants the whole picture; the per-layer routes exist
+  // for pages that need only one and should not pay for the full ~3.9KB.
+
+  async getMathLayersStatus(): Promise<ApiResult<MathLayersStatus>> {
+    const dto = await apiGet<MathLayersStatusDTO>(endpointPath(ENDPOINTS.mathLayers.status))
+    return ok(toMathLayersStatus(dto))
+  }
+
+  async getMathRecommendations(): Promise<ApiResult<MathRecommendationsEnvelope>> {
+    const dto = await apiGet<MathRecommendationsDTO>(endpointPath(ENDPOINTS.mathLayers.recommendations))
+    return ok(toMathRecommendations(dto))
+  }
+
+  async getMathKalman(): Promise<ApiResult<KalmanLayer>> {
+    const dto = await apiGet<KalmanLayerDTO>(endpointPath(ENDPOINTS.mathLayers.kalman))
+    return ok(toKalmanLayer(dto))
+  }
+
+  async getMathBayesian(): Promise<ApiResult<BayesianLayer>> {
+    // Per-layer routes wrap their payload in `state`; the composite /status
+    // route inlines the same object. One adapter serves both.
+    const dto = await apiGet<{ available: boolean; state: BayesianLayerDTO }>(
+      endpointPath(ENDPOINTS.mathLayers.bayesian),
+    )
+    return ok(toBayesianLayer(dto.state))
+  }
+
+  async getMathBrier(): Promise<ApiResult<BrierLayer>> {
+    const dto = await apiGet<{ available: boolean; state: BrierLayerDTO }>(
+      endpointPath(ENDPOINTS.mathLayers.brier),
+    )
+    return ok(toBrierLayer(dto.state))
+  }
+
+  async getMathShapley(): Promise<ApiResult<ShapleyLayer>> {
+    const dto = await apiGet<{ available: boolean; state: ShapleyLayerDTO }>(
+      endpointPath(ENDPOINTS.mathLayers.shapley),
+    )
+    return ok(toShapleyLayer(dto.state))
+  }
+
+  async getPerformanceByCategory(): Promise<ApiResult<PerformanceBuckets>> {
+    const dto = await apiGet<PerformanceByCategoryDTO>(endpointPath(ENDPOINTS.performance.byCategory))
+    return ok(toPerformanceByCategory(dto))
+  }
+
+  async getPerformanceByAsset(): Promise<ApiResult<PerformanceBuckets>> {
+    const dto = await apiGet<PerformanceByAssetDTO>(endpointPath(ENDPOINTS.performance.byAsset))
+    return ok(toPerformanceByAsset(dto))
+  }
+
+  async getKalmanMultiAsset(): Promise<ApiResult<KalmanLayer>> {
+    const dto = await apiGet<KalmanMultiAssetDTO>(endpointPath(ENDPOINTS.performance.kalmanMultiAsset))
+    return ok(toKalmanMultiAsset(dto))
   }
 }

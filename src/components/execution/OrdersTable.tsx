@@ -49,7 +49,7 @@ export function OrdersTable() {
   const columns = objects.length > 0 ? Object.keys(objects[0]!) : []
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+    <div className="rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
       <div className="px-4 py-3 flex items-center justify-between gap-3 flex-wrap" style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <div className="flex flex-col gap-0.5">
           <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Orders</h2>
@@ -66,7 +66,7 @@ export function OrdersTable() {
                 aria-pressed={scope === s}
                 className="px-3 py-1 text-2xs font-semibold capitalize cursor-pointer transition-colors duration-150 focus-ring"
                 style={scope === s
-                  ? { background: 'var(--probex-accent)', color: '#fff' }
+                  ? { background: 'var(--probex-primary)', color: 'var(--probex-bg)' }
                   : { background: 'transparent', color: 'var(--probex-text-muted)' }}
               >
                 {s}

@@ -1,66 +1,142 @@
 'use client'
 
-// PortfolioMetrics — restored from V1 (git 0e3833a4). V1's "Avg. Consensus"
-// stat depended on a fabricated per-position consensus score; every other
-// stat was already the right shape for real engine data. V3 replaces it with
-// Total Trades (a genuinely live execution metric) and sources every value
-// from /api/execution/status + /api/positions — both confirmed, live.
+// PortfolioMetrics — the capital summary that opens the Portfolio page.
+//
+// Portfolio's question is "HOW IS CAPITAL AND PERFORMANCE EVOLVING?", so the
+// summary is split along the axis that question implies: what the account is
+// worth now, what trading has actually banked, and what is still at risk.
+//
+// ─── What this replaces ──────────────────────────────────────────────────────
+// Six StatCards in a row (Portfolio Value, Unrealized P&L, Realized P&L, Win
+// Rate, Open Positions, Total Trades), each 216×128px holding a single figure —
+// 1296px of width for six numbers, on a page that then stacked five more
+// StatCards below. Same six figures now sit in three panels alongside the
+// context that makes them mean something (win/loss split, closed count,
+// execution latency, position count), which the StatCard shape had nowhere to
+// put except a one-line `deltaLabel`.
+//
+// Data sources are unchanged: /api/execution/status and /api/positions, both
+// already polled. No new requests, no new fields.
 
 import { useApplicationStore } from '@/store/applicationStore'
-import { formatCurrency, formatSignedCurrency } from '@/lib/utils'
-import { StatCard } from '@/components/ui/StatCard'
+import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'
+import { Panel, Focal, Row, RowGroup, Meter, PanelPending } from '@/components/ui/Panel'
+
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
+
+const pnlColor = (v: number) =>
+  v > 0 ? 'var(--probex-positive)' : v < 0 ? 'var(--probex-negative)' : undefined
 
 export function PortfolioMetrics() {
   const executionSlice = useApplicationStore((s) => s.engine.executionStatus)
   const positionsSlice = useApplicationStore((s) => s.engine.positions)
 
-  const ex  = executionSlice.status === 'success' ? executionSlice.data : null
+  const ex = executionSlice.status === 'success' ? executionSlice.data : null
   const pos = positionsSlice.status === 'success' ? positionsSlice.data : null
 
-  const loading = !ex && !pos
-
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-      <StatCard
-        label="Portfolio Value"
-        value={ex ? formatCurrency(ex.balance) : ''}
-        isLoading={loading}
-        valueSize="lg"
-        {...(pos && { deltaLabel: `${pos.count} open position${pos.count === 1 ? '' : 's'}` })}
-      />
-      <StatCard
-        label="Unrealized P&L"
-        value={pos ? formatSignedCurrency(pos.totalUnrealizedPnl) : ''}
-        isLoading={loading}
-        {...(pos && pos.totalUnrealizedPnl !== 0 && { valueColor: pos.totalUnrealizedPnl > 0 ? 'var(--probex-positive)' : 'var(--probex-negative)' })}
-        deltaLabel="across open positions"
-      />
-      <StatCard
-        label="Realized P&L"
-        value={ex ? formatSignedCurrency(ex.totalPnl) : ''}
-        isLoading={loading}
-        {...(ex && ex.totalPnl !== 0 && { valueColor: ex.totalPnl > 0 ? 'var(--probex-positive)' : 'var(--probex-negative)' })}
-        {...(ex && { deltaLabel: `${ex.closedPositions} closed` })}
-      />
-      <StatCard
-        label="Win Rate"
-        value={ex ? `${Math.round(ex.winRate * 100)}%` : ''}
-        isLoading={loading}
-        {...(ex && { valueColor: ex.winRate >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-warning)' })}
-        {...(ex && { deltaLabel: `${ex.wins}W / ${ex.losses}L` })}
-      />
-      <StatCard
-        label="Open Positions"
-        value={pos ? String(pos.count) : ''}
-        isLoading={loading}
-        deltaLabel={pos && pos.count === 0 ? 'no capital deployed' : 'currently held'}
-      />
-      <StatCard
-        label="Total Trades"
-        value={ex ? String(ex.totalTrades) : ''}
-        isLoading={loading}
-        {...(ex && { deltaLabel: `${ex.avgExecutionMs}ms avg execution` })}
-      />
-    </div>
+    <section aria-label="Capital summary" className="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+      {/* 1 · What the account is worth */}
+      <Panel title="Account Value" provenance="live" source="/api/execution/status">
+        {!ex ? (
+          <PanelPending note="Awaiting the execution engine's balance." />
+        ) : (
+          <>
+            <Focal
+              value={formatCurrency(ex.balance)}
+              unit={ex.mode === 'paper' ? 'paper account' : 'live account'}
+            />
+            <RowGroup>
+              <Row label="Open positions" value={pos ? String(pos.count) : '—'} />
+              <Row label="Closed" value={`${ex.closedPositions}`} />
+              <Row
+                label="Total trades"
+                value={
+                  ex.totalTrades === 0
+                    ? '0'
+                    : <>
+                        {ex.totalTrades}
+                        <span style={{ color: 'var(--probex-text-disabled)', fontWeight: 400 }}>
+                          {' · '}{Math.round(ex.avgExecutionMs)}ms avg
+                        </span>
+                      </>
+                }
+              />
+            </RowGroup>
+          </>
+        )}
+      </Panel>
+
+      {/* 2 · What trading has actually banked */}
+      <Panel title="Realized Performance" provenance="live" source="/api/execution/status">
+        {!ex ? (
+          <PanelPending note="Awaiting the trading record." />
+        ) : (
+          <>
+            <Focal
+              value={formatSignedCurrency(ex.totalPnl)}
+              unit="realized"
+              color={pnlColor(ex.totalPnl)}
+              caption={
+                ex.totalTrades === 0 ? (
+                  <span className="t-helper">No closed trades yet — nothing has been realized.</span>
+                ) : undefined
+              }
+            />
+            {ex.totalTrades > 0 && (
+              <Meter
+                value={clamp01(ex.winRate)}
+                color={ex.winRate >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-warning)'}
+                ariaLabel="Win rate"
+              />
+            )}
+            <RowGroup>
+              <Row
+                label="Win rate"
+                value={ex.totalTrades > 0 ? formatPercent(ex.winRate) : '—'}
+                color={ex.totalTrades > 0 && ex.winRate >= 0.5 ? 'var(--probex-positive)' : undefined}
+              />
+              <Row label="Wins" value={`${ex.wins}`} color={ex.wins > 0 ? 'var(--probex-positive)' : undefined} />
+              <Row label="Losses" value={`${ex.losses}`} color={ex.losses > 0 ? 'var(--probex-negative)' : undefined} />
+            </RowGroup>
+          </>
+        )}
+      </Panel>
+
+      {/* 3 · What is still at risk */}
+      <Panel title="Open Exposure" provenance="live" source="/api/positions">
+        {!pos ? (
+          <PanelPending note="Awaiting open-position state." />
+        ) : (
+          <>
+            <Focal
+              value={formatSignedCurrency(pos.totalUnrealizedPnl)}
+              unit="unrealized"
+              color={pnlColor(pos.totalUnrealizedPnl)}
+              caption={
+                pos.count === 0 ? (
+                  <span className="t-helper">Flat — no capital deployed right now.</span>
+                ) : undefined
+              }
+            />
+            <RowGroup>
+              <Row label="Positions held" value={`${pos.count}`} />
+              <Row
+                label="Combined P&L"
+                value={ex ? formatSignedCurrency(ex.totalPnl + pos.totalUnrealizedPnl) : '—'}
+                color={ex ? pnlColor(ex.totalPnl + pos.totalUnrealizedPnl) : undefined}
+                title="Realized plus unrealized — derived, not reported by the engine"
+              />
+              <Row
+                label="Account mode"
+                value={ex ? ex.mode : '—'}
+                color={ex?.mode === 'live' ? 'var(--probex-negative)' : undefined}
+              />
+            </RowGroup>
+          </>
+        )}
+      </Panel>
+    </section>
   )
 }

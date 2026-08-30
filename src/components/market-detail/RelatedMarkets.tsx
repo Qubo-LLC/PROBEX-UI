@@ -62,7 +62,7 @@ export function RelatedMarkets({ currentMarketId, segment, onSelect }: RelatedMa
   }, [tab, allRows, currentMarketId, segment])
 
   return (
-    <div className="mx-6 my-5 rounded-xl overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+    <div className="mx-6 my-5 rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
       <div style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <div className="px-4 pt-3">
           <h2 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--probex-text-primary)' }}>Related Markets</h2>

@@ -29,7 +29,7 @@ export function CapitalLedger() {
   const rows = (ledger?.ledger ?? []).slice().sort((a, b) => b.closedAt - a.closedAt).slice(0, MAX_ROWS)
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+    <div className="rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
       <div className="px-4 py-3 flex flex-col gap-2.5" style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Capital Ledger</h2>

@@ -38,8 +38,13 @@ interface MutationButtonProps {
 }
 
 const TONE_STYLE: Record<Tone, React.CSSProperties> = {
-  danger:  { background: 'var(--probex-negative)', color: '#fff', border: '1px solid transparent' },
-  primary: { background: 'var(--probex-accent)',   color: '#fff', border: '1px solid transparent' },
+  // --probex-negative is tuned to be legible AS TEXT on a dark surface, which
+  // makes it too light to sit UNDER white text: #EF4444 with #fff gives 3.76:1,
+  // below AA. That put the least readable label in the product on the Emergency
+  // Stop button. --probex-negative-strong is the same hue darkened for use as a
+  // fill; white on it clears 4.5:1 in every theme.
+  danger:  { background: 'var(--probex-negative-strong)', color: '#fff', border: '1px solid transparent' },
+  primary: { background: 'var(--probex-primary)', color: 'var(--probex-bg)', border: '1px solid transparent' },
   neutral: { background: 'transparent', color: 'var(--probex-text-secondary)', border: '1px solid var(--probex-border-default)' },
 }
 

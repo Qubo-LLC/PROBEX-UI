@@ -6,6 +6,7 @@
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { LiveChart, type LiveChartPoint } from '@/components/shared/LiveChart'
+import { chartStateFromSlice } from '@/components/shared/ChartFrame'
 import { formatCurrency, formatSignedCurrency } from '@/lib/utils'
 
 export function PnLChart({ height = 200 }: { height?: number }) {
@@ -14,9 +15,16 @@ export function PnLChart({ height = 200 }: { height?: number }) {
     ? slice.data.history.map((p) => ({ tick: new Date(p.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), value: p.realizedPnl }))
     : []
 
+  // Real state, not just "has rows": an errored slice is unavailable and an
+  // available:false envelope is idle — both look like zero rows otherwise.
+  const { state, message } = chartStateFromSlice(slice, data.length)
+
   return (
     <LiveChart
       title="Daily & Cumulative P&L"
+      state={state}
+      message={message}
+      lastConfirmedAt={slice.data?.timestamp}
       source="/api/portfolio/history"
       data={data}
       variant="line"

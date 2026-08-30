@@ -25,17 +25,18 @@ import { SegmentPerformance } from './SegmentPerformance'
 import { AnalyticsEngineStatus } from './AnalyticsEngineStatus'
 import { ConsensusAccuracyAnalytics } from './ConsensusAccuracyAnalytics'
 import { IntelligenceModule } from '@/components/shared/IntelligenceModule'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 export function AnalyticsPage() {
   return (
     <div className="page-container flex flex-col gap-5 pb-8 animate-fade-in-up">
-      <div>
-        <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--probex-text-primary)' }}>Analytics</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--probex-text-muted)' }}>Deeper analysis of edge quality, capital efficiency, and trading performance</p>
-      </div>
+      <PageHeader
+        title="Analytics"
+        subtitle="How the system has performed over time — edge quality, capital efficiency, and trading results"
+      />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Edge & Sizing</h2>
+        <h2 className="t-section-title">Edge & Sizing</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
           <EdgeQualityAnalytics />
           <KellyUtilization />
@@ -43,12 +44,12 @@ export function AnalyticsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Performance History</h2>
+        <h2 className="t-section-title">Performance History</h2>
         <PerformanceAnalytics />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Attribution</h2>
+        <h2 className="t-section-title">Attribution</h2>
         <AnalyticsEngineStatus />
         <SegmentPerformance />
       </section>
@@ -56,7 +57,8 @@ export function AnalyticsPage() {
       <IntelligenceModule
         title="Signal Accuracy"
         description="How often the engine's edge direction has matched the eventual market resolution — activates once resolution outcomes are joined to signal history"
-        endpoint="consensusAccuracy"
+        // Human-readable, not the registry key — see ConsensusAccuracyAnalytics.
+        endpoint="Consensus accuracy"
       >
         <ConsensusAccuracyAnalytics />
       </IntelligenceModule>

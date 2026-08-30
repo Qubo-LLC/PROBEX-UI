@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
 import { cookies, headers } from 'next/headers'
 import { RUNTIME_GLOBAL_KEY } from '@/config/runtime'
 import { resolveRuntimeConfig } from '@/config/runtime.server'
@@ -16,25 +15,20 @@ import type { ReactNode } from 'react'
 // Module scope → runs once per server process, before any page renders.
 validateEnv()
 
-const inter = Inter({
-  subsets:  ['latin'],
-  variable: '--font-inter',
-  display:  'swap',
-  weight:   ['400', '500', '600', '700', '800'],
-  preload:  true,
-})
-
-// Data / machine voice (Design System §typography): tabular monospace for every
-// numeral, timestamp, latency, and engine-authored value. Loaded as a variable
-// font (single file, full weight axis) and exposed as --font-mono, which
-// tailwind's `mono` family and globals' `.font-data` already reference. Phase 1
-// only makes the face available; casting data onto it is the Data-Plane phase.
-const jetbrainsMono = JetBrains_Mono({
-  subsets:  ['latin'],
-  variable: '--font-mono',
-  display:  'swap',
-  preload:  true,
-})
+// ─── Typography ───────────────────────────────────────────────────────────
+//
+// No font is loaded here. Inter and JetBrains Mono used to be pulled through
+// next/font/google from this file, which made fonts.googleapis.com a build-time
+// dependency of the app's typography — and one that fails soft: on a failed
+// fetch Next substitutes a metrics-adjusted "<Family> Fallback" and builds
+// successfully, so the product renders in fallback type with only a warning in
+// the log. The dev server was running in precisely that state.
+//
+// Both families now resolve from --font-sans / --font-mono, declared once in
+// globals.css against fonts the operating system already provides. See the
+// TYPEFACES block there for the stack rationale. Nothing about the type SCALE
+// changed: the t-* classes, sizes, weights, letter-spacing and tabular figures
+// are untouched — only where the glyphs come from.
 
 // ─── Metadata ─────────────────────────────────────────────────────────────
 
@@ -205,7 +199,9 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       // intentional `scroll-behavior: smooth` on <html> (silences the dev
       // warning while preserving smooth scrolling).
       data-scroll-behavior="smooth"
-      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      // No font className: next/font's generated variable classes are gone.
+      // --font-sans / --font-mono are declared on :root in globals.css, so they
+      // are in scope for the whole document without anything being mounted here.
       // Suppress hydration warning: data-theme will be updated client-side
       suppressHydrationWarning
     >

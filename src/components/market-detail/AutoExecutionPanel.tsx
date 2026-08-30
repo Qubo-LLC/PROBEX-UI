@@ -40,7 +40,12 @@ export function AutoExecutionPanel({ edge }: { edge: EdgeRow | undefined }) {
     )
   }
 
-  const minEdgePct = survival.minEdgeThreshold * 100
+  // minEdgeThreshold is ALREADY a percentage (1.6 = 1.6%), same unit as
+  // edge.edgePct — see formatEdgePct in lib/display/engine. The ×100 that used
+  // to be here made the threshold 100× too large, so `wouldTrigger` was false
+  // for every edge the engine can produce and the panel told the operator a
+  // qualifying trade would not fire.
+  const minEdgePct = survival.minEdgeThreshold
   const wouldTrigger = edge !== undefined && edge.edgePct >= minEdgePct
   const kellySizePct = edge?.kellySize !== null && edge?.kellySize !== undefined
     ? edge.kellySize * survival.kellyModifier * 100

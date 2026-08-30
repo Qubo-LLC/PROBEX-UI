@@ -25,7 +25,24 @@ export interface ProfitTargets {
 }
 
 interface PreferencesStore {
-  /** Watchlisted market ids, keyed for O(1) membership checks. */
+  /**
+   * Watchlisted market ids, keyed for O(1) membership checks.
+   *
+   * ─── Why expired ids are NOT auto-pruned ───────────────────────────────────
+   * These are ephemeral ids (ID_LIFECYCLE_MANAGEMENT.md) and they accumulate:
+   * a market watched today is dead within ~15 minutes but its id stays here.
+   * Pruning on "absent from /api/markets" looks like the obvious fix and is a
+   * worse bug than the leak — /api/markets is the endpoint that stalls, and on
+   * 2026-08-20 it timed out for the better part of an hour. A prune driven by
+   * absence would have silently deleted the operator's entire watchlist during
+   * an outage, permanently, with no way to recover it.
+   *
+   * Absence from a list is not proof of expiry; it is proof we could not ask.
+   * So entries are kept, and WatchlistPage renders unmatched ids as "no longer
+   * active" only when the list genuinely resolved — and as "status unknown"
+   * when it did not. Growth is bounded in practice by the operator, who is the
+   * only thing that adds to it.
+   */
   watchlist: Record<string, true>
   toggleWatchlist: (marketId: string) => void
 

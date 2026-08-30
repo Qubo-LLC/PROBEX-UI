@@ -113,7 +113,7 @@ export function PaperTradingConsole({ embedded = false }: EmbeddableProps = {}) 
           {/* 4 · Survival state timeline */}
           {p.survivalStates.length > 0 && (
             <Card className="flex flex-col gap-3">
-              <h3 className="t-label">
+              <h3 className="t-card-title">
                 Survival State Timeline
               </h3>
               <div className="flex flex-wrap items-center gap-2">
@@ -170,7 +170,7 @@ function BucketTable({ title, source, buckets, formatKey }: { title: string; sou
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h3 className="t-label">{title}</h3>
+        <h3 className="t-card-title">{title}</h3>
         <ProvenanceBadge provenance="live" detail={source} />
       </div>
       {entries.length === 0 ? (

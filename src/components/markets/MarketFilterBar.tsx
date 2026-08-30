@@ -17,7 +17,19 @@ const SORT_OPTIONS: Array<{ field: MarketSortField; label: string }> = [
   { field: 'closesAt',    label: 'Closing Soon' },
 ]
 
-export function MarketFilterBar() {
+interface MarketFilterBarProps {
+  /**
+   * True when the market list could not be loaded.
+   *
+   * The controls stay rendered but inert. Hiding them would make the page look
+   * like filtering was never available; leaving them live would offer to sort
+   * and search a dataset that cannot arrive, which is what the toolbar did
+   * while sitting directly above "Markets unavailable".
+   */
+  disabled?: boolean
+}
+
+export function MarketFilterBar({ disabled = false }: MarketFilterBarProps = {}) {
   const search    = useUIStore((s) => s.marketSearch)
   const timeframe = useUIStore((s) => s.marketTimeframe)
   const sortBy    = useUIStore((s) => s.marketSortBy)
@@ -44,7 +56,11 @@ export function MarketFilterBar() {
   const hasFilter = Boolean(search || timeframe !== null)
 
   return (
-    <div className="flex flex-col gap-2">
+    <div
+      className="flex flex-col gap-2"
+      style={disabled ? { opacity: 0.45 } : undefined}
+      aria-disabled={disabled || undefined}
+    >
       {/* Row 1: Search + Sort + View toggle */}
       <div className="flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[180px] max-w-sm">
@@ -63,10 +79,12 @@ export function MarketFilterBar() {
             placeholder="Search Bitcoin markets…"
             className="input-base h-8 pl-8 pr-3 text-sm w-full"
             aria-label="Search markets"
+            disabled={disabled}
           />
           {search && (
             <button
               onClick={() => setSearch('')}
+              disabled={disabled}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer focus-ring rounded"
               style={{ color: 'var(--probex-text-muted)' }}
               aria-label="Clear search"
@@ -85,6 +103,7 @@ export function MarketFilterBar() {
             className="h-8 pl-2.5 pr-6 text-xs rounded-md cursor-pointer appearance-none transition-colors duration-100"
             style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border-default)', color: 'var(--probex-text-secondary)', minWidth: 110 }}
             aria-label="Sort markets by"
+            disabled={disabled}
           >
             {SORT_OPTIONS.map((opt) => <option key={opt.field} value={opt.field}>{opt.label}</option>)}
           </select>
@@ -98,6 +117,7 @@ export function MarketFilterBar() {
             <button
               key={m}
               onClick={() => setViewMode(m)}
+              disabled={disabled}
               aria-pressed={viewMode === m}
               aria-label={`${m} view`}
               className="flex items-center justify-center w-8 h-8 cursor-pointer transition-colors duration-100 focus-ring"
@@ -124,6 +144,7 @@ export function MarketFilterBar() {
         {hasFilter && (
           <button
             onClick={resetFilters}
+            disabled={disabled}
             className="text-xs px-2.5 py-1.5 rounded-md cursor-pointer transition-colors duration-100 focus-ring"
             style={{ background: 'var(--probex-negative-dim)', color: 'var(--probex-negative)', border: '1px solid var(--probex-negative-border)' }}
           >

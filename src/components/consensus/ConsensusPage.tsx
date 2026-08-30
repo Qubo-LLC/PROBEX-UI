@@ -110,7 +110,7 @@ export function ConsensusPage({ embedded = false }: EmbeddableProps = {}) {
 
       {/* ── Decision Pipeline (live, whole-engine cycle — not market-scoped) ── */}
       <Card className="flex flex-col gap-3">
-        <h3 className="t-label">
+        <h3 className="t-card-title">
           Decision Pipeline
         </h3>
         <DecisionPipeline
@@ -128,7 +128,7 @@ export function ConsensusPage({ embedded = false }: EmbeddableProps = {}) {
       {/* ── Consensus Intelligence — platform-wide, live since 2026-07-22 ── */}
       <div className="flex flex-col gap-3 mt-2">
         <div>
-          <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Consensus Intelligence</h2>
+          <h2 className="t-section-title">Consensus Intelligence</h2>
           <p className="text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>Platform-wide aggregation across all signal sources</p>
         </div>
 

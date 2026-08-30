@@ -31,7 +31,7 @@ export function KellyUtilization() {
 
   if (!cfg || !sv) {
     return (
-      <div className="rounded-xl p-4" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+      <div className="rounded-lg p-4" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
         <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>Waiting for /api/config and /api/survival…</p>
       </div>
     )
@@ -41,7 +41,7 @@ export function KellyUtilization() {
   const utilization = cfg.kellyFraction > 0 ? effectiveKelly / cfg.kellyFraction : 1
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+    <div className="rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
       <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Kelly Utilization</h2>
         <p className="text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>How much of the configured Kelly fraction the survival brain currently allows</p>

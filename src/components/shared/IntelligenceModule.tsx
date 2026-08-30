@@ -32,7 +32,7 @@ export function IntelligenceModule({ title, description, endpoint, children, cla
     >
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>{title}</h2>
+          <h2 className="t-section-title">{title}</h2>
           <p className="text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>{description}</p>
         </div>
         <ProvenanceBadge provenance="awaiting" detail={endpoint} />

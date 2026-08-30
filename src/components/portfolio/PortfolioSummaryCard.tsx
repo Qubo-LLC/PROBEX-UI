@@ -8,7 +8,7 @@
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatCurrency, formatPercent } from '@/lib/utils'
 import { StatCard } from '@/components/ui/StatCard'
-import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
+import { Panel } from '@/components/ui/Panel'
 
 export function PortfolioSummaryCard() {
   const summarySlice = useApplicationStore((s) => s.engine.portfolioSummary)
@@ -19,12 +19,16 @@ export function PortfolioSummaryCard() {
   if (!s && !bal) return null
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
-        <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Snapshot History</h2>
-        <ProvenanceBadge provenance="live" detail="/api/portfolio/summary" />
-      </div>
-      <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+    // Canonical data surface — see ConsensusScoreCard.
+    <Panel
+      title="Snapshot History"
+      provenance={s ? 'live' : 'idle'}
+      source="/api/portfolio/summary"
+      state={s ? 'live' : 'idle'}
+      // Capital changing is the most consequential number on this surface.
+      {...(s ? { updateKey: s.currentValue } : {})}
+    >
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {s && (
           <>
             <StatCard label="Current Value" value={formatCurrency(s.currentValue)} deltaLabel={`peak ${formatCurrency(s.peakValue)}`} />
@@ -60,12 +64,10 @@ export function PortfolioSummaryCard() {
         )}
       </div>
       {s && s.currentPositions !== 0 && (
-        <div className="px-4 pb-3">
-          <p className="text-2xs leading-relaxed" style={{ color: 'var(--probex-text-disabled)' }}>
-            This snapshot history reports {s.currentPositions} current position{s.currentPositions === 1 ? '' : 's'} from {s.snapshotCount} portfolio snapshots — a different aggregation than the live trading metrics above, which come directly from the execution engine.
-          </p>
-        </div>
+        <p className="t-helper">
+          This snapshot history reports {s.currentPositions} current position{s.currentPositions === 1 ? '' : 's'} from {s.snapshotCount} portfolio snapshots — a different aggregation than the live trading metrics above, which come directly from the execution engine.
+        </p>
       )}
-    </div>
+    </Panel>
   )
 }

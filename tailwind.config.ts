@@ -51,10 +51,20 @@ const config: Config = {
       },
 
       // ─── Typography ──────────────────────────────────────────────────────
+      // Both families resolve through the CSS variables declared on :root in
+      // globals.css (see the TYPEFACES block there) — that file is the single
+      // source of truth, and these entries only point at it. The trailing
+      // generic is a safety net for the case where the stylesheet has not
+      // applied yet; the full platform stack lives in the variable.
+      //
+      // `display` previously pointed at var(--font-display), which was never
+      // defined anywhere — so `font-display` silently fell through to its
+      // literal "Inter" fallback, matching only on machines that happened to
+      // have Inter installed. It now aliases the sans stack.
       fontFamily: {
-        sans:  ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
-        mono:  ["var(--font-mono)", "JetBrains Mono", "Fira Code", "monospace"],
-        display: ["var(--font-display)", "Inter", "system-ui", "sans-serif"],
+        sans:    ["var(--font-sans)", "system-ui", "sans-serif"],
+        mono:    ["var(--font-mono)", "ui-monospace", "monospace"],
+        display: ["var(--font-sans)", "system-ui", "sans-serif"],
       },
 
       fontSize: {

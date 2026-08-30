@@ -68,7 +68,7 @@ export function Dialog({
         {(title || dismissable) && (
           <div className="flex items-start justify-between gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
             <div className="flex flex-col gap-0.5 min-w-0">
-              {title && <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>{title}</h2>}
+              {title && <h2 className="t-section-title">{title}</h2>}
               {description && <p className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{description}</p>}
             </div>
             {dismissable && (

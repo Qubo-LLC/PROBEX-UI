@@ -32,7 +32,7 @@ export function PositionDetail({ position, edge, onClose }: { position: Position
   }[alignment]
 
   return (
-    <div className="rounded-xl overflow-hidden animate-fade-in-up" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border-default)' }}>
+    <div className="rounded-lg overflow-hidden animate-fade-in-up" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border-default)' }}>
       <div className="flex items-start justify-between gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="text-2xs font-black uppercase tracking-widest px-2 py-0.5 rounded flex-shrink-0" style={{ background: sideColor, color: isYes ? '#050816' : '#fff' }}>{position.side.toUpperCase()}</span>

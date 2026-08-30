@@ -13,7 +13,6 @@
 // empty/awaiting state instead of one page-level all-or-nothing gate. The
 // page always looks like a complete, populated product.
 
-import type { ReactNode } from 'react'
 import { PortfolioOverview } from './PortfolioOverview'
 import { PortfolioSummaryCard } from './PortfolioSummaryCard'
 import { PerformanceWindow } from './PerformanceWindow'
@@ -23,25 +22,41 @@ import { PortfolioActivity } from './PortfolioActivity'
 import { PortfolioValueChart } from './charts/PortfolioValueChart'
 import { PnLChart } from './charts/PnLChart'
 import { WinRateChart } from './charts/WinRateChart'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { SectionHeading } from '@/components/ui/SectionHeading'
+import { Panel } from '@/components/ui/Panel'
+import { chartStateFromSlice } from '@/components/shared/ChartFrame'
+import { useApplicationStore } from '@/store/applicationStore'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
-function ChartCard({ title, children, className = '' }: { title: string; children: ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-xl p-4 ${className}`} style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
-      <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--probex-text-muted)' }}>{title}</h3>
-      {children}
-    </div>
-  )
-}
+// The local ChartCard that used to live here re-implemented .card at a
+// different radius (`rounded-xl` where every sibling surface is `rounded-lg`)
+// with its own uppercase heading treatment matching neither .t-card-title nor
+// .t-label — ten instances on this page alone, and the same hand-rolled shape
+// appeared in ~30 places across the app. Charts now sit in the shared Panel,
+// so a chart container and an instrument panel are the same material.
 
 export function PortfolioPage({ embedded = false }: EmbeddableProps = {}) {
+  // All three history charts read one slice, so the wrapping Panels derive
+  // their lineage from it here rather than hardcoding provenance="live".
+  // Measured before this: a failing /api/portfolio/history rendered
+  // "Portfolio Value unavailable" directly beneath a green LIVE badge, because
+  // the Panel could not see the state its own child had resolved.
+  const historySlice = useApplicationStore((st) => st.engine.portfolioHistory)
+  const historyRows = historySlice.data?.history.length ?? 0
+  const { state: historyState } = chartStateFromSlice(historySlice, historyRows)
+  const historyProvenance =
+    historyState === 'unavailable' ? 'unreachable' as const
+    : historyState === 'idle'      ? 'idle' as const
+    : 'live' as const
+  const historyPanelState = historyState === 'unavailable' ? 'unavailable' as const : 'live' as const
   return (
     <div className={pageShell(embedded, 'gap-5')}>
       {!embedded && (
-        <div>
-          <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--probex-text-primary)' }}>Portfolio</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--probex-text-muted)' }}>Performance, exposure, and the engine&apos;s live edge alignment</p>
-        </div>
+        <PageHeader
+          title="Portfolio"
+          subtitle="How capital and performance are evolving — value, realized results, and open exposure"
+        />
       )}
 
       <PortfolioOverview />
@@ -51,16 +66,25 @@ export function PortfolioPage({ embedded = false }: EmbeddableProps = {}) {
       <PerformanceWindow />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Performance History</h2>
+        <SectionHeading
+          title="Performance History"
+          subtitle="Every series below is drawn from the engine's own snapshot history"
+        />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <ChartCard title="Portfolio Value"><PortfolioValueChart height={200} /></ChartCard>
-          <ChartCard title="Daily & Cumulative P&L"><PnLChart height={200} /></ChartCard>
-          <ChartCard title="Rolling Win Rate" className="lg:col-span-2"><WinRateChart height={160} /></ChartCard>
+          <Panel title="Portfolio Value" provenance={historyProvenance} state={historyPanelState} source="/api/portfolio/history">
+            <PortfolioValueChart height={200} />
+          </Panel>
+          <Panel title="Daily & Cumulative P&L" provenance={historyProvenance} state={historyPanelState} source="/api/portfolio/history">
+            <PnLChart height={200} />
+          </Panel>
+          <Panel title="Rolling Win Rate" provenance={historyProvenance} state={historyPanelState} source="/api/portfolio/history" className="lg:col-span-2">
+            <WinRateChart height={160} />
+          </Panel>
         </div>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Allocation</h2>
+        <SectionHeading title="Allocation" />
         <PortfolioAllocation />
       </section>
 

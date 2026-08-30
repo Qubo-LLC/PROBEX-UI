@@ -6,17 +6,29 @@
 
 import { useEffect, useState } from 'react'
 import { diagnostics, type DiagnosticsSnapshot, type EndpointRecord } from '@/lib/diagnostics'
+import { circuitSnapshot } from '@/lib/api/circuitBreaker'
+import { useRuntimeConfig } from '@/providers/RuntimeConfigProvider'
 import { Card } from '@/components/ui/Card'
 import { RadialGauge } from '@/components/shared/RadialGauge'
 
 export function DiagnosticsPanel() {
+  const { deployment } = useRuntimeConfig()
+
   // The singleton is not reactive — poll a snapshot once per second while
   // the panel is mounted (client-side only; renders nothing on the server).
   const [snap, setSnap] = useState<DiagnosticsSnapshot | null>(null)
+  // Endpoints the client has deliberately stopped calling. Without this the
+  // operator sees an endpoint simply go quiet and cannot tell whether the
+  // engine stopped answering or the app stopped asking — see circuitBreaker.ts.
+  const [paused, setPaused] = useState<ReturnType<typeof circuitSnapshot>>([])
 
   useEffect(() => {
-    setSnap(diagnostics.snapshot())
-    const id = setInterval(() => setSnap(diagnostics.snapshot()), 1_000)
+    const read = () => {
+      setSnap(diagnostics.snapshot())
+      setPaused(circuitSnapshot().filter((c) => c.open))
+    }
+    read()
+    const id = setInterval(read, 1_000)
     return () => clearInterval(id)
   }, [])
 
@@ -28,7 +40,7 @@ export function DiagnosticsPanel() {
   return (
     <Card className="flex flex-col gap-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="t-label">
+        <h3 className="t-card-title">
           Endpoint Diagnostics
         </h3>
         <span className="text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
@@ -51,9 +63,31 @@ export function DiagnosticsPanel() {
         </div>
       )}
 
+      {paused.length > 0 && (
+        <div
+          className="flex flex-col gap-1 px-3 py-2 rounded-md"
+          style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}
+          role="status"
+        >
+          <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-warning)' }}>
+            Requests paused
+          </span>
+          {paused.map((c) => (
+            <span key={c.key} className="text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+              {c.key} — stopped responding {c.consecutiveFailures}× in a row; retrying in {c.cooldownSeconds}s
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* The engine's address is named only under the development policy —
+          elsewhere this panel is just as useful without printing an internal
+          host onto a console that gets screen-shared. Same rule as the
+          top-nav popover and the System State panel. */}
       <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
-        Live view of this browser session's requests to {snap.apiBaseUrl || 'the engine API'} — each ring is this
-        endpoint's session success rate; latency includes network transit, not just engine processing.
+        Live view of this browser session&rsquo;s requests to{' '}
+        {deployment === 'development' && snap.apiBaseUrl ? snap.apiBaseUrl : 'the engine API'} — each ring is this
+        endpoint&rsquo;s session success rate; latency includes network transit, not just engine processing.
       </p>
     </Card>
   )

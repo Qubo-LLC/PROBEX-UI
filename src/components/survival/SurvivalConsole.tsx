@@ -74,7 +74,7 @@ export function SurvivalConsole({ embedded = false }: EmbeddableProps = {}) {
           {/* 1 · State machine */}
           <Card className="flex flex-col gap-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="t-label">
+              <h3 className="t-card-title">
                 Survival State
               </h3>
               <span className="text-xs" style={{ color: 'var(--probex-text-muted)' }}>
@@ -175,7 +175,7 @@ export function SurvivalConsole({ embedded = false }: EmbeddableProps = {}) {
             }} />
 
             <Card className="flex flex-col gap-3">
-              <h3 className="t-label">
+              <h3 className="t-card-title">
                 Brain Response
               </h3>
               <SizingRow

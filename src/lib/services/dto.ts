@@ -5,8 +5,28 @@
 // Wire conventions:
 //   • Entity timestamps are ISO 8601 strings → normalized to epoch ms here
 //   • Money is USD floats; percentages arrive as the backend sends them
+//
+// ─── The two-shape envelope ──────────────────────────────────────────────────
+// Many engine endpoints carry an `available` flag, and several answer with ONE
+// OF TWO shapes: the full payload, or `{ available: false, message }` with the
+// payload key OMITTED entirely. Verified 2026-08-20 on /api/consensus,
+// /api/consensus/bias, /api/portfolio/summary and (nested)
+// /api/portfolio/performance — see docs/BACKEND_CONTRACT_2026-08-20.md.
+//
+// Those four are modelled explicitly: their domain types make the payload
+// `| null` so "not computed yet" cannot be mistaken for zero.
+//
+// The remaining `available`-bearing endpoints were all observed returning the
+// full shape, so their types are left alone rather than restructured on
+// speculation. They are guarded with `requireAvailable()` instead: if the
+// engine ever sends them the short shape, the adapter raises a NAMED, typed
+// error the UI can report honestly, rather than a raw TypeError from
+// dereferencing `undefined` — which is what produced a misleading hard-error
+// state before this audit.
 
 import { APP_NAME, APP_VERSION } from '@/config/constants'
+import { normalizeHealthStatus } from './health'
+import { ServiceException } from './response'
 import type {
   EngineHealthDTO, HealthComponentDTO, RuntimeComponentsDTO,
   EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
@@ -18,7 +38,7 @@ import type {
   EngineMarkets, EnginePositions, EngineEvents, EngineEdges,
   EngineIdentity, ExecutionStatus, RateLimitBucket,
   ExecutionPolicy, ExecutionTrades, PaperStats, BucketPerformanceStat,
-  EngineHealthStatus, SurvivalState, EngineMode,
+  SurvivalState, EngineMode,
   PositionsHistoryDTO, PositionsHistory,
   SurvivalPatternsDTO, SurvivalPatterns, SurvivalPatternItemDTO, SurvivalPatternItem,
   ConsensusDTO, Consensus, ConsensusBiasDTO, ConsensusBias,
@@ -46,6 +66,39 @@ const pctToFraction = (pct: number): number => pct / 100
 
 export const isoToMs = (iso: string): number => new Date(iso).getTime()
 export const msToIso = (ms: number): string => new Date(ms).toISOString()
+
+// ─── Two-shape envelope guard ─────────────────────────────────────────────────
+
+/**
+ * Asserts that an `available`-gated payload is actually present.
+ *
+ * Turns the engine's "not computed yet" short shape into a typed, named
+ * ServiceException instead of a TypeError raised deep inside a mapper. The
+ * distinction is the whole point: a ServiceException carries a code and a
+ * message the UI can present as a real state, whereas
+ * `Cannot read properties of undefined (reading 'timestamp')` reaches the user
+ * as generic breakage and tells the operator nothing true.
+ *
+ * @param payload   The nested object the DTO declares.
+ * @param endpoint  Path, for the operator-facing message.
+ * @param message   The engine's own `message`, when it sent one.
+ */
+function requireAvailable<T>(
+  payload:  T | undefined | null,
+  endpoint: string,
+  message?: string,
+): T {
+  if (payload === undefined || payload === null) {
+    throw new ServiceException(
+      'PAYLOAD_UNAVAILABLE',
+      message ?? `${endpoint} reported no data available yet`,
+      // Retryable: this is a transient engine state, not a contract violation.
+      // The engine starts sending the full shape as soon as it has something.
+      true,
+    )
+  }
+  return payload
+}
 
 // ─── Engine shared helpers ────────────────────────────────────────────────────
 
@@ -82,7 +135,8 @@ function toRuntimeComponents(dto: RuntimeComponentsDTO): RuntimeComponents {
 
 export function toEngineHealth(dto: EngineHealthDTO): EngineHealth {
   return {
-    status:          dto.status as EngineHealthStatus,
+    status:          normalizeHealthStatus(dto.status),
+    statusLabel:     dto.status,
     components:      dto.components.map(toHealthComponent),
     checkDurationMs: dto.check_duration_ms,
     uptimeSeconds:   dto.uptime_seconds,
@@ -130,7 +184,7 @@ export function toEngineStats(dto: EngineStatsDTO): EngineStats {
     unrealizedPnl:      dto.unrealized_pnl,
     realizedPnl:        dto.realized_pnl,
     totalPnl:           dto.total_pnl,
-    healthStatus:       dto.health_status as EngineHealthStatus,
+    healthStatus:       normalizeHealthStatus(dto.health_status),
     healthComponents:   dto.health_components.map(toHealthComponent),
     runtimeComponents:  toRuntimeComponents(dto.runtime_components),
     timestamp:          isoToMs(dto.timestamp),
@@ -200,7 +254,7 @@ export function toPriceHistory(dto: PriceHistoryDTO): PriceHistory {
 
 export function toEngineIdentity(dto: EngineIdentityDTO): EngineIdentity {
   return {
-    status:        dto.status as EngineHealthStatus,
+    status:        normalizeHealthStatus(dto.status),
     bot:           dto.bot,
     version:       dto.version,
     mode:          dto.runtime.mode as EngineMode,
@@ -245,7 +299,9 @@ function toRateLimitBucket(dto: RateLimitBucketDTO): RateLimitBucket {
 }
 
 export function toExecutionStatus(dto: ExecutionStatusDTO): ExecutionStatus {
-  const s = dto.status
+  // The source of trading truth — if the engine ever withholds it, say so
+  // plainly rather than crashing mid-map. See the two-shape note in the header.
+  const s = requireAvailable(dto.status, '/api/execution/status')
   return {
     available:          dto.available,
     mode:               dto.mode as EngineMode,
@@ -423,44 +479,65 @@ export function toSurvivalPatterns(dto: SurvivalPatternsDTO): SurvivalPatterns {
   }
 }
 
+/**
+ * The engine answers /api/consensus with ONE OF TWO shapes: a full reading, or
+ * `{ available: false, message }` with the `consensus` key omitted entirely.
+ * Dereferencing it unconditionally threw a TypeError, which the hook caught and
+ * rendered as a hard error — turning "the engine hasn't computed one yet" into
+ * "something is broken". They are different facts; keep them different.
+ */
 export function toConsensus(dto: ConsensusDTO): Consensus {
   const c = dto.consensus
   return {
     available: dto.available,
-    scoreTimestamp: isoToMs(c.timestamp),
-    score: c.score,
-    confidence: c.confidence,
-    signalCount: c.signal_count,
-    signals: {
-      edgeDirection: c.signals.edge_direction,
-      edgeConfidence: c.signals.edge_confidence,
-      rsiMomentum: c.signals.rsi_momentum,
-      macdTrend: c.signals.macd_trend,
-      priceMomentum: c.signals.price_momentum,
+    message:   dto.message ?? null,
+    reading: !dto.available || c === undefined ? null : {
+      scoreTimestamp: isoToMs(c.timestamp),
+      score: c.score,
+      confidence: c.confidence,
+      signalCount: c.signal_count,
+      signals: {
+        edgeDirection: c.signals.edge_direction,
+        edgeConfidence: c.signals.edge_confidence,
+        rsiMomentum: c.signals.rsi_momentum,
+        macdTrend: c.signals.macd_trend,
+        priceMomentum: c.signals.price_momentum,
+      },
+      btcPrice: c.btc_price,
+      interpretation: c.interpretation,
     },
-    btcPrice: c.btc_price,
-    interpretation: c.interpretation,
     timestamp: isoToMs(dto.timestamp),
   }
 }
 
+/** Same two-shape envelope as toConsensus — `bias`/`confidence`/`recent_trend`
+ *  are all absent when the engine has detected no edges yet. */
 export function toConsensusBias(dto: ConsensusBiasDTO): ConsensusBias {
+  const { bias, confidence, recent_trend: trend } = dto
   return {
     available: dto.available,
-    totalEdges: dto.total_edges,
-    bias: {
-      yesCount: dto.bias.yes_count, noCount: dto.bias.no_count,
-      yesPercent: dto.bias.yes_percent, noPercent: dto.bias.no_percent,
-    },
-    confidence: {
-      average: dto.confidence.average, p50: dto.confidence.p50, p75: dto.confidence.p75,
-      p90: dto.confidence.p90, min: dto.confidence.min, max: dto.confidence.max,
-    },
-    recentTrend: {
-      last10Edges: dto.recent_trend.last_10_edges,
-      yesCount: dto.recent_trend.yes_count, noCount: dto.recent_trend.no_count,
-      bias: dto.recent_trend.bias,
-    },
+    message:   dto.message ?? null,
+    detail: !dto.available || bias === undefined || confidence === undefined || trend === undefined
+      ? null
+      : {
+        // Reached only when bias/confidence/recent_trend are all present, which
+        // the engine sends as one block with total_edges — so this default is
+        // unreachable belt-and-braces, not an unknown being coerced to zero.
+        totalEdges: dto.total_edges ?? 0,
+        bias: {
+          yesCount: bias.yes_count, noCount: bias.no_count,
+          yesPercent: bias.yes_percent, noPercent: bias.no_percent,
+        },
+        confidence: {
+          average: confidence.average, p50: confidence.p50, p75: confidence.p75,
+          p90: confidence.p90, min: confidence.min, max: confidence.max,
+        },
+        recentTrend: {
+          last10Edges: trend.last_10_edges,
+          yesCount: trend.yes_count, noCount: trend.no_count,
+          bias: trend.bias,
+        },
+      },
     timestamp: isoToMs(dto.timestamp),
   }
 }
@@ -525,11 +602,14 @@ export function toPortfolioHistory(dto: PortfolioHistoryDTO): PortfolioHistory {
   }
 }
 
+/** Two-shape envelope — `summary` is absent while the portfolio tracker has
+ *  recorded no snapshots ("No portfolio data available yet"). */
 export function toPortfolioSummary(dto: PortfolioSummaryDTO): PortfolioSummary {
   const s = dto.summary
   return {
     available: dto.available,
-    summary: {
+    message:   dto.message ?? null,
+    summary: !dto.available || s === undefined ? null : {
       currentValue: s.current_value, initialValue: s.initial_value, peakValue: s.peak_value,
       totalReturnPct: s.total_return_pct, currentDrawdownPct: s.current_drawdown_pct,
       snapshotCount: s.snapshot_count, timeRangeSeconds: s.time_range_seconds,
@@ -541,14 +621,29 @@ export function toPortfolioSummary(dto: PortfolioSummaryDTO): PortfolioSummary {
   }
 }
 
+/**
+ * Nested two-shape envelope: the OUTER `available` reports whether the endpoint
+ * worked, the INNER one whether the lookback window contained anything. The
+ * metric keys are absent in the "no data" case, so the previous mapping wrote
+ * `undefined` into fields typed `number` — a type lie that would have rendered
+ * as NaN the moment any consumer stopped checking `.available` first.
+ */
 export function toPortfolioPerformance(dto: PortfolioPerformanceDTO): PortfolioPerformance {
   const p = dto.performance
+  const measured =
+    dto.available && p !== undefined && p.available && p.period_hours !== undefined
   return {
-    available: dto.available,
-    performance: {
-      available: p.available, periodHours: p.period_hours, startValue: p.start_value, endValue: p.end_value,
-      valueChange: p.value_change, returnPct: p.return_pct, maxDrawdownPct: p.max_drawdown_pct,
-      tradesInPeriod: p.trades_in_period, snapshotCount: p.snapshot_count,
+    available: dto.available && (p?.available ?? false),
+    message:   p?.message ?? dto.message ?? null,
+    performance: !measured ? null : {
+      periodHours: p.period_hours as number,
+      startValue: p.start_value as number,
+      endValue: p.end_value as number,
+      valueChange: p.value_change as number,
+      returnPct: p.return_pct as number,
+      maxDrawdownPct: p.max_drawdown_pct as number,
+      tradesInPeriod: p.trades_in_period as number,
+      snapshotCount: p.snapshot_count as number,
     },
     lookbackHours: dto.lookback_hours,
     timestamp: isoToMs(dto.timestamp),
@@ -564,7 +659,7 @@ export function toAnalyticsSignals(dto: AnalyticsSignalsDTO): AnalyticsSignals {
 }
 
 export function toAnalyticsSummary(dto: AnalyticsSummaryDTO): AnalyticsSummary {
-  const s = dto.summary
+  const s = requireAvailable(dto.summary, '/api/analytics/summary')
   return {
     available: dto.available,
     summary: {
@@ -594,9 +689,12 @@ export function toPaperStatus(dto: PaperStatusDTO): PaperStatus {
 }
 
 export function toSystemMetrics(dto: SystemMetricsDTO): SystemMetrics {
+  // Documented as "requires psutil" — an install without it is a plausible
+  // route to the short shape, so this one is guarded on the same principle.
+  const uptime = requireAvailable(dto.uptime, '/api/system/metrics')
   return {
     available: dto.available,
-    uptime: { seconds: dto.uptime.seconds, formatted: dto.uptime.formatted },
+    uptime: { seconds: uptime.seconds, formatted: uptime.formatted },
     memoryMb: { rssMb: dto.memory.rss_mb, vmsMb: dto.memory.vms_mb },
     cpuPercent: dto.cpu.percent,
     components: toRuntimeComponents(dto.components),

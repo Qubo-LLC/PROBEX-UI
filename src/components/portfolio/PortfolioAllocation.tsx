@@ -59,7 +59,7 @@ export function PortfolioAllocation() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
       {/* By Segment */}
-      <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+      <div className="rounded-lg p-4 flex flex-col gap-3" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
         <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>By Segment</h3>
         {bySegment.length === 0 ? (
           <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>No open positions</p>
@@ -84,7 +84,7 @@ export function PortfolioAllocation() {
       </div>
 
       {/* By Side */}
-      <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+      <div className="rounded-lg p-4 flex flex-col gap-3" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
         <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>By Position Side</h3>
         <div className="flex h-3 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }}>
           <div className="h-full" style={{ width: total > 0 ? `${(bySide.yes.value / total) * 100}%` : '0%', background: 'var(--probex-yes)' }} />
@@ -104,7 +104,7 @@ export function PortfolioAllocation() {
       </div>
 
       {/* By P&L state — replaces V1's fabricated consensus-category breakdown */}
-      <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+      <div className="rounded-lg p-4 flex flex-col gap-3" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
         <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>By P&amp;L State</h3>
         {positions.length === 0 ? (
           <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>No open positions</p>

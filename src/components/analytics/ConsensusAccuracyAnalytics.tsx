@@ -13,7 +13,12 @@ export function ConsensusAccuracyAnalytics() {
     <PendingChart
       title="Signal Accuracy"
       subtitle="How often the engine's edge direction has matched the eventual market resolution"
-      endpoint="consensusAccuracy"
+      // `endpoint` is rendered to the operator (in the awaiting badge and the
+      // "Awaiting … — {endpoint}" caption), so it must read as English. This
+      // previously passed the literal registry key `consensusAccuracy`, which
+      // showed an internal identifier where a data-source name belongs. The
+      // registry entry itself is unchanged — this is presentation only.
+      endpoint="Consensus accuracy"
       variant="line"
     />
   )

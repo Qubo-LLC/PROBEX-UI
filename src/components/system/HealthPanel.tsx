@@ -44,8 +44,11 @@ export function HealthPanel() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <h3 className="t-card-title">Health</h3>
+          {/* Tone and liveness come from the canonical status; the LABEL is the
+              engine's own word, so the panel still reports what it actually
+              said ("healthy") rather than the app's internal spelling. */}
           <StatusChip tone={toneForStatus(health.status)} live={health.status === 'online'}>
-            {health.status}
+            {health.statusLabel}
           </StatusChip>
           <span
             className="t-value"

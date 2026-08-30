@@ -82,7 +82,7 @@ export function MarketsArchive() {
                 aria-pressed={sortBy === key}
                 className="px-3 py-1 text-2xs font-semibold cursor-pointer transition-colors duration-150 focus-ring"
                 style={sortBy === key
-                  ? { background: 'var(--probex-accent)', color: '#fff' }
+                  ? { background: 'var(--probex-primary)', color: 'var(--probex-bg)' }
                   : { background: 'transparent', color: 'var(--probex-text-muted)' }}
               >
                 {label}

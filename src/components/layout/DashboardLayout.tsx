@@ -1,11 +1,12 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { Sidebar }       from './Sidebar'
 import { TopNavigation } from './TopNavigation'
 import { AuthGate }               from '@/components/providers/AuthGate'
 import { ApplicationStateLoader } from '@/components/providers/ApplicationStateLoader'
 import { SettingsEffects }        from '@/components/providers/SettingsEffects'
+import { LivenessEffect }         from '@/components/providers/LivenessEffect'
 import { cn }            from '@/lib/utils'
 import { useMobileOpen, useSidebarStore } from '@/store/sidebarStore'
 
@@ -19,6 +20,59 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const isMobileOpen = useMobileOpen()
   const closeMobile  = useSidebarStore((s) => s.closeMobile)
+
+  // ─── Mobile drawer focus management ─────────────────────────────────────────
+  // The drawer is a SECOND <Sidebar/> instance parked off-canvas by
+  // `-translate-x-full`. A transform moves pixels and nothing else: the closed
+  // drawer kept `display:flex` and `visibility:visible`, so all ten navigation
+  // links stayed in the tab order and the accessibility tree. Measured at 375px:
+  // 21 focusable elements sitting entirely off-screen, ahead of the page content
+  // a keyboard or screen-reader user was trying to reach.
+  //
+  // `inert` (React 19 supports it as a boolean prop) removes the subtree from
+  // focus, hit-testing and the accessibility tree in one attribute, which is
+  // exactly the semantic wanted here — and unlike unmounting it preserves the
+  // 220ms slide transition, so the shell's motion is unchanged.
+  const drawerRef  = useRef<HTMLDivElement>(null)
+  const restoreRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (!isMobileOpen) return undefined
+
+    // Remember what opened the drawer so focus can return there on close —
+    // typically the top bar's menu button, but this stays correct whatever
+    // triggered it.
+    restoreRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+
+    const focusables = (): HTMLElement[] =>
+      drawerRef.current
+        ? [...drawerRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+        : []
+
+    focusables()[0]?.focus()
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { closeMobile(); return }
+      if (e.key !== 'Tab') return
+
+      const items = focusables()
+      if (items.length === 0) return
+      const first = items[0]!
+      const last  = items[items.length - 1]!
+      const active = document.activeElement
+
+      // Wrap at both ends so Tab cannot escape an open modal drawer into the
+      // page behind it.
+      if (e.shiftKey && active === first)      { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus() }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      restoreRef.current?.focus()
+    }
+  }, [isMobileOpen, closeMobile])
 
   return (
     <AuthGate>
@@ -61,12 +115,26 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Mobile sidebar drawer */}
         <div
+          ref={drawerRef}
           className={cn(
             'fixed top-0 left-0 h-full z-sidebar lg:hidden',
-            'transition-transform duration-220 ease-[cubic-bezier(0.4,0,0.2,1)]',
+            'transition-transform',
             isMobileOpen ? 'translate-x-0' : '-translate-x-full',
           )}
-          aria-modal={isMobileOpen}
+          // Chassis motion, not content motion — the drawer slides the shell
+          // rather than settling a value, so it keeps its own 220ms curve. It
+          // now reads that duration from --motion-shell instead of an arbitrary
+          // `duration-220`, so the one place shell timing is decided is the
+          // token file. Same duration and same curve as before.
+          style={{ transitionDuration: 'var(--motion-shell)', transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)' }}
+          // Closed, the drawer is off-canvas but still rendered. Without these
+          // its links stay focusable and announced — see the focus-management
+          // note above. `role="dialog"` is only correct while it is acting as
+          // one; a permanently-present dialog role would be announced even when
+          // there is nothing to interact with.
+          inert={!isMobileOpen}
+          aria-hidden={!isMobileOpen}
+          {...(isMobileOpen ? { role: 'dialog' as const, 'aria-modal': true } : {})}
           aria-label="Navigation drawer"
         >
           {/* Mobile: always render expanded */}
@@ -117,6 +185,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Applies persisted accessibility preferences to <html> (Settings). */}
       <SettingsEffects />
+
+      {/* Reflects the resolved system state onto <html> so liveness animation
+          is suppressed product-wide whenever the data is not actually live. */}
+      <LivenessEffect />
 
       {/* ── Reserved overlay host (Phase 1 · T9) ─────────────────────────────
           Canonical mount point for future modal / toast / tooltip layers.

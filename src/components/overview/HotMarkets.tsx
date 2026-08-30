@@ -53,7 +53,7 @@ export function HotMarkets({ className = '' }: HotMarketsProps) {
 
   if (marketsSlice.status === 'error') {
     return (
-      <div className={`rounded-md overflow-hidden ${className}`} style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+      <div className={`rounded-lg overflow-hidden ${className}`} style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
         <ErrorState title="Markets unavailable" description={marketsSlice.error?.message ?? 'The /api/markets endpoint did not respond.'} fullPage={false} />
       </div>
     )
@@ -61,12 +61,17 @@ export function HotMarkets({ className = '' }: HotMarketsProps) {
 
   return (
     <div
-      className={`flex flex-col overflow-hidden rounded-md ${className}`}
+      className={`flex flex-col overflow-hidden rounded-lg ${className}`}
       style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}
     >
       <div className="px-3.5 py-3 flex-shrink-0 flex items-center justify-between" style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <div className="flex items-center gap-1.5">
-          <span className="live-dot w-1.5 h-1.5" aria-hidden="true" />
+          {/* Decorating a section title, not reporting a source. It pulsed
+              beside "Hot Markets" whether the list held twelve rows or none —
+              with the engine returning zero markets it was breathing over an
+              empty table. Static: it marks the section, the rows report the
+              data. */}
+          <span className="state-dot" aria-hidden="true" />
           <h3 className="text-sm font-semibold m-0" style={{ color: 'var(--probex-text-primary)' }}>Hot Markets</h3>
         </div>
         <span className="text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{ranked.length} open</span>
@@ -97,7 +102,7 @@ export function HotMarkets({ className = '' }: HotMarketsProps) {
             >
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-2xs font-semibold truncate flex-1" style={{ color: 'var(--probex-text-primary)' }}>{m.title}</span>
-                {countdown && <span className="text-[9px] font-mono tabular-nums flex-shrink-0" style={{ color: 'var(--probex-text-muted)' }}>{countdown}</span>}
+                {countdown && <span className="text-2xs font-mono tabular-nums flex-shrink-0" style={{ color: 'var(--probex-text-muted)' }}>{countdown}</span>}
               </div>
               <div className="flex items-center justify-between gap-2">
                 <EdgeBadge edge={edge} size="sm" showEmpty={false} />

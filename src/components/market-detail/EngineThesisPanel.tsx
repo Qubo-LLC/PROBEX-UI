@@ -19,7 +19,7 @@ interface EngineThesisPanelProps {
 function Metric({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
     <div className="flex flex-col gap-0.5 px-3 py-2.5 rounded-lg" style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}>
-      <span className="text-[9px] font-bold tracking-wider uppercase" style={{ color: 'var(--probex-text-muted)' }}>{label}</span>
+      <span className="text-2xs font-bold tracking-wider uppercase" style={{ color: 'var(--probex-text-muted)' }}>{label}</span>
       <span className="text-sm font-bold tabular-nums" style={{ color: accent ?? 'var(--probex-text-primary)' }}>{value}</span>
     </div>
   )

@@ -6,6 +6,7 @@
 import { useMemo } from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
 import { LiveChart, type LiveChartPoint } from '@/components/shared/LiveChart'
+import { chartStateFromSlice } from '@/components/shared/ChartFrame'
 import { formatCurrency } from '@/lib/utils'
 import type { PortfolioHistoryPoint } from '@/types/engine'
 
@@ -28,6 +29,10 @@ export function PerformanceAnalytics() {
   )
   const drawdownData = useMemo(() => toDrawdownSeries(history), [history])
 
+  // Both charts read the same slice, so they share one state derivation.
+  const { state, message } = chartStateFromSlice(slice, history.length)
+  const confirmedAt = slice.data?.timestamp
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
       <LiveChart
@@ -35,6 +40,9 @@ export function PerformanceAnalytics() {
         subtitle="Peak-to-trough capital decline over time"
         source="/api/portfolio/history"
         provenance="derived"
+        state={state}
+        message={message}
+        lastConfirmedAt={confirmedAt}
         data={drawdownData}
         variant="area"
         color="var(--probex-negative)"
@@ -45,6 +53,9 @@ export function PerformanceAnalytics() {
         title="Capital Growth"
         subtitle="Account equity curve since session start"
         source="/api/portfolio/history"
+        state={state}
+        message={message}
+        lastConfirmedAt={confirmedAt}
         data={growthData}
         variant="line"
         color="var(--probex-primary)"

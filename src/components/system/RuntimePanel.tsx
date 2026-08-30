@@ -118,8 +118,13 @@ export function RuntimePanel() {
                 {COMPONENT_LABELS[key]}
               </span>
               <span
-                className="text-[9px] font-bold uppercase tracking-wider flex-shrink-0 tabular-nums"
-                style={{ color: active ? 'color-mix(in srgb, var(--probex-positive) 80%, transparent)' : 'var(--probex-text-disabled)' }}
+                className="text-2xs font-bold uppercase tracking-wider flex-shrink-0 tabular-nums"
+                // Was color-mix(… var(--probex-positive) 80%, transparent),
+                // which softens by dropping ALPHA to 0.8 rather than by mixing
+                // toward the surface. Green at 0.8 over this tile's own green
+                // tint measured 1.17:1 — the ON readout, the one thing this row
+                // exists to state, was the least legible text in the product.
+                style={{ color: active ? 'var(--probex-positive)' : 'var(--probex-text-disabled)' }}
               >
                 {active ? 'on' : 'off'}
               </span>

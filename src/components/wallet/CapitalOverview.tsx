@@ -35,7 +35,7 @@ export function CapitalOverview() {
 
   if (!ex) {
     return (
-      <div className="rounded-xl p-5" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border-default)' }}>
+      <div className="rounded-lg p-5" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border-default)' }}>
         <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>Waiting for /api/execution/status…</p>
       </div>
     )

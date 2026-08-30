@@ -20,7 +20,8 @@ import { parsePositionRows, type PositionRow } from '@/lib/mappers/positions'
 import { parseEdgeRows, toEdgeRowMap, type EdgeRow } from '@/lib/mappers/edges'
 import { formatSignedCurrency } from '@/lib/utils'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { StatCard }   from '@/components/ui/StatCard'
+import { SectionHeading } from '@/components/ui/SectionHeading'
+import { Panel, Focal, Row, RowGroup, PanelPending } from '@/components/ui/Panel'
 import { Card }       from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -77,9 +78,11 @@ export function PositionsConsole() {
       />
 
       {positions.status === 'loading' && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {['Open Positions', 'Unrealized P&L', 'Closed', 'Resolutions'].map((label) => (
-            <StatCard key={label} label={label} value="" isLoading />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {['Open Exposure', 'Resolution Record', 'Session'].map((label) => (
+            <Panel key={label} title={label}>
+              <PanelPending note="Awaiting position state." />
+            </Panel>
           ))}
         </div>
       )}
@@ -94,56 +97,92 @@ export function PositionsConsole() {
 
       {pos && (
         <>
-          {/* Summary vitals — envelope + execution truth */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard
-              label="Open Positions"
-              value={String(pos.count)}
-              deltaLabel={pos.count === 0 ? 'no capital deployed' : 'currently held'}
-            />
-            <StatCard
-              label="Unrealized P&L"
-              value={formatSignedCurrency(pos.totalUnrealizedPnl)}
-              valueColor={
-                pos.totalUnrealizedPnl > 0 ? 'var(--probex-positive)'
-                : pos.totalUnrealizedPnl < 0 ? 'var(--probex-negative)' : undefined
-              }
-              deltaLabel="across open positions"
-            />
-            {ex && (
-              <StatCard
-                label="Closed"
-                value={String(ex.closedPositions)}
-                deltaLabel="this session"
-              />
-            )}
-            {ex && (
-              <StatCard
-                label="Resolutions"
-                value={
-                  ex.resolutionStats.totalResolved > 0
-                    ? `${ex.resolutionStats.wins}W / ${ex.resolutionStats.losses}L`
-                    : ex.resolutionStats.isRunning ? 'Tracking' : 'Stopped'
+          {/* Summary — envelope + execution truth.
+              Was four StatCards holding one figure each; the resolution
+              tracker in particular had three separate facts (record, tracked
+              count, auto-closed) competing for a single `deltaLabel` line. */}
+          <section aria-label="Exposure summary" className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Panel title="Open Exposure" provenance="live" source="/api/positions">
+              <Focal
+                value={formatSignedCurrency(pos.totalUnrealizedPnl)}
+                unit="unrealized"
+                color={
+                  pos.totalUnrealizedPnl > 0 ? 'var(--probex-positive)'
+                  : pos.totalUnrealizedPnl < 0 ? 'var(--probex-negative)' : undefined
                 }
-                valueColor={
-                  ex.resolutionStats.totalResolved > 0
-                    ? (ex.resolutionStats.wins >= ex.resolutionStats.losses ? 'var(--probex-positive)' : 'var(--probex-negative)')
+                caption={
+                  pos.count === 0
+                    ? <span className="t-helper">No capital deployed right now.</span>
                     : undefined
                 }
-                deltaLabel={
-                  ex.resolutionStats.totalResolved > 0
-                    ? `${ex.resolutionStats.autoClosed} auto-closed`
-                    : `${ex.resolutionStats.trackedPositions} tracked`
-                }
               />
-            )}
-          </div>
+              <RowGroup>
+                <Row label="Positions held" value={`${pos.count}`} />
+                <Row label="Closed this session" value={ex ? `${ex.closedPositions}` : '—'} />
+                <Row label="Account" value={ex ? ex.mode : '—'} color={ex?.mode === 'live' ? 'var(--probex-negative)' : undefined} />
+              </RowGroup>
+            </Panel>
+
+            <Panel title="Resolution Record" provenance="live" source="/api/execution/status">
+              {!ex ? (
+                <PanelPending note="Awaiting the resolution tracker." />
+              ) : (
+                <>
+                  <Focal
+                    value={
+                      ex.resolutionStats.totalResolved > 0
+                        ? `${ex.resolutionStats.wins}W / ${ex.resolutionStats.losses}L`
+                        : ex.resolutionStats.isRunning ? 'Tracking' : 'Stopped'
+                    }
+                    color={
+                      ex.resolutionStats.totalResolved > 0
+                        ? (ex.resolutionStats.wins >= ex.resolutionStats.losses ? 'var(--probex-positive)' : 'var(--probex-negative)')
+                        : undefined
+                    }
+                    caption={
+                      ex.resolutionStats.totalResolved === 0
+                        ? <span className="t-helper">No position has resolved yet this session.</span>
+                        : undefined
+                    }
+                  />
+                  <RowGroup>
+                    <Row label="Resolved" value={`${ex.resolutionStats.totalResolved}`} />
+                    <Row label="Auto-closed" value={`${ex.resolutionStats.autoClosed}`} />
+                    <Row label="Tracked" value={`${ex.resolutionStats.trackedPositions}`} />
+                  </RowGroup>
+                </>
+              )}
+            </Panel>
+
+            <Panel title="Realized" provenance="live" source="/api/execution/status">
+              {!ex ? (
+                <PanelPending note="Awaiting the trading record." />
+              ) : (
+                <>
+                  <Focal
+                    value={formatSignedCurrency(ex.totalPnl)}
+                    unit="banked"
+                    color={
+                      ex.totalPnl > 0 ? 'var(--probex-positive)'
+                      : ex.totalPnl < 0 ? 'var(--probex-negative)' : undefined
+                    }
+                  />
+                  <RowGroup>
+                    <Row label="Trades" value={`${ex.totalTrades}`} />
+                    <Row label="Wins" value={`${ex.wins}`} color={ex.wins > 0 ? 'var(--probex-positive)' : undefined} />
+                    <Row label="Losses" value={`${ex.losses}`} color={ex.losses > 0 ? 'var(--probex-negative)' : undefined} />
+                  </RowGroup>
+                </>
+              )}
+            </Panel>
+          </section>
 
           {/* Open positions: filters + table + detail panel */}
           <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>
-              Open Positions
-            </h2>
+            <SectionHeading
+              title="Open Positions"
+              {...(rows?.kind === 'rows' ? { count: rows.rows.length } : {})}
+            />
 
             {rows?.kind === 'empty' && (
               <EmptyState

@@ -67,6 +67,25 @@ export function survivalStateLabel(state: SurvivalState): string {
   }
 }
 
+/**
+ * Edge percentages, formatted.
+ *
+ * ⚠️ Unit trap. `/api/survival.min_edge_threshold` and `EdgeRow.edgePct` are
+ * ALREADY percentages — 1.6 means 1.6%, not 160%. They are the exception in a
+ * codebase where most ratios are 0–1 and go through formatPercent(), which
+ * multiplies by 100. Passing one of these to formatPercent() renders "160.0%"
+ * and, worse, silently breaks any comparison written against the scaled value.
+ *
+ * That mistake has already been made twice — once in this pass, and once in
+ * AutoExecutionPanel, where `minEdgeThreshold * 100` made the threshold 100×
+ * too large so "would this edge trigger a trade?" answered no for every edge
+ * the engine could ever produce. Naming the unit in one function is cheaper
+ * than remembering the convention at each call site.
+ */
+export function formatEdgePct(pct: number, decimals = 1): string {
+  return `${pct.toFixed(decimals)}%`
+}
+
 /** "3d 4h" / "2h 18m" / "45m" / "<1m" — compact uptime display. */
 export function formatUptime(seconds: number): string {
   const d = Math.floor(seconds / 86_400)

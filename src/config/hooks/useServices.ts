@@ -237,6 +237,63 @@ export function useEngineExecutionOrders(refreshMs?: number) {
   return useServiceQuery(() => services.engine.getExecutionOrders(), () => services.engine.peekExecutionOrders?.() ?? null, [], refreshMs)
 }
 
+// ─── Quant surface (2026-08-20) ───────────────────────────────────────────────
+// The five mathematical layers and the multi-asset performance endpoints.
+//
+// Only four of the nine routes are polled (see ApplicationStateLoader):
+// `/math-layers/status` is a composite that already contains kalman, kelly,
+// bayesian, brier and shapley, so polling the five per-layer routes as well
+// would be five redundant requests for data the store already holds. The
+// per-layer hooks below exist for a page that wants exactly one layer and
+// should not pay for the ~3.9KB composite — they are opt-in, not polled.
+
+/** /api/math-layers/status — all five layers in one composite payload. */
+export function useMathLayersStatus(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getMathLayersStatus(), () => services.engine.peekMathLayersStatus?.() ?? null, [], refreshMs)
+}
+
+/** /api/math-layers/recommendations — the five-layer verdict (e.g. "SKIP"). */
+export function useMathRecommendations(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getMathRecommendations(), () => services.engine.peekMathRecommendations?.() ?? null, [], refreshMs)
+}
+
+/** /api/performance/by-category — six market categories. */
+export function usePerformanceByCategory(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getPerformanceByCategory(), () => services.engine.peekPerformanceByCategory?.() ?? null, [], refreshMs)
+}
+
+/** /api/performance/by-asset — per-symbol buckets; empty until an asset trades. */
+export function usePerformanceByAsset(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getPerformanceByAsset(), () => services.engine.peekPerformanceByAsset?.() ?? null, [], refreshMs)
+}
+
+// ── Opt-in, non-polled per-layer hooks ───────────────────────────────────────
+
+/** /api/math-layers/kalman — the filter bank on its own. */
+export function useMathKalman(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getMathKalman(), () => services.engine.peekMathKalman?.() ?? null, [], refreshMs)
+}
+
+/** /api/performance/kalman-multi-asset — same states plus `activeFilters`. */
+export function useKalmanMultiAsset(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getKalmanMultiAsset(), () => services.engine.peekKalmanMultiAsset?.() ?? null, [], refreshMs)
+}
+
+/** /api/math-layers/bayesian — regime posteriors on their own. */
+export function useMathBayesian(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getMathBayesian(), () => services.engine.peekMathBayesian?.() ?? null, [], refreshMs)
+}
+
+/** /api/math-layers/brier — calibration scoring on its own. */
+export function useMathBrier(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getMathBrier(), () => services.engine.peekMathBrier?.() ?? null, [], refreshMs)
+}
+
+/** /api/math-layers/shapley — signal attribution on its own. */
+export function useMathShapley(refreshMs?: number) {
+  return useServiceQuery(() => services.engine.getMathShapley(), () => services.engine.peekMathShapley?.() ?? null, [], refreshMs)
+}
+
 // ─── Composite view-model hooks (read from ApplicationStore, zero extra HTTP) ───
 
 /**

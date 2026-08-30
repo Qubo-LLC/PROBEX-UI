@@ -72,7 +72,7 @@ export function AwaitingBackend({
       <div className={`flex flex-col gap-3 ${className}`} role="status" aria-label={`${title} — awaiting backend`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1 min-w-0">
-            <h3 className="t-label">
+            <h3 className="t-card-title">
               {title}
             </h3>
             <p className="text-xs leading-relaxed" style={{ color: 'var(--probex-text-disabled)' }}>

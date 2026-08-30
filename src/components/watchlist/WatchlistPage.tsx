@@ -68,8 +68,11 @@ export function WatchlistPage({ embedded = false }: EmbeddableProps = {}) {
       <div className="flex items-center justify-between flex-wrap gap-2">
         {!embedded && (
           <div>
-            <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--probex-text-primary)' }}>Watchlist</h1>
-            <p className="text-sm mt-1" style={{ color: 'var(--probex-text-muted)' }}>
+            {/* Was the old hand-rolled PageHeader treatment, copied before the
+                type scale had consumers. Same two semantic classes every other
+                page title now uses. */}
+            <h1 className="t-page-title">Watchlist</h1>
+            <p className="t-page-subtitle mt-1">
               {watchedIds.length === 0 ? "Markets you're following closely" : `${watchedIds.length} market${watchedIds.length === 1 ? '' : 's'} you're following closely`}
             </p>
           </div>
@@ -132,13 +135,29 @@ export function WatchlistPage({ embedded = false }: EmbeddableProps = {}) {
                 )
               )}
 
+              {/* "No longer active" is a CLAIM about the market, and it is only
+                  supportable when the market list actually resolved. If the
+                  request failed we do not know whether these markets expired or
+                  whether we simply could not ask — and telling the operator
+                  "this is expected, not an error" while /api/markets is timing
+                  out states the opposite of what happened. Absence of evidence
+                  is reported as absence of evidence. */}
               {inactiveIds.length > 0 && (
-                <section className="flex flex-col gap-2">
-                  <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>No Longer Active</h2>
-                  <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
-                    {inactiveIds.length} watched market{inactiveIds.length === 1 ? '' : 's'} {inactiveIds.length === 1 ? 'is' : 'are'} no longer in the current 5-minute cycle — Polymarket markets rotate continuously, so this is expected, not an error.
-                  </p>
-                </section>
+                marketsSlice.status === 'error' ? (
+                  <section className="flex flex-col gap-2">
+                    <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>Status Unknown</h2>
+                    <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
+                      {inactiveIds.length} watched market{inactiveIds.length === 1 ? '' : 's'} could not be checked — the market list did not respond, so whether {inactiveIds.length === 1 ? 'it is' : 'they are'} still active is unknown. Nothing has been removed from your watchlist.
+                    </p>
+                  </section>
+                ) : (
+                  <section className="flex flex-col gap-2">
+                    <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>No Longer Active</h2>
+                    <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
+                      {inactiveIds.length} watched market{inactiveIds.length === 1 ? '' : 's'} {inactiveIds.length === 1 ? 'is' : 'are'} no longer in the current 5-minute cycle — Polymarket markets rotate continuously, so this is expected, not an error.
+                    </p>
+                  </section>
+                )
               )}
             </>
           )}

@@ -1,8 +1,10 @@
 'use client'
 
-// EventLog — the engine event log (/api/events). Each row surfaces the full
-// payload: severity accent, title + message, and metadata chips (direction,
-// edge_pct, rejection reason). Duplicate bursts collapse via dedupeEventRows.
+// EventLog — the full engine event log (/api/events) with type and severity
+// filters. The LIVE TAIL of the same stream is on Live Feed; both render rows
+// through the shared EventStream component so engine activity looks identical
+// wherever it appears. This surface owns filtering and depth; Live Feed owns
+// immediacy.
 //
 // Type filtering is SERVER-side (the endpoint takes `type`), so selecting a
 // type narrows the request rather than fetching the whole log and throwing most
@@ -11,38 +13,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
 import { services } from '@/lib/services'
-import { parseEventRows, dedupeEventRows, type DedupedEventRow } from '@/lib/mappers/events'
+import { parseEventRows, dedupeEventRows } from '@/lib/mappers/events'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card }       from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
+import { EventStream, severityColor, EVENT_TYPES } from '@/components/shared/EventStream'
+import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
 import type { EngineEvents } from '@/types/engine'
-
-// Severity → accent colour. Anything unrecognised falls back to muted.
-const SEVERITY_COLOR: Record<string, string> = {
-  info:     'var(--probex-primary)',
-  warning:  'var(--probex-warning)',
-  error:    'var(--probex-negative)',
-  critical: 'var(--probex-negative)',
-  success:  'var(--probex-positive)',
-}
-const severityColor = (s: string | null): string =>
-  (s && SEVERITY_COLOR[s.toLowerCase()]) || 'var(--probex-text-muted)'
-
-/** The event types the backend documents for /api/events?type=. Used as the
- *  filter vocabulary rather than deriving chips from whatever happened to
- *  arrive — with server-side filtering the response only contains the selected
- *  type, so a derived list would collapse to one chip after the first click.
- *
- *  Showing the full documented set also makes coverage visible: as of
- *  2026-07-25 the engine emits `edge` and `trade`, and nothing for the other
- *  six. Which types are live has already changed once during this work, so the
- *  UI deliberately does not hardcode that fact anywhere the operator sees. */
-const EVENT_TYPES = [
-  'edge', 'trade', 'position', 'health',
-  'error', 'resolution', 'survival', 'paper_trading',
-] as const
 
 const EVENT_LIMIT = 200
 
@@ -105,11 +84,14 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
           title="Events"
           subtitle="Engine event log — edges, trades, resolutions, and system activity, with the reasoning behind each"
           actions={
-            slice.data && slice.data.count > 0 ? (
-              <span className="text-xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
-                {slice.data.count} event{slice.data.count === 1 ? '' : 's'} · limit {slice.data.limit}
-              </span>
-            ) : undefined
+            <span className="flex items-center gap-3">
+              {slice.data && slice.data.count > 0 && (
+                <span className="text-xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+                  {slice.data.count} event{slice.data.count === 1 ? '' : 's'} · limit {slice.data.limit}
+                </span>
+              )}
+              <ProvenanceBadge provenance="live" detail="/api/events" />
+            </span>
           }
         />
       )}
@@ -187,14 +169,11 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
         </Card>
       )}
 
-      {visibleRows.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          {visibleRows.map((row) => <EventRowItem key={row.id} row={row} />)}
-        </div>
-      )}
+      {visibleRows.length > 0 && <EventStream rows={visibleRows} />}
     </div>
   )
 }
+
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -214,94 +193,5 @@ function FilterChip({ label, active, onClick, dotColor }: { label: string; activ
       {dotColor && <span className="w-1.5 h-1.5 rounded-full" style={{ background: dotColor }} aria-hidden="true" />}
       {label}
     </button>
-  )
-}
-
-/** Human-readable chips from an event's metadata; fields are optional and
- *  skipped when absent (never fabricated). */
-function metaChips(row: DedupedEventRow): Array<{ label: string; tone?: 'yes' | 'no' | 'muted' }> {
-  const m = row.metadata
-  if (!m) return []
-  const chips: Array<{ label: string; tone?: 'yes' | 'no' | 'muted' }> = []
-
-  const dir = (m.direction ?? m.top_edge_direction)
-  if (typeof dir === 'string') chips.push({ label: dir.toUpperCase(), tone: dir.toLowerCase() === 'yes' ? 'yes' : 'no' })
-
-  const edge = (m.edge_pct ?? m.top_edge_pct)
-  if (typeof edge === 'number') chips.push({ label: `${edge.toFixed(1)}% edge` })
-
-  if (typeof m.edges_detected === 'number') chips.push({ label: `${m.edges_detected} edge${m.edges_detected === 1 ? '' : 's'}`, tone: 'muted' })
-  if (typeof m.reason === 'string') chips.push({ label: m.reason, tone: 'muted' })
-
-  return chips
-}
-
-function EventRowItem({ row }: { row: DedupedEventRow }) {
-  const accent = severityColor(row.severity)
-  const chips  = metaChips(row)
-  const headline = row.title ?? row.type
-
-  return (
-    <div
-      className="flex items-start gap-3 rounded-lg px-3 py-2.5 text-xs"
-      style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)', borderLeft: `2.5px solid ${accent}` }}
-    >
-      {/* Type badge + severity dot */}
-      <span className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-        <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} aria-hidden="true" title={row.severity ?? undefined} />
-        <span
-          className="text-2xs font-semibold rounded px-1.5 py-0.5 uppercase tracking-wide"
-          style={{ color: 'var(--probex-text-secondary)', background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}
-        >
-          {row.type}
-        </span>
-      </span>
-
-      {/* Headline (title) + detail (message) + metadata chips */}
-      <div className="flex-1 min-w-0 flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold truncate" style={{ color: 'var(--probex-text-primary)' }}>{headline}</span>
-          {row.repeatCount > 1 && (
-            <span
-              className="text-2xs font-bold rounded px-1.5 py-0.5 flex-shrink-0 tabular-nums"
-              style={{ color: 'var(--probex-warning)', background: 'var(--probex-warning-dim)' }}
-              title={`Repeated ${row.repeatCount} times — collapsed to reduce noise`}
-            >
-              ×{row.repeatCount}
-            </span>
-          )}
-        </div>
-
-        {row.description && row.description !== headline && (
-          <span className="truncate" style={{ color: 'var(--probex-text-muted)' }} title={row.description}>{row.description}</span>
-        )}
-
-        {chips.length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {chips.map((c, i) => (
-              <span
-                key={i}
-                className="text-2xs font-medium rounded px-1.5 py-0.5"
-                style={
-                  c.tone === 'yes'   ? { color: 'var(--probex-yes)', background: 'var(--probex-yes-dim)' }
-                  : c.tone === 'no'  ? { color: 'var(--probex-no)',  background: 'var(--probex-no-dim)' }
-                  : c.tone === 'muted' ? { color: 'var(--probex-text-muted)', background: 'var(--probex-surface-2)' }
-                  : { color: 'var(--probex-text-secondary)', background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }
-                }
-              >
-                {c.label}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Timestamp */}
-      {row.timestamp !== null && (
-        <span className="tabular-nums flex-shrink-0 mt-0.5 text-2xs" style={{ color: 'var(--probex-text-disabled)' }} title={row.firstTimestamp !== null && row.repeatCount > 1 ? `First seen ${new Date(row.firstTimestamp).toLocaleTimeString()}` : undefined}>
-          {new Date(row.timestamp).toLocaleTimeString()}
-        </span>
-      )}
-    </div>
   )
 }

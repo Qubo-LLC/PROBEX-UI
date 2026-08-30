@@ -17,7 +17,7 @@ export function AboutSettings() {
         <div className="flex items-center gap-3 px-[18px] py-4" style={{ borderBottom: '1px solid var(--probex-border)' }}>
           <div className="flex items-center justify-center rounded-lg flex-shrink-0" style={{ width: 40, height: 40, background: 'var(--probex-gradient-brand)', color: '#fff', fontWeight: 800, fontSize: 18 }} aria-hidden="true">P</div>
           <div className="flex flex-col">
-            <span className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Probex Terminal</span>
+            <span className="t-section-title">Probex Terminal</span>
             <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>Bitcoin prediction-market intelligence</span>
           </div>
           <span className="ml-auto text-2xs font-semibold px-2 py-0.5 rounded" style={{ background: 'var(--probex-primary-dim)', color: 'var(--probex-primary)' }}>

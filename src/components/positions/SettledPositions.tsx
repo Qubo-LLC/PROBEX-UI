@@ -51,7 +51,7 @@ export function SettledPositions() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Settled Positions</h2>
+        <h2 className="t-section-title">Settled Positions</h2>
         <div className="flex items-center gap-3">
           {summary && (summary.wins > 0 || summary.losses > 0) && (
             <div className="flex items-center gap-2 text-xs">

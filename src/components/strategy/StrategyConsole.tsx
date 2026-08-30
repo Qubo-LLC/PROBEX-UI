@@ -26,6 +26,8 @@ import { Card }       from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { EdgeTable }  from '@/components/shared/EdgeTable'
 import { DecisionPipeline } from '@/components/shared/DecisionPipeline'
+import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
+import { SectionHeading } from '@/components/ui/SectionHeading'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
 export function StrategyConsole({ embedded = false }: EmbeddableProps = {}) {
@@ -54,7 +56,8 @@ export function StrategyConsole({ embedded = false }: EmbeddableProps = {}) {
       {!embedded && (
         <PageHeader
           title="Strategy"
-          subtitle="How the engine thinks — the live decision pipeline from market scan to execution"
+          subtitle="How the engine makes decisions — the live pipeline from market scan to execution"
+          actions={<ProvenanceBadge provenance="live" detail="/api/survival · /api/config" />}
         />
       )}
 
@@ -69,7 +72,7 @@ export function StrategyConsole({ embedded = false }: EmbeddableProps = {}) {
       {/* ── The decision pipeline ─────────────────────────────────────── */}
       <Card className="flex flex-col gap-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className="t-label">
+          <h3 className="t-card-title">
             Decision Pipeline
           </h3>
           <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
@@ -96,11 +99,12 @@ export function StrategyConsole({ embedded = false }: EmbeddableProps = {}) {
       </Card>
 
       {/* ── What made it through: active edges ────────────────────────── */}
-      <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>
-          Active Edges
-          {edges.data && edges.data.count > 0 ? ` (${edges.data.count})` : ''}
-        </h2>
+      <section className="flex flex-col gap-2.5">
+        <SectionHeading
+          title="Active Edges"
+          {...(edges.data ? { count: edges.data.count } : {})}
+          actions={<ProvenanceBadge provenance="live" detail="/api/edges" />}
+        />
         {edges.status === 'error' ? (
           <ErrorState
             title="Edges unavailable"
@@ -123,7 +127,7 @@ export function StrategyConsole({ embedded = false }: EmbeddableProps = {}) {
       {/* ── Sizing model + hard limits ────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
         <Card className="flex flex-col gap-3">
-          <h3 className="t-label">
+          <h3 className="t-card-title">
             Position Sizing Model
           </h3>
           {cfg && sv ? (
@@ -164,7 +168,7 @@ export function StrategyConsole({ embedded = false }: EmbeddableProps = {}) {
         </Card>
 
         <Card className="flex flex-col gap-3">
-          <h3 className="t-label">
+          <h3 className="t-card-title">
             Hard Limits
           </h3>
           {cfg ? (

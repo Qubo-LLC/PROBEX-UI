@@ -60,7 +60,7 @@ function EngineStrip({ edge }: { edge: EdgeRow }) {
           <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }}>
             <div className="h-full rounded-full" style={{ width: `${conf}%`, background: color }} />
           </div>
-          <span className="text-[9px] font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{conf}%</span>
+          <span className="text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{conf}%</span>
         </div>
       )}
     </div>

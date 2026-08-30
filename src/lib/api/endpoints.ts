@@ -129,10 +129,14 @@ export const ENDPOINTS = {
 
   // ── Portfolio ────────────────────────────────────────────────────────────────
   portfolio: {
-    // 2026-07-25: returns 500 Internal Server Error. Was 'confirmed'.
-    // Composite snapshot — the individual balance/positions/survival/summary
-    // routes all still work, so nothing is lost while this is down.
-    live:        def('GET', '/portfolio',             'backend-error', 'Portfolio live snapshot (500)', 'Full Portfolio'),
+    // 2026-08-20 RE-VERIFIED: 200 in 0.85s with a complete snapshot (mode,
+    // balance, positions, pnl, performance, survival, btc_price). The 500 that
+    // demoted this on 2026-07-25 has been fixed backend-side, so it is
+    // 'confirmed' again — registry drift, caught by re-probing rather than
+    // assumed. It stays out of the polling loader on purpose: it is a composite
+    // of routes already polled individually, so polling it too would double the
+    // request cost for data the store already holds.
+    live:        def('GET', '/portfolio',             'confirmed', 'Portfolio live snapshot', 'Full Portfolio'),
     summary:     def('GET', '/portfolio/summary',     'confirmed', 'Portfolio summary', 'Portfolio Summary'),
     history:     def('GET', '/portfolio/history',     'confirmed', 'Portfolio value history chart', 'Portfolio History'),
     performance: def('GET', '/portfolio/performance', 'confirmed', 'Portfolio performance over a lookback window', 'Portfolio Performance'),
@@ -168,6 +172,38 @@ export const ENDPOINTS = {
   // ── Trade Ledger (live, empty until a trade settles) ─────────────────────────
   trades: {
     ledger: def('GET', '/trades/ledger', 'confirmed', 'Settled trade ledger', 'Trade Ledger'),
+  },
+
+  // ── The five mathematical layers ─────────────────────────────────────────────
+  // DISCOVERED 2026-08-20. Present in the attached postman_collection.json
+  // (folder "5 Mathematical Layers") but ABSENT from the collection published to
+  // the Postman workspace — which is why they had no registry entry until now.
+  // All six verified live against qubo-probex.duckdns.org, sub-2.5s, with rich
+  // payloads (status alone is ~3.9KB). See types/quant.ts for captured shapes.
+  //
+  // ⚠️ These endpoints answer with complete numbers even when the engine has
+  // learned nothing (zero Shapley values, priors reported as posteriors, Kalman
+  // seed prices). The adapters in services/quantDto.ts derive explicit `has*`
+  // flags; consuming the raw numbers without them fabricates measurement.
+  mathLayers: {
+    status:          def('GET', '/math-layers/status',          'confirmed', 'All five mathematical layers', 'Math Layers Status'),
+    recommendations: def('GET', '/math-layers/recommendations', 'confirmed', 'Five-layer trading recommendation', 'Math Layers Recommendations'),
+    kalman:          def('GET', '/math-layers/kalman',          'confirmed', 'Kalman filter bank (multi-asset)', 'Math Layers Kalman'),
+    bayesian:        def('GET', '/math-layers/bayesian',        'confirmed', 'Bayesian regime inference', 'Math Layers Bayesian'),
+    brier:           def('GET', '/math-layers/brier',           'confirmed', 'Brier calibration scoring', 'Math Layers Brier'),
+    shapley:         def('GET', '/math-layers/shapley',         'confirmed', 'Shapley signal attribution', 'Math Layers Shapley'),
+  },
+
+  // ── Multi-asset / category performance ───────────────────────────────────────
+  // DISCOVERED 2026-08-20, same provenance as mathLayers above. This is the
+  // engine's first genuinely MULTI-ASSET surface: by-category returns six market
+  // categories (crypto, macro, politics, sports, entertainment, science_tech)
+  // and the Kalman bank tracks BTC, ETH and SOL. See PHASE 7 in the audit report
+  // for what the product should and should not generalise on the back of it.
+  performance: {
+    byCategory:       def('GET', '/performance/by-category',       'confirmed', 'Performance by market category', 'Performance by Category'),
+    byAsset:          def('GET', '/performance/by-asset',          'confirmed', 'Performance by asset symbol', 'Performance by Asset'),
+    kalmanMultiAsset: def('GET', '/performance/kalman-multi-asset', 'confirmed', 'Multi-asset Kalman filter status', 'Kalman Multi-Asset Status'),
   },
 
   // ── Wallet ───────────────────────────────────────────────────────────────────

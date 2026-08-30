@@ -122,7 +122,7 @@ export function TopNavigation() {
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
           </svg>
           <span className="hidden sm:inline text-xs flex-1 text-left">Jump to page…</span>
-          <kbd className="hidden sm:inline text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5" style={{ border: '1px solid var(--probex-border)' }}>⌘K</kbd>
+          <kbd className="hidden sm:inline text-2xs font-bold uppercase tracking-wider rounded px-1.5 py-0.5" style={{ border: '1px solid var(--probex-border)' }}>⌘K</kbd>
         </button>
       </div>
 

@@ -19,7 +19,11 @@ import { ValueFlash } from './ValueFlash'
 // Client-only (lightweight-charts is canvas) — never rendered during SSR.
 const MarketChart = dynamic(() => import('./MarketChart').then((m) => m.MarketChart), {
   ssr: false,
-  loading: () => <div className="skeleton rounded w-full h-full" />,
+  // An explicit height, not h-full: the chart is no longer inside a
+  // fixed-height wrapper (see the render below), so a percentage height would
+  // resolve against an auto-height parent and collapse this placeholder to
+  // nothing. 120 is the height of the only size in use.
+  loading: () => <div className="skeleton rounded w-full" style={{ height: 120 }} />,
 })
 
 interface PriceCardProps {
@@ -55,8 +59,20 @@ export function PriceCard({ chart, feed, size = 'default' }: PriceCardProps) {
     prevPrice.current = chart.currentPrice
   }, [chart.currentPrice])
 
+  // ─── Why this card no longer glows at all ──────────────────────────────────
+  // It carried `card-glow-live` as a static class, so it glowed whether or not
+  // the price feed was connected — the light described the component's identity
+  // ("I am a live card") rather than the engine's state.
+  //
+  // The fix is removal, not a better condition. A price feed that is connected
+  // is connected *continuously*, so any glow tied to it is permanent, and a
+  // permanent glow carries no information — it is the live-equals-glow mistake
+  // wearing a gate. Liveness here is already said four times over, each tied to
+  // something that actually happens: the pulsing live dot, the "Feed 964ms"
+  // latency label, the one-shot ring below when a confirmed price ticks, and
+  // the chart's own motion. Light is reserved for the exception.
   return (
-    <Card variant={isHero ? 'elevated' : 'default'} className="relative flex flex-col gap-3 card-glow-live">
+    <Card variant={isHero ? 'elevated' : 'default'} className="relative flex flex-col gap-3">
       {pulseN > 0 && <span key={pulseN} className="pulse-ring" aria-hidden="true" />}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex flex-col gap-1">
@@ -88,13 +104,14 @@ export function PriceCard({ chart, feed, size = 'default' }: PriceCardProps) {
         </div>
       </div>
 
-      <div style={{ height: isHero ? 180 : 120 }}>
-        {series.hasData ? (
-          <MarketChart points={series.points} up={isUp} height={isHero ? 180 : 120} />
-        ) : (
-          <div className="skeleton rounded w-full h-full" />
-        )}
-      </div>
+      {/* Unwrapped for the same reason as the Overview hero: ChartFrame adds a
+          stale strip below the plot when the price feed stops, and a fixed
+          height would clip it. Healthy-feed layout is unchanged. */}
+      {series.hasData ? (
+        <MarketChart points={series.points} up={isUp} height={isHero ? 180 : 120} />
+      ) : (
+        <div className="skeleton rounded w-full" style={{ height: isHero ? 180 : 120 }} />
+      )}
 
       {windowLabel && (
         <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>

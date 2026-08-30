@@ -32,7 +32,7 @@ export function OpportunityIntelligence({ onSelectMarket }: { onSelectMarket: (m
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-2">
-        <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Opportunity Intelligence</h2>
+        <h2 className="t-section-title">Opportunity Intelligence</h2>
         <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>Ranked by edge magnitude, not detection time</span>
       </div>
 

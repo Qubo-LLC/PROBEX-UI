@@ -20,7 +20,7 @@ export function ResearchLibrary() {
   const reports = slice.status === 'success' && slice.data ? slice.data.reports : []
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+    <div className="rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <div>
           <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Research Reports</h2>
@@ -57,7 +57,7 @@ function ReportCard({ report }: { report: ResearchReportItem }) {
   const details = Object.entries(report.details).slice(0, 4)
 
   return (
-    <div className="flex flex-col gap-2.5 p-4 rounded-xl" style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}>
+    <div className="flex flex-col gap-2.5 p-4 rounded-lg" style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}>
       <div className="flex items-center gap-2">
         <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: `color-mix(in srgb, ${meta.color} 14%, transparent)`, color: meta.color }} aria-hidden="true">
           {meta.icon}

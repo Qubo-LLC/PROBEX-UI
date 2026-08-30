@@ -16,6 +16,7 @@ import { MarketFilterBar } from './MarketFilterBar'
 import { MarketCard } from './MarketCard'
 import { MarketTable } from './MarketTable'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Card } from '@/components/ui/Card'
@@ -65,28 +66,52 @@ export function MarketsPage({ embedded = false }: EmbeddableProps = {}) {
 
   const handleSelect = (id: string) => router.push(MARKET_DETAIL_PATH(id))
 
+  /**
+   * The market list failed to load — a different fact from "the engine returned
+   * zero markets", and the page must not blur them. While this is true there is
+   * no catalogue to search, sort or switch views over, so the toolbar is inert
+   * and the failure is stated before the controls rather than beneath them.
+   */
+  const marketsUnavailable = marketsSlice.status === 'error'
+
   return (
     <div className={pageShell(embedded, 'gap-4')}>
       {!embedded && (
-        <PageHeader title="Markets" subtitle="Bitcoin 5-minute markets the engine is scanning right now" />
+        <PageHeader
+          title="Markets"
+          subtitle="Which markets are open, and where the engine sees an opportunity"
+          actions={
+            <span className="flex items-center gap-3">
+              {/* Lineage tracks THIS endpoint, not the app as a whole.
+                  ProvenanceBadge's global downgrade only fires when every core
+                  endpoint is failing, so a markets-only outage previously left
+                  a green LIVE badge directly above "Markets unavailable". */}
+              <ProvenanceBadge
+                provenance={marketsUnavailable ? 'unreachable' : 'live'}
+                detail="/api/markets"
+              />
+              <ProvenanceBadge provenance="live" detail="/api/edges" />
+            </span>
+          }
+        />
+      )}
+
+      {marketsUnavailable && (
+        <ErrorState
+          title="Markets unavailable"
+          description={`${marketsSlice.error?.message ?? 'The /api/markets endpoint did not respond.'} Filtering and sorting are unavailable until the catalogue loads; nothing has been removed from your watchlist.`}
+          fullPage={false}
+        />
       )}
 
       <div className="sticky top-0 z-10 -mx-5 px-5 pb-2" style={{ background: 'var(--probex-bg)', borderBottom: '1px solid var(--probex-border)' }}>
-        <MarketFilterBar />
+        <MarketFilterBar disabled={marketsUnavailable} />
       </div>
 
       {marketsSlice.status === 'loading' && (
         <p className="text-xs py-2" style={{ color: 'var(--probex-text-disabled)' }}>
           Waiting for /api/markets — the engine’s market fetcher can take several seconds under rate limiting.
         </p>
-      )}
-
-      {marketsSlice.status === 'error' && (
-        <ErrorState
-          title="Markets unavailable"
-          description={marketsSlice.error?.message ?? 'The /api/markets endpoint did not respond.'}
-          fullPage={false}
-        />
       )}
 
       {marketRows?.kind === 'unrecognized' && (

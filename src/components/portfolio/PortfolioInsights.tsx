@@ -46,7 +46,7 @@ export function PortfolioInsights() {
 
   if (!insights) {
     return (
-      <div className="rounded-xl p-4" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+      <div className="rounded-lg p-4" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
         <p className="text-xs" style={{ color: 'var(--probex-text-muted)' }}>No open positions to summarize.</p>
       </div>
     )
@@ -56,7 +56,7 @@ export function PortfolioInsights() {
   const navigate = (marketId: string | null) => { if (marketId) router.push(MARKET_DETAIL_PATH(marketId)) }
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+    <div className="rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
       <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Portfolio Insights</h2>
       </div>

@@ -5,20 +5,26 @@
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { AwaitingValue } from '@/components/shared/AwaitingValue'
-import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
+import { Panel } from '@/components/ui/Panel'
 
 export function BiasBreakdown() {
   const slice = useApplicationStore((s) => s.engine.consensusBias)
-  const b = slice.status === 'success' ? slice.data : null
+  const envelope = slice.status === 'success' ? slice.data : null
+  // null exactly when the engine reports no edges detected yet — the split bar
+  // must not be filled to a fabricated 50/50 in that case.
+  const b = envelope?.detail ?? null
+  const notComputed = envelope !== null && envelope.detail === null
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
-        <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Bias Breakdown</h2>
-        <ProvenanceBadge provenance="live" detail="/api/consensus/bias" />
-      </div>
-
-      <div className="p-4 flex flex-col gap-3">
+    // Canonical data surface — see ConsensusScoreCard for why the hand-rolled
+    // header/body split was retired.
+    <Panel
+      title="Bias Breakdown"
+      provenance={b ? 'live' : 'idle'}
+      source="/api/consensus/bias"
+      state={b ? 'live' : 'idle'}
+    >
+      <div className="flex flex-col gap-3">
         <BiasRow
           label="YES"
           description={b ? `${b.bias.yesCount} of ${b.totalEdges} detected edge${b.totalEdges === 1 ? '' : 's'}` : 'Directional edges favoring YES'}
@@ -39,17 +45,26 @@ export function BiasBreakdown() {
             <span>YES {b ? `${b.bias.yesPercent.toFixed(0)}%` : <AwaitingValue size="sm" className="inline" />}</span>
             <span>NO {b ? `${b.bias.noPercent.toFixed(0)}%` : <AwaitingValue size="sm" className="inline" />}</span>
           </div>
+          {/* An unfilled track when there is no split — a half-filled bar would
+              read as a measured 50/50, which is a value the engine never gave. */}
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }}>
-            <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${b?.bias.yesPercent ?? 50}%`, background: 'var(--probex-yes)' }} />
+            {b !== null && (
+              <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${b.bias.yesPercent}%`, background: 'var(--probex-yes)' }} />
+            )}
           </div>
-          {b && (
+          {b !== null && (
             <span className="text-2xs mt-0.5" style={{ color: 'var(--probex-text-disabled)' }}>
               Recent trend (last {b.recentTrend.last10Edges}): {b.recentTrend.bias}
             </span>
           )}
+          {notComputed && (
+            <span className="text-2xs mt-0.5" style={{ color: 'var(--probex-text-disabled)' }}>
+              {envelope.message ?? 'No edges detected yet.'}
+            </span>
+          )}
         </div>
       </div>
-    </div>
+    </Panel>
   )
 }
 

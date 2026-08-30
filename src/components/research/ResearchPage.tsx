@@ -9,16 +9,17 @@
 // interaction shell would be decorative complexity with nothing behind it;
 // revisit once research.get exists (see Phase 5 report).
 
+import { PageHeader } from '@/components/ui/PageHeader'
 import { OpportunityNotes } from './OpportunityNotes'
 import { ResearchLibrary } from './ResearchLibrary'
 
 export function ResearchPage() {
   return (
     <div className="page-container flex flex-col gap-5 pb-8 animate-fade-in-up">
-      <div>
-        <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--probex-text-primary)' }}>Research</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--probex-text-muted)' }}>Engine reasoning, opportunity summaries, and market intelligence</p>
-      </div>
+      <PageHeader
+        title="Research"
+        subtitle="Engine reasoning, opportunity summaries, and market intelligence"
+      />
 
       <OpportunityNotes />
       <ResearchLibrary />

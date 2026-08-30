@@ -49,7 +49,11 @@ export interface HealthStatsDTO {
 }
 
 export interface EngineHealthDTO {
-  status:            string              // 'online' | 'degraded' | 'offline'
+  // Wire vocabulary, NOT the canonical one: the live engine sends "healthy"
+  // here while the host-root identity endpoint sends "online". Both are real
+  // (verified 2026-08-20). Never compare this directly — run it through
+  // normalizeHealthStatus() in lib/services/health.ts.
+  status:            string
   components:        HealthComponentDTO[]
   check_duration_ms: number
   uptime_seconds:    number
@@ -193,7 +197,13 @@ export interface HealthStats {
 }
 
 export interface EngineHealth {
-  status:          EngineHealthStatus
+  /** Canonical status, produced by normalizeHealthStatus(). `null` when the
+   *  engine sent a value this app does not recognise — never guessed. */
+  status:          EngineHealthStatus | null
+  /** What the engine literally said ("healthy"), for display. Keeping the raw
+   *  word means the System route can still report the engine's own vocabulary
+   *  while every comparison runs against `status`. */
+  statusLabel:     string
   components:      HealthComponent[]
   checkDurationMs: number
   uptimeSeconds:   number
@@ -245,7 +255,8 @@ export interface EngineStats {
   unrealizedPnl:      number
   realizedPnl:        number
   totalPnl:           number
-  healthStatus:       EngineHealthStatus
+  /** Canonical; `null` when unrecognised. See lib/services/health.ts. */
+  healthStatus:       EngineHealthStatus | null
   healthComponents:   HealthComponent[]
   runtimeComponents:  RuntimeComponents
   timestamp:          number  // epoch ms
@@ -318,7 +329,8 @@ export interface EngineIdentityDTO {
 
 /** Flattened identity — bot name/version plus the runtime snapshot the root embeds. */
 export interface EngineIdentity {
-  status:        EngineHealthStatus
+  /** Canonical; `null` when unrecognised. See lib/services/health.ts. */
+  status:        EngineHealthStatus | null
   bot:           string
   version:       string
   mode:          EngineMode
@@ -774,10 +786,19 @@ export interface ConsensusInnerDTO {
   interpretation: string  // e.g. "NEUTRAL" — only value observed so far
 }
 
+/**
+ * ⚠️ Two-shape envelope. Verified against the live engine 2026-08-20:
+ * when the consensus engine has nothing to report it answers
+ *   { available: false, message: "No consensus calculated yet", timestamp }
+ * — the `consensus` key is ABSENT, not null and not zero-filled. Declaring it
+ * required made the adapter dereference `undefined` and throw, which surfaced a
+ * routine "not computed yet" as a hard client error. See UNAVAILABLE_SHAPE.
+ */
 export interface ConsensusDTO {
-  available: boolean
-  consensus: ConsensusInnerDTO
-  timestamp: string  // ISO 8601
+  available:  boolean
+  consensus?: ConsensusInnerDTO
+  message?:   string
+  timestamp:  string  // ISO 8601
 }
 
 export interface ConsensusSignals {
@@ -788,8 +809,8 @@ export interface ConsensusSignals {
   priceMomentum:  number
 }
 
-export interface Consensus {
-  available:      boolean
+/** The computed reading. Only ever present when the engine says so. */
+export interface ConsensusReading {
   scoreTimestamp: number  // epoch ms
   score:          number
   confidence:     number
@@ -797,7 +818,16 @@ export interface Consensus {
   signals:        ConsensusSignals
   btcPrice:       number
   interpretation: string
-  timestamp:      number  // epoch ms
+}
+
+export interface Consensus {
+  available:  boolean
+  /** Engine's own reason when unavailable (e.g. "No consensus calculated yet"). */
+  message:    string | null
+  /** null EXACTLY when `available` is false — never a zero-filled stand-in.
+   *  UNKNOWN and ZERO are different facts and must stay distinguishable. */
+  reading:    ConsensusReading | null
+  timestamp:  number  // epoch ms
 }
 
 // ─── /api/consensus/bias ──────────────────────────────────────────────────────
@@ -825,13 +855,16 @@ export interface ConsensusRecentTrendDTO {
   bias:          string  // e.g. "NEUTRAL"
 }
 
+/** ⚠️ Two-shape envelope — see ConsensusDTO. Live sample when idle:
+ *  { available: false, message: "No edges detected yet", timestamp }. */
 export interface ConsensusBiasDTO {
-  available:    boolean
-  total_edges:  number
-  bias:         ConsensusBiasSplitDTO
-  confidence:   ConsensusConfidenceStatsDTO
-  recent_trend: ConsensusRecentTrendDTO
-  timestamp:    string  // ISO 8601
+  available:     boolean
+  total_edges?:  number
+  bias?:         ConsensusBiasSplitDTO
+  confidence?:   ConsensusConfidenceStatsDTO
+  recent_trend?: ConsensusRecentTrendDTO
+  message?:      string
+  timestamp:     string  // ISO 8601
 }
 
 export interface ConsensusBiasSplit {
@@ -857,12 +890,20 @@ export interface ConsensusRecentTrend {
   bias:        string
 }
 
-export interface ConsensusBias {
-  available:   boolean
+/** The computed breakdown. Present only when the engine has detected edges. */
+export interface ConsensusBiasDetail {
   totalEdges:  number
   bias:        ConsensusBiasSplit
   confidence:  ConsensusConfidenceStats
   recentTrend: ConsensusRecentTrend
+}
+
+export interface ConsensusBias {
+  available:   boolean
+  /** Engine's own reason when unavailable (e.g. "No edges detected yet"). */
+  message:     string | null
+  /** null EXACTLY when `available` is false — never zero-filled. */
+  detail:      ConsensusBiasDetail | null
   timestamp:   number  // epoch ms
 }
 
@@ -1097,9 +1138,12 @@ export interface PortfolioSummaryInnerDTO {
   total_trades:         number
 }
 
+/** ⚠️ Two-shape envelope — see ConsensusDTO. Live sample when idle:
+ *  { available: false, message: "No portfolio data available yet", timestamp }. */
 export interface PortfolioSummaryDTO {
   available: boolean
-  summary:   PortfolioSummaryInnerDTO
+  summary?:  PortfolioSummaryInnerDTO
+  message?:  string
   timestamp: string  // ISO 8601
 }
 
@@ -1120,33 +1164,45 @@ export interface PortfolioSummaryInner {
 
 export interface PortfolioSummary {
   available: boolean
-  summary:   PortfolioSummaryInner
+  /** Engine's own reason when unavailable. */
+  message:   string | null
+  /** null EXACTLY when `available` is false — never zero-filled. */
+  summary:   PortfolioSummaryInner | null
   timestamp: number  // epoch ms
 }
 
 // ─── /api/portfolio/performance ───────────────────────────────────────────────
 
+/** ⚠️ Nested two-shape envelope. The OUTER `available` is true even when the
+ *  INNER one is false. Live sample 2026-08-20:
+ *    { available: true,
+ *      performance: { available: false, message: "No data in last 24 hours" },
+ *      lookback_hours: 24, timestamp }
+ *  So the metric keys are absent while the request itself succeeded — the outer
+ *  flag answers "did the endpoint work", the inner one "is there a result". */
 export interface PortfolioPerformancePeriodDTO {
   available:          boolean
-  period_hours:       number
-  start_value:        number
-  end_value:          number
-  value_change:       number
-  return_pct:         number
-  max_drawdown_pct:   number
-  trades_in_period:   number
-  snapshot_count:     number
+  message?:           string
+  period_hours?:      number
+  start_value?:       number
+  end_value?:         number
+  value_change?:      number
+  return_pct?:        number
+  max_drawdown_pct?:  number
+  trades_in_period?:  number
+  snapshot_count?:    number
 }
 
 export interface PortfolioPerformanceDTO {
   available:      boolean
-  performance:    PortfolioPerformancePeriodDTO
+  performance?:   PortfolioPerformancePeriodDTO
+  message?:       string
   lookback_hours: number
   timestamp:      string  // ISO 8601
 }
 
+/** The measured window. Present only when the engine had data to measure. */
 export interface PortfolioPerformancePeriod {
-  available:       boolean
   periodHours:     number
   startValue:      number
   endValue:        number
@@ -1159,7 +1215,10 @@ export interface PortfolioPerformancePeriod {
 
 export interface PortfolioPerformance {
   available:     boolean
-  performance:   PortfolioPerformancePeriod
+  /** Engine's own reason when there is no measurable window. */
+  message:       string | null
+  /** null when the engine reports no data for the lookback — never zero-filled. */
+  performance:   PortfolioPerformancePeriod | null
   lookbackHours: number
   timestamp:     number  // epoch ms
 }

@@ -17,6 +17,7 @@
 
 import { useEffect, useState } from 'react'
 import { services } from '@/lib/services'
+import { readEphemeral } from '@/lib/api/resourceLifecycle'
 import { LiveChart, type LiveChartPoint } from '@/components/shared/LiveChart'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -32,17 +33,32 @@ const hhmm = (ts: number) =>
 export function MarketCharts({ marketId }: { marketId: string }) {
   const [data, setData]       = useState<MarketPriceHistory | null>(null)
   const [error, setError]     = useState<string | null>(null)
+  // Distinct from `error`: an id that has aged out is the normal end of a
+  // 5-minute market's life, not a fault, and must not be reported as one.
+  const [expired, setExpired] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let active = true
     setLoading(true)
     setError(null)
-    services.engine
-      .getMarketPriceHistory(marketId, SNAPSHOT_LIMIT)
-      .then((r) => { if (active) setData(r.data) })
-      .catch((e: unknown) => { if (active) setError(e instanceof Error ? e.message : 'Request failed') })
+    setExpired(false)
+
+    // No `refreshId` is supplied on purpose. Substituting a DIFFERENT market's
+    // history under a heading that names this one would be a silent lie — the
+    // very failure mode this page exists to avoid. Refreshing the id is correct
+    // for "give me the current market" reads; this is "give me THIS market".
+    readEphemeral(marketId, (id) =>
+      services.engine.getMarketPriceHistory(id, SNAPSHOT_LIMIT).then((r) => r.data),
+    )
+      .then((outcome) => {
+        if (!active) return
+        if (outcome.kind === 'ok')            setData(outcome.value)
+        else if (outcome.kind === 'expired')  setExpired(true)
+        else                                  setError(outcome.error.message)
+      })
       .finally(() => { if (active) setLoading(false) })
+
     return () => { active = false }
   }, [marketId])
 
@@ -54,6 +70,18 @@ export function MarketCharts({ marketId }: { marketId: string }) {
         <p className="text-xs py-6" style={{ color: 'var(--probex-text-disabled)' }}>
           Loading market history…
         </p>
+      </Section>
+    )
+  }
+
+  if (expired) {
+    return (
+      <Section>
+        <EmptyState
+          size="sm"
+          title="This market has closed"
+          description="Polymarket's 5-minute markets rotate continuously, and the engine no longer holds a record for this one. Its id has expired — nothing is wrong."
+        />
       </Section>
     )
   }

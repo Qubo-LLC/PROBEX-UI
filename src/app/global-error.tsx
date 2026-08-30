@@ -29,7 +29,10 @@ export default function GlobalError({
           justifyContent: 'center',
           background: '#050816',
           color: '#e6e8ee',
-          fontFamily: 'Inter, system-ui, sans-serif',
+          // Literal stack, not var(--font-sans): global-error replaces the root
+          // layout when it fires, so globals.css may not have applied. Named
+          // Inter until now, which the app never shipped.
+          fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif',
         }}
       >
         <div style={{ textAlign: 'center', maxWidth: 420, padding: 24 }}>

@@ -77,7 +77,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             className="flex-1 bg-transparent outline-none text-sm"
             style={{ color: 'var(--probex-text-primary)' }}
           />
-          <kbd className="text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5" style={{ color: 'var(--probex-text-muted)', border: '1px solid var(--probex-border)' }}>Esc</kbd>
+          <kbd className="text-2xs font-bold uppercase tracking-wider rounded px-1.5 py-0.5" style={{ color: 'var(--probex-text-muted)', border: '1px solid var(--probex-border)' }}>Esc</kbd>
         </div>
 
         <div className="max-h-[320px] overflow-y-auto py-1.5" role="listbox" aria-label="Pages">

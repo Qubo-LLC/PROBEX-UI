@@ -9,17 +9,12 @@
 import Link            from 'next/link'
 import { ProbexLogo }  from '@/components/ui/ProbexLogo'
 import { ROUTES }      from '@/config/constants'
+import { FooterTrust, FooterMode } from './FooterTrust'
 
 const PLATFORM_LINKS = [
   { label: 'Overview',  href: ROUTES.HOME },
   { label: 'Live Feed',  href: ROUTES.LIVE },
   { label: 'Positions',  href: ROUTES.POSITIONS },
-] as const
-
-const TRUST_ITEMS = [
-  { k: 'Autonomous',  v: 'The engine trades without manual intervention' },
-  { k: 'Live',        v: 'Real-time engine polling, not static data' },
-  { k: 'Transparent', v: 'Every figure traces to a live endpoint, or says so' },
 ] as const
 
 export function Footer() {
@@ -51,7 +46,7 @@ export function Footer() {
 
           {/* Platform links */}
           <div className="min-w-[110px]">
-            <div className="text-[9px] font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--probex-text-muted)' }}>
+            <div className="text-2xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--probex-text-muted)' }}>
               Platform
             </div>
             <ul className="list-none p-0 m-0 flex flex-col gap-2.5">
@@ -70,26 +65,20 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Trust strip */}
-        <div className="mt-7 pt-4 flex gap-6 flex-wrap" style={{ borderTop: '1px solid var(--probex-border)' }}>
-          {TRUST_ITEMS.map((item) => (
-            <div key={item.k} className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'var(--probex-positive)' }} />
-              <span className="text-2xs" style={{ color: 'var(--probex-text-secondary)' }}>
-                <strong className="font-semibold" style={{ color: 'var(--probex-text-primary)' }}>{item.k}.</strong> {item.v}
-              </span>
-            </div>
-          ))}
-        </div>
+        {/* Trust strip — one of its three claims describes the CURRENT engine
+            connection, so the strip is a client component. See FooterTrust. */}
+        <FooterTrust />
 
         {/* Bottom bar */}
         <div className="mt-5 pt-4 flex justify-between items-center flex-wrap gap-2" style={{ borderTop: '1px solid var(--probex-border)' }}>
           <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
             © {year} Probex. All rights reserved.
           </span>
-          <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
-            Autonomous trading carries risk. Currently running in paper mode.
-          </span>
+          {/* The execution mode was hardcoded to "paper" here, which is a claim
+              about the running engine written as static copy — it stayed on
+              screen unchanged when the engine was unreachable, and would have
+              said "paper" on a LIVE deployment. FooterMode derives it. */}
+          <FooterMode />
         </div>
       </div>
     </footer>

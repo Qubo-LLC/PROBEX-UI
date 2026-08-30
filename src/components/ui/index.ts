@@ -1,6 +1,8 @@
 export { Card, CardHeader, CardTitle, CardBody, CardFooter } from './Card'
 export { StatCard } from './StatCard'
 export { PageHeader } from './PageHeader'
+export { SectionHeading } from './SectionHeading'
+export { Panel, Focal, Row, RowGroup, Meter, PanelPending } from './Panel'
 export { EmptyState } from './EmptyState'
 export { ErrorState } from './ErrorState'
 export { Tooltip, TooltipProvider } from './Tooltip'

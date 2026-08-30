@@ -16,7 +16,14 @@ import {
   MOCK_ANALYTICS_SEGMENTS, MOCK_ANALYTICS_SIGNALS, MOCK_ANALYTICS_SUMMARY, MOCK_ANALYTICS_TOP_SEGMENTS, MOCK_ANALYTICS_HOURLY,
   MOCK_PAPER_STATUS, MOCK_SYSTEM_METRICS, MOCK_TRADES_LEDGER, MOCK_EXECUTION_ORDERS,
   MOCK_MARKETS_SUMMARY, mockMarketPriceHistory,
+  MOCK_MATH_LAYERS_STATUS, MOCK_MATH_RECOMMENDATIONS, MOCK_KALMAN_LAYER,
+  MOCK_BAYESIAN_LAYER, MOCK_BRIER_LAYER, MOCK_SHAPLEY_LAYER,
+  MOCK_PERFORMANCE_BY_CATEGORY, MOCK_PERFORMANCE_BY_ASSET,
 } from '@/mock/engine'
+import type {
+  MathLayersStatus, MathRecommendationsEnvelope, KalmanLayer,
+  BayesianLayer, BrierLayer, ShapleyLayer, PerformanceBuckets,
+} from '@/types/quant'
 import type {
   EngineHealth, EngineRuntime, EngineStats, EngineConfig, SurvivalStatus, PriceHistory,
   EngineMarkets, EnginePositions, EngineEvents, EngineEdges,
@@ -128,6 +135,27 @@ class MockEngineService implements IEngineService {
   async cancelOrder(orderId: string): Promise<ApiResult<MutationResult>> {
     return ok(mockMutation(`Mock: cancelled order ${orderId}`))
   }
+  // ── Phase 2 (2026-08-20) — quant surface ───────────────────────────────────
+  peekMathLayersStatus():      MathLayersStatus            { return MOCK_MATH_LAYERS_STATUS }
+  peekMathRecommendations():   MathRecommendationsEnvelope { return MOCK_MATH_RECOMMENDATIONS }
+  peekMathKalman():            KalmanLayer                 { return MOCK_KALMAN_LAYER }
+  peekMathBayesian():          BayesianLayer               { return MOCK_BAYESIAN_LAYER }
+  peekMathBrier():             BrierLayer                  { return MOCK_BRIER_LAYER }
+  peekMathShapley():           ShapleyLayer                { return MOCK_SHAPLEY_LAYER }
+  peekPerformanceByCategory(): PerformanceBuckets          { return MOCK_PERFORMANCE_BY_CATEGORY }
+  peekPerformanceByAsset():    PerformanceBuckets          { return MOCK_PERFORMANCE_BY_ASSET }
+  peekKalmanMultiAsset():      KalmanLayer                 { return MOCK_KALMAN_LAYER }
+
+  async getMathLayersStatus():      Promise<ApiResult<MathLayersStatus>>            { return ok(MOCK_MATH_LAYERS_STATUS) }
+  async getMathRecommendations():   Promise<ApiResult<MathRecommendationsEnvelope>> { return ok(MOCK_MATH_RECOMMENDATIONS) }
+  async getMathKalman():            Promise<ApiResult<KalmanLayer>>                 { return ok(MOCK_KALMAN_LAYER) }
+  async getMathBayesian():          Promise<ApiResult<BayesianLayer>>               { return ok(MOCK_BAYESIAN_LAYER) }
+  async getMathBrier():             Promise<ApiResult<BrierLayer>>                  { return ok(MOCK_BRIER_LAYER) }
+  async getMathShapley():           Promise<ApiResult<ShapleyLayer>>                { return ok(MOCK_SHAPLEY_LAYER) }
+  async getPerformanceByCategory(): Promise<ApiResult<PerformanceBuckets>>          { return ok(MOCK_PERFORMANCE_BY_CATEGORY) }
+  async getPerformanceByAsset():    Promise<ApiResult<PerformanceBuckets>>          { return ok(MOCK_PERFORMANCE_BY_ASSET) }
+  async getKalmanMultiAsset():      Promise<ApiResult<KalmanLayer>>                 { return ok(MOCK_KALMAN_LAYER) }
+
   async emergencyStop():      Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: emergency stop — no live positions affected')) }
   async startPaperTrading():  Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: paper trading started')) }
   async stopPaperTrading():   Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: paper trading stopped')) }

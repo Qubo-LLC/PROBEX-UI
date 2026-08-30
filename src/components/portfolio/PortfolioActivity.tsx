@@ -40,7 +40,7 @@ export function PortfolioActivity() {
   }, [eventsSlice.data])
 
   return (
-    <div className="flex flex-col rounded-xl overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+    <div className="flex flex-col rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <div className="flex items-center gap-2">
           <span className="live-dot" aria-hidden="true" />

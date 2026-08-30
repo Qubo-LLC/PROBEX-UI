@@ -97,7 +97,7 @@ export function Tabs({ tabs, param = 'view', label }: TabsProps) {
             {isActive && (
               <span
                 className="absolute left-0 right-0 -bottom-px h-0.5"
-                style={{ background: 'var(--probex-accent)' }}
+                style={{ background: 'var(--probex-primary)' }}
                 aria-hidden="true"
               />
             )}

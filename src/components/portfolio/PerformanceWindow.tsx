@@ -15,7 +15,7 @@
 
 import { useEffect, useState } from 'react'
 import { services } from '@/lib/services'
-import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
+import { Panel } from '@/components/ui/Panel'
 import { formatCurrency, formatSignedCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import type { PortfolioPerformance } from '@/types/engine'
@@ -45,28 +45,30 @@ export function PerformanceWindow() {
     return () => { active = false }
   }, [hours])
 
+  // `performance` is null exactly when the engine reports no data for the
+  // window (its own `available: false`) — a lookback longer than the recorded
+  // history has no answer, and that is not an error. The availability check now
+  // lives in the adapter, so reaching a non-null `p` already means "measured".
   const p = data?.performance ?? null
-  // The engine reports its own availability for the window — a lookback longer
-  // than the recorded history has no answer, and that is not an error.
-  const hasData = p !== null && p.available && p.snapshotCount > 0
+  const hasData = p !== null && p.snapshotCount > 0
 
   const returnPositive = (p?.returnPct ?? 0) >= 0
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
-      <div className="px-4 py-3 flex items-center justify-between gap-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>
-            Performance Window
-          </h2>
-          <p className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
-            Value change and worst drawdown over a bounded recent period
-          </p>
-        </div>
-        <ProvenanceBadge provenance="live" detail="/api/portfolio/performance" />
-      </div>
-
-      <div className="px-4 pt-3">
+    // Canonical data surface — see ConsensusScoreCard. This one exercises
+    // Panel's `subtitle` slot: the explanatory line was previously hand-placed
+    // under a hand-rolled title, which is why it had its own colour and size.
+    <Panel
+      title="Performance Window"
+      subtitle="Value change and worst drawdown over a bounded recent period"
+      provenance={hasData ? 'live' : 'idle'}
+      source="/api/portfolio/performance"
+      state={hasData ? 'live' : 'idle'}
+      // No updateKey: this figure changes when the OPERATOR picks a different
+      // lookback, not when the engine does something. Ringing a panel for the
+      // user's own click would teach them to ignore the ring.
+    >
+      <div>
         <div className="inline-flex rounded-md overflow-hidden" style={{ border: '1px solid var(--probex-border-default)' }} role="group" aria-label="Lookback window">
           {WINDOWS.map((w) => (
             <button
@@ -78,7 +80,7 @@ export function PerformanceWindow() {
               )}
               style={
                 hours === w.hours
-                  ? { background: 'var(--probex-accent)', color: '#fff' }
+                  ? { background: 'var(--probex-primary)', color: 'var(--probex-bg)' }
                   : { background: 'transparent', color: 'var(--probex-text-muted)' }
               }
             >
@@ -88,7 +90,7 @@ export function PerformanceWindow() {
         </div>
       </div>
 
-      <div className="p-4">
+      <div>
         {loading && <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>Loading window…</p>}
 
         {!loading && error && (
@@ -97,7 +99,8 @@ export function PerformanceWindow() {
 
         {!loading && !error && !hasData && (
           <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
-            The engine has no recorded snapshots covering the last {hours}h yet.
+            {/* Prefer the engine's own wording when it supplied one. */}
+            {data?.message ?? `The engine has no recorded snapshots covering the last ${hours}h yet.`}
           </p>
         )}
 
@@ -136,7 +139,7 @@ export function PerformanceWindow() {
           </div>
         )}
       </div>
-    </div>
+    </Panel>
   )
 }
 

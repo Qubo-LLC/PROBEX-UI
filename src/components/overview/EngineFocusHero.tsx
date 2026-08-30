@@ -1,314 +1,333 @@
 'use client'
 
-// EngineFocusHero — the Overview centerpiece (Product Experience Restoration,
-// Phase A + B). Replaces the static LiveBtcHero with a hybrid hero that expresses
-// Probex's two coexisting modes:
+// EngineFocusHero — the Overview centerpiece. Two coexisting modes, stated
+// side by side and both fully visible at all times:
 //
-//   LEFT  — the live BTC market: the trader's domain. Big price + honest area
-//           chart of the engine's rolling price buffer.
-//   RIGHT — Engine Focus: the AI's domain. An auto-rotating panel cycling the
-//           engine's current REAL state (strongest edge → posture → record).
+//   LEFT  — the live BTC market: the trader's domain. Big price + the engine's
+//           rolling price buffer as an area chart.
+//   RIGHT — Engine Focus: what the engine currently sees and why it does or
+//           does not care.
+//
+// ─── The carousel is gone ────────────────────────────────────────────────────
+// The right half used to auto-rotate three slides on a 7-second timer: edge,
+// posture, record. It existed because posture and record had nowhere else to
+// live — the page below was three near-empty cards, so the hero absorbed the
+// content. That inverted the job of a cockpit: an operator glancing at the
+// screen got whichever third of the engine's state the timer happened to be
+// showing, and had to wait up to fourteen seconds to see a specific figure.
+// Motion also read as marketing on a surface whose whole claim is precision.
+//
+// Posture now lives in the Capital panel and record in the Execution panel
+// (EngineStateBand), both permanently visible. That frees this half to answer
+// one question completely instead of three questions intermittently: what edge
+// does the engine see, and what is it doing about it.
 //
 // Every value comes from a confirmed endpoint (/price-history, /edges,
-// /survival, /execution/status) — the mock's rotating-hero *soul* restored on
-// real data, never its fabricated markets/consensus/recommendations. Manual
-// trading is acknowledged as a mode but honestly marked "soon": no order
-// endpoint exists in the frozen backend contract, so nothing pretends to trade.
+// /survival). Manual trading is acknowledged as a mode but honestly marked
+// "soon": no order endpoint exists in the frozen backend contract.
 
-import { useState, useEffect, useMemo, useCallback, type ReactNode } from 'react'
+import { useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { useApplicationStore } from '@/store/applicationStore'
-import { useCommandCenter, useEnginePriceChart } from '@/config/hooks/useServices'
+import { useEnginePriceChart } from '@/config/hooks/useServices'
 import { useMarketSeries } from '@/config/hooks/useMarketSeries'
+import { useSystemStatus } from '@/config/hooks/useSystemStatus'
 import { parseEdgeRows, type EdgeRow } from '@/lib/mappers/edges'
 import { formatBtcPrice, formatPriceChangePct } from '@/lib/mappers/priceHistory'
-import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'
-import { survivalStateColor, survivalStateLabel } from '@/lib/display/engine'
-import type { CommandCenterVM } from '@/lib/mappers/overview'
+import { formatPercent } from '@/lib/utils'
+import { formatEdgePct } from '@/lib/display/engine'
 import { RadialGauge } from '@/components/shared/RadialGauge'
 import { ValueFlash } from '@/components/shared/ValueFlash'
+import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
 
 // Institutional BTC chart — client-only (lightweight-charts is canvas), so it
 // is never rendered during SSR.
 const MarketChart = dynamic(() => import('@/components/shared/MarketChart').then((m) => m.MarketChart), {
   ssr: false,
-  loading: () => <div className="skeleton rounded w-full" style={{ height: 140 }} />,
+  loading: () => <div className="skeleton rounded w-full" style={{ height: CHART_H }} />,
 })
 
-const ROTATE_MS = 7000
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// Raised from 140px. The chart is the page's one genuine visualisation and the
+// hero had the height to spare once the rotating panel stopped needing a fixed
+// 160px minimum for its tallest slide.
+const CHART_H = 184
 
 export function EngineFocusHero() {
-  const vm         = useCommandCenter()
-  const chart      = useEnginePriceChart()
-  const series     = useMarketSeries()
+  const chart = useEnginePriceChart()
+  const series = useMarketSeries()
+  const status = useSystemStatus()
   const edgesSlice = useApplicationStore((s) => s.engine.edges)
+  const survival = useApplicationStore((s) => s.engine.survival)
+  const stats = useApplicationStore((s) => s.engine.stats)
 
-  const topEdge = useMemo<EdgeRow | null>(() => {
-    if (!edgesSlice.data) return null
+  const edges = useMemo<EdgeRow[]>(() => {
+    if (!edgesSlice.data) return []
     const parsed = parseEdgeRows(edgesSlice.data)
-    if (parsed.kind !== 'rows' || parsed.rows.length === 0) return null
-    return [...parsed.rows].sort((a, b) => b.edgePct - a.edgePct)[0] ?? null
+    return parsed.kind === 'rows' ? [...parsed.rows].sort((a, b) => b.edgePct - a.edgePct) : []
   }, [edgesSlice.data])
 
-  // Rotating Engine Focus slides, built only from real data that has resolved.
-  // The edge slide is always present (it states "holding" when no edge cleared),
-  // so the hero always has something to say.
-  const slides = useMemo(() => {
-    const list: Array<{ key: string; node: ReactNode }> = [
-      { key: 'edge', node: <EdgeSlide edge={topEdge} activeEdges={vm.activeEdges} /> },
-    ]
-    if (vm.capital) list.push({ key: 'posture', node: <PostureSlide capital={vm.capital} /> })
-    if (vm.trading) list.push({ key: 'record',  node: <RecordSlide trading={vm.trading} /> })
-    return list
-  }, [topEdge, vm.activeEdges, vm.capital, vm.trading])
+  const topEdge = edges[0] ?? null
+  const edgeCount = edgesSlice.data?.count ?? null
+  const minEdge = survival.data?.minEdgeThreshold ?? null
+  const edgesDetected = stats.data?.edgesDetected ?? null
 
-  const [current, setCurrent] = useState(0)
-  const [paused, setPaused]   = useState(false)
-
-  useEffect(() => {
-    if (paused || slides.length <= 1) return
-    const id = setInterval(() => setCurrent((c) => (c + 1) % slides.length), ROTATE_MS)
-    return () => clearInterval(id)
-  }, [paused, slides.length])
-
-  useEffect(() => { if (current >= slides.length) setCurrent(0) }, [current, slides.length])
-
-  const go = useCallback((i: number) => {
-    setCurrent(i)
-    setPaused(true)
-    setTimeout(() => setPaused(false), 12_000)
-  }, [])
-
-  const isUp   = chart.data ? chart.data.priceChange >= 0 : true
+  const isUp = chart.data ? chart.data.priceChange >= 0 : true
   const accent = isUp ? 'var(--probex-positive)' : 'var(--probex-negative)'
-  const active = slides[current] ?? slides[0]
 
   return (
     <section
-      aria-label="Engine focus"
-      // hero-glow: ambient two-hue interior light (slow breathing), inset top
-      // edge highlight, and a soft theme-tinted outer light — the page's one
-      // dominant surface (visual hierarchy: the hero draws the eye; everything
-      // below stays quieter).
-      className="relative rounded-md overflow-hidden card-elevated hero-glow"
-      style={{ minHeight: 300 }}
+      aria-label="Market and engine focus"
+      // hero-glow: ambient two-hue interior light, inset top edge highlight and
+      // a soft theme-tinted outer light — the page's one dominant surface.
+      className="relative rounded-lg overflow-hidden card-elevated hero-glow"
     >
+      <div className="relative grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr]">
 
-      <div className="relative grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
         {/* ── LEFT · Live BTC Market (the trader's domain) ────────────────── */}
-        <div className="flex flex-col gap-3 p-6 lg:border-r" style={{ borderColor: 'var(--probex-border)' }}>
+        <div className="flex flex-col gap-3 p-5 lg:border-r" style={{ borderColor: 'var(--probex-border)' }}>
           <div className="flex items-center justify-between gap-3">
+            {/* The market label states its own provenance. In synthetic mode
+                this previously read "LIVE MARKET" above generated prices. */}
             <span className="t-label">
-              BTC / USD · Live Market
+              BTC / USD · {
+                status.dataIsSynthetic ? 'Generated feed'
+                : !status.dataIsLive ? 'No feed'
+                : 'Live market'
+              }
             </span>
-            {/* Honest manual-trading acknowledgement — no order endpoint exists yet. */}
-            <span
-              className="text-[9px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 select-none"
-              style={{ color: 'var(--probex-text-muted)', border: '1px solid var(--probex-border)' }}
-              title="Manual trading — available in a future release"
-            >
-              Manual · Soon
+            <span className="flex items-center gap-2">
+              <ProvenanceBadge provenance="live" detail="/api/price-history" />
+              <span
+                className="text-2xs font-bold uppercase tracking-wider rounded px-1.5 py-0.5 select-none hidden sm:inline"
+                style={{ color: 'var(--probex-text-disabled)', border: '1px solid var(--probex-border)' }}
+                title="Manual trading — available in a future release"
+              >
+                Manual · Soon
+              </span>
             </span>
           </div>
 
           {chart.data ? (
             <>
               <div className="flex items-baseline gap-2.5 flex-wrap">
-                <span className="text-5xl font-bold font-mono tabular-nums leading-none" style={{ color: 'var(--probex-text-primary)' }}>
+                <span
+                  className="text-[2.75rem] font-bold font-mono tabular-nums leading-none"
+                  style={{ color: 'var(--probex-text-primary)', letterSpacing: '-0.03em' }}
+                >
                   <ValueFlash value={chart.data.currentPrice}>{formatBtcPrice(chart.data.currentPrice)}</ValueFlash>
                 </span>
                 <span className="text-base font-semibold font-mono tabular-nums" style={{ color: accent }}>
                   {formatPriceChangePct(chart.data.priceChangePct)}
                 </span>
+                <span className="t-metadata ml-auto">
+                  H {formatBtcPrice(chart.data.highPrice)} · L {formatBtcPrice(chart.data.lowPrice)}
+                </span>
               </div>
 
-              <div style={{ height: 140 }}>
-                {series.hasData ? (
-                  <MarketChart points={series.points} up={isUp} height={140} />
-                ) : (
-                  <div className="skeleton rounded w-full h-full" />
-                )}
-              </div>
-
-              <div className="flex items-center gap-4 text-xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
-                <span>H {formatBtcPrice(chart.data.highPrice)}</span>
-                <span>L {formatBtcPrice(chart.data.lowPrice)}</span>
-                {vm.vitals && (
-                  <span className="flex items-center gap-1.5 ml-auto">
-                    <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: vm.vitals.feedConnected ? 'var(--probex-positive)' : 'var(--probex-negative)' }} aria-hidden="true" />
-                    {vm.vitals.feedConnected ? `Feed ${Math.round(vm.vitals.feedLatencyMs)}ms` : 'Feed down'}
-                  </span>
-                )}
-              </div>
+              {/* No fixed-height wrapper: MarketChart is framed by ChartFrame
+                  now, and the frame appends a "last confirmed Ns ago" strip
+                  beneath the plot when the feed goes quiet. Pinning the height
+                  here would clip that line off — the one case where the chart
+                  has something extra to say. The plot itself is still exactly
+                  CHART_H tall, so nothing moves while the feed is healthy. */}
+              {series.hasData ? (
+                <MarketChart points={series.points} up={isUp} height={CHART_H} />
+              ) : (
+                <div className="skeleton rounded w-full" style={{ height: CHART_H }} />
+              )}
             </>
           ) : (
             <BtcSkeleton />
           )}
         </div>
 
-        {/* ── RIGHT · Engine Focus (the AI's domain, rotating) ────────────── */}
-        <div
-          className="flex flex-col gap-3 p-6"
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
-        >
+        {/* ── RIGHT · Engine Focus (what the engine sees) ─────────────────── */}
+        <div className="flex flex-col gap-4 p-5">
           <div className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-primary)' }}>
-              <span className="live-dot w-1.5 h-1.5" style={{ background: 'var(--probex-primary)' }} aria-hidden="true" />
+            {/* The dot that used to sit here was a second live claim about the
+                same source as the badge on the other end of this row — two
+                assertions three elements apart, one of them animated. The badge
+                is the product's lineage authority, so it keeps the claim and
+                the section label is just a label. */}
+            <span
+              className="text-2xs font-semibold uppercase tracking-wider"
+              style={{ color: 'var(--probex-primary)' }}
+            >
               Engine Focus
             </span>
-            <span
-              className="text-[9px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5"
-              style={{ color: 'var(--probex-primary)', background: 'var(--probex-primary-dim)', border: '1px solid var(--probex-yes-border)' }}
-            >
-              Autonomous AI
-            </span>
+            <ProvenanceBadge provenance="live" detail="/api/edges" />
           </div>
 
-          <div className="relative flex-1 min-h-[160px]">
-            <div key={active?.key} className="absolute inset-0 animate-fade-in">
-              {active?.node}
-            </div>
+          <div className="flex-1 flex flex-col justify-center">
+            {/* Three states, not two. "Holding" is a DECISION the engine made,
+                so it may only be shown when the engine actually answered — the
+                edges endpoint having returned is what licenses that claim.
+                Rendering it whenever `topEdge` was falsy meant an unreachable
+                engine was reported as deliberately standing aside, which
+                invents intelligence out of a network failure. */}
+            {topEdge ? (
+              <EdgeFound edge={topEdge} />
+            ) : edgesSlice.data !== null ? (
+              <EdgeHolding minEdge={minEdge} />
+            ) : (
+              <EdgeUnknown errored={edgesSlice.status === 'error'} />
+            )}
           </div>
 
-          {slides.length > 1 && (
-            <div className="flex items-center justify-between">
-              <div className="flex gap-1.5" role="tablist" aria-label="Engine focus">
-                {slides.map((s, i) => (
-                  <button
-                    key={s.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={i === current}
-                    aria-label={`Focus ${i + 1}`}
-                    onClick={() => go(i)}
-                    className="h-1.5 rounded-full transition-[width,background] duration-200 cursor-pointer p-0 border-0"
-                    style={{ width: i === current ? 20 : 5, background: i === current ? 'var(--probex-primary)' : 'var(--probex-border-strong)' }}
-                  />
-                ))}
-              </div>
-              {paused && (
-                <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>Paused</span>
-              )}
-            </div>
-          )}
+          {/* The signal ledger. Always present, so "no edge" is quantified
+              rather than merely asserted — the difference between an engine
+              that is idle and one that is actively rejecting candidates. */}
+          <dl
+            className="grid grid-cols-3 gap-2 pt-3 m-0"
+            style={{ borderTop: '1px solid var(--probex-border)' }}
+          >
+            <SignalStat label="Under review" value={edgeCount !== null ? `${edgeCount}` : '—'} />
+            <SignalStat label="Detected" value={edgesDetected !== null ? `${edgesDetected}` : '—'} />
+            <SignalStat label="Threshold" value={minEdge !== null ? formatEdgePct(minEdge) : '—'} />
+          </dl>
         </div>
       </div>
     </section>
   )
 }
 
-// ─── Slides ─────────────────────────────────────────────────────────────────
+// ─── Engine Focus states ──────────────────────────────────────────────────────
 
-function EdgeSlide({ edge, activeEdges }: { edge: EdgeRow | null; activeEdges: number | null }) {
-  if (!edge) {
-    return (
-      <div className="flex flex-col justify-center h-full gap-2">
-        <span className="t-label">Strongest Edge</span>
-        <p className="text-sm font-semibold" style={{ color: 'var(--probex-text-secondary)' }}>No edge has cleared the threshold</p>
-        <p className="text-xs leading-relaxed" style={{ color: 'var(--probex-text-muted)' }}>
-          The engine is holding — it prefers no trade over a weak one.
-          {activeEdges !== null ? ` ${activeEdges} signal${activeEdges === 1 ? '' : 's'} under review.` : ''}
-        </p>
-      </div>
-    )
-  }
+function EdgeFound({ edge }: { edge: EdgeRow }) {
   const color = edge.direction.toLowerCase() === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)'
   return (
-    <div className="flex flex-col justify-center h-full gap-3">
-      <span className="t-label">Strongest Active Edge</span>
-      <div className="flex items-center gap-4">
-        <RadialGauge
-          value={Math.min(1, edge.edgePct / 100)}
-          color={color}
-          size={76}
-          strokeWidth={7}
-          ariaLabel={`Edge strength ${edge.edgePct.toFixed(1)}%`}
-        >
-          <span className="text-sm font-bold font-mono tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{edge.edgePct.toFixed(1)}%</span>
-        </RadialGauge>
-        <div className="flex flex-col gap-1 min-w-0">
-          {edge.marketTitle && (
-            <span
-              className="text-sm font-semibold leading-tight"
-              style={{ color: 'var(--probex-text-primary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-            >
-              {edge.marketTitle}
-            </span>
-          )}
-          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color }}>{edge.direction} · edge</span>
-          <div className="flex gap-3 text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
-            {edge.confidence !== null && <span>{formatPercent(edge.confidence)} conf</span>}
-            {edge.kellySize !== null && <span>{(edge.kellySize * 100).toFixed(0)}% Kelly</span>}
-          </div>
+    <div className="flex items-center gap-4">
+      <RadialGauge
+        value={Math.min(1, edge.edgePct / 100)}
+        color={color}
+        size={84}
+        strokeWidth={7}
+        ariaLabel={`Edge strength ${edge.edgePct.toFixed(1)} percent`}
+      >
+        <span className="text-sm font-bold font-mono tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>
+          {edge.edgePct.toFixed(1)}%
+        </span>
+        <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+          edge
+        </span>
+      </RadialGauge>
+
+      <div className="flex flex-col gap-1.5 min-w-0">
+        {edge.marketTitle && (
+          <span
+            className="text-sm font-semibold leading-tight"
+            style={{
+              color: 'var(--probex-text-primary)',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {edge.marketTitle}
+          </span>
+        )}
+        <span className="text-xs font-bold uppercase tracking-wider" style={{ color }}>
+          {edge.direction}
+        </span>
+        <div className="flex gap-3 text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+          {edge.confidence !== null && <span>{formatPercent(edge.confidence)} conf</span>}
+          {edge.kellySize !== null && <span>{(edge.kellySize * 100).toFixed(0)}% Kelly</span>}
         </div>
       </div>
     </div>
   )
 }
 
-function PostureSlide({ capital }: { capital: NonNullable<CommandCenterVM['capital']> }) {
-  const color = survivalStateColor(capital.state)
+/**
+ * The common state, and the one the old hero handled worst: 593×200px of panel
+ * for a single sentence. Holding is a *decision*, so it is presented as one —
+ * with the threshold that produced it.
+ */
+function EdgeHolding({ minEdge }: { minEdge: number | null }) {
   return (
-    <div className="flex flex-col justify-center h-full gap-3">
-      <div className="flex items-center justify-between">
-        <span className="t-label">Engine Posture</span>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2.5">
         <span
-          className="text-2xs font-bold uppercase tracking-wider rounded-full px-2 py-0.5"
-          style={{ color, background: `color-mix(in srgb, ${color} 12%, transparent)`, border: `1px solid color-mix(in srgb, ${color} 30%, transparent)` }}
+          className="flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0"
+          style={{
+            border: '1px solid var(--probex-border-default)',
+            background: 'var(--probex-surface)',
+            color: 'var(--probex-text-muted)',
+          }}
+          aria-hidden="true"
         >
-          {survivalStateLabel(capital.state)}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <rect x="6" y="4" width="4" height="16" rx="1" />
+            <rect x="14" y="4" width="4" height="16" rx="1" />
+          </svg>
         </span>
+        <div className="flex flex-col">
+          <span className="text-sm font-semibold" style={{ color: 'var(--probex-text-primary)' }}>
+            Holding
+          </span>
+          <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
+            No candidate has cleared the edge threshold
+          </span>
+        </div>
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-bold font-mono tabular-nums leading-none" style={{ color: 'var(--probex-text-primary)' }}>{formatCurrency(capital.currentCapital)}</span>
-        <span className="text-xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{(capital.capitalPct * 100).toFixed(0)}% of initial</span>
-      </div>
-      <MiniTarget label="Daily"  pnl={capital.dailyPnl}  target={capital.dailyTarget}  progress={capital.dailyProgress} />
-      <MiniTarget label="Weekly" pnl={capital.weeklyPnl} target={capital.weeklyTarget} progress={capital.weeklyProgress} />
+      <p className="t-description">
+        {minEdge !== null
+          ? `The engine acts only above ${formatEdgePct(minEdge)} edge. It prefers no trade to a weak one.`
+          : 'The engine prefers no trade to a weak one.'}
+      </p>
     </div>
   )
 }
 
-function RecordSlide({ trading }: { trading: NonNullable<CommandCenterVM['trading']> }) {
-  const pnlColor = trading.totalPnl > 0 ? 'var(--probex-positive)' : trading.totalPnl < 0 ? 'var(--probex-negative)' : 'var(--probex-text-primary)'
+/**
+ * The engine has not told us what it sees. Distinct from Holding, which is a
+ * position the engine took; this is the absence of a report.
+ */
+function EdgeUnknown({ errored }: { errored: boolean }) {
   return (
-    <div className="flex flex-col justify-center h-full gap-3">
-      <span className="t-label">Trading Record</span>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-        <MiniStat label="Balance"  value={formatCurrency(trading.balance)} />
-        <MiniStat label="Total P&L" value={formatSignedCurrency(trading.totalPnl)} color={pnlColor} />
-        <MiniStat label="Win Rate" value={trading.totalTrades > 0 ? formatPercent(trading.winRate) : '—'} />
-        <MiniStat label="Trades"   value={`${trading.totalTrades}`} {...(trading.totalTrades > 0 && { sub: `${trading.wins}W · ${trading.losses}L` })} />
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2.5">
+        <span
+          className="flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0"
+          style={{
+            border: '1px dashed var(--probex-border-default)',
+            color: 'var(--probex-text-disabled)',
+          }}
+          aria-hidden="true"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M12 17h.01" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" />
+          </svg>
+        </span>
+        <div className="flex flex-col">
+          <span className="text-sm font-semibold" style={{ color: 'var(--probex-text-secondary)' }}>
+            No signal report
+          </span>
+          <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
+            {errored ? 'The engine did not answer' : 'Waiting for the engine'}
+          </span>
+        </div>
       </div>
+      <p className="t-description">
+        Whether the engine sees an edge right now is unknown — this panel shows
+        nothing rather than assuming it is idle.
+      </p>
     </div>
   )
 }
 
 // ─── Small building blocks ────────────────────────────────────────────────────
 
-function MiniTarget({ label, pnl, target, progress }: { label: string; pnl: number; target: number; progress: number }) {
+function SignalStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex justify-between text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
-        <span className="uppercase tracking-wider">{label}</span>
-        <span>{formatSignedCurrency(pnl)} / {formatCurrency(target)}</span>
-      </div>
-      <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }}>
-        <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${Math.round(progress * 100)}%`, background: 'var(--probex-primary)' }} />
-      </div>
-    </div>
-  )
-}
-
-function MiniStat({ label, value, color, sub }: { label: string; value: string; color?: string; sub?: string }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>{label}</span>
-      <span className="text-lg font-bold font-mono tabular-nums leading-none" style={{ color: color ?? 'var(--probex-text-primary)' }}>{value}</span>
-      {sub && <span className="text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{sub}</span>}
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <dt className="text-2xs font-bold uppercase tracking-wider truncate" style={{ color: 'var(--probex-text-muted)' }}>
+        {label}
+      </dt>
+      <dd className="text-sm font-bold font-mono tabular-nums m-0" style={{ color: 'var(--probex-text-primary)' }}>
+        {value}
+      </dd>
     </div>
   )
 }
@@ -316,9 +335,8 @@ function MiniStat({ label, value, color, sub }: { label: string; value: string; 
 function BtcSkeleton() {
   return (
     <div className="flex flex-col gap-3">
-      <div className="skeleton h-12 w-56 rounded" />
-      <div className="skeleton rounded" style={{ height: 130 }} />
-      <div className="skeleton h-4 w-40 rounded" />
+      <div className="skeleton h-11 w-56 rounded" />
+      <div className="skeleton rounded" style={{ height: CHART_H }} />
     </div>
   )
 }

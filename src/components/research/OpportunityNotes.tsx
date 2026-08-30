@@ -39,7 +39,7 @@ export function OpportunityNotes() {
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <h2 className="text-sm font-bold" style={{ color: 'var(--probex-text-primary)' }}>Opportunity Notes</h2>
+        <h2 className="t-section-title">Opportunity Notes</h2>
         <p className="text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>Auto-generated from the engine's currently-active edges — real signals, plain-language summary</p>
       </div>
 

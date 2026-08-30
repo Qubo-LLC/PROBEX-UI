@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { services } from '@/lib/services'
+import { isExpiredResource } from '@/lib/api/resourceLifecycle'
 import { toServiceError, type ServiceError } from '@/lib/services/response'
 import type { CreateOrderInput } from '@/lib/services/interfaces'
 import type { MutationResult } from '@/types/engine'
@@ -83,9 +84,32 @@ function useMutation(
       onSettled?.()
       return data
     } catch (e) {
+      // An ephemeral id that 404s did not fail — it finished. A position that
+      // resolved, or an order that filled, between the list poll the operator
+      // clicked from and this request arriving is the ordinary case
+      // (ID_LIFECYCLE_MANAGEMENT.md), and "Request failed (404)" describes it
+      // to the operator as a fault they should investigate.
+      //
+      // The id is deliberately NOT refreshed and the call is NOT retried:
+      // re-issuing a destructive mutation against whatever resource is current
+      // would close a position the operator never selected.
+      const expired = isExpiredResource(e)
       if (mounted.current) {
-        setState({ status: 'error', result: null, error: toServiceError(e) })
+        setState({
+          status: 'error',
+          result: null,
+          error: expired
+            ? {
+                code:      'RESOURCE_EXPIRED',
+                message:   'This no longer exists — it resolved or filled before the request arrived. The list has been refreshed.',
+                retryable: false,
+              }
+            : toServiceError(e),
+        })
       }
+      // Refresh the authoritative list on expiry too, so the stale row the
+      // operator acted on disappears instead of inviting a second attempt.
+      if (expired) onSettled?.()
       return null
     } finally {
       inFlight.current = false
