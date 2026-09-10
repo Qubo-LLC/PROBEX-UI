@@ -15,6 +15,7 @@
 
 import { useEffect, useState } from 'react'
 import { services } from '@/lib/services'
+import { isCanceledError } from '@/lib/services/response'
 import { Panel } from '@/components/ui/Panel'
 import { formatCurrency, formatSignedCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -33,16 +34,32 @@ export function PerformanceWindow() {
   const [error, setError]   = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // The one read in the product that is NOT centrally polled — the lookback is
+  // a user choice, so there is no single value ApplicationStateLoader could
+  // fetch. It still has to honour the same request lifecycle as everything else.
+  //
+  // 2026-09-07: this was the last surviving soft-cancel — an `active` boolean
+  // that discarded the RESULT while the request ran on, holding a connection
+  // and a backend worker for up to the full 15s timeout. Switching the lookback
+  // twice in quick succession left two dead requests in flight. That is the
+  // exact pattern QUB-48 replaced everywhere else; it was missed because this
+  // component fetches directly rather than through useServiceQuery.
   useEffect(() => {
+    const controller = new AbortController()
     let active = true
     setLoading(true)
     setError(null)
     services.engine
-      .getPortfolioPerformance(hours)
+      .getPortfolioPerformance(hours, controller.signal)
       .then((r) => { if (active) setData(r.data) })
-      .catch((e: unknown) => { if (active) setError(e instanceof Error ? e.message : 'Request failed') })
+      .catch((e: unknown) => {
+        // A read WE aborted is not a failure to report — the user simply picked
+        // a different window. Surfacing it would flash an error on every change.
+        if (!active || isCanceledError(e)) return
+        setError(e instanceof Error ? e.message : 'Request failed')
+      })
       .finally(() => { if (active) setLoading(false) })
-    return () => { active = false }
+    return () => { active = false; controller.abort() }
   }, [hours])
 
   // `performance` is null exactly when the engine reports no data for the

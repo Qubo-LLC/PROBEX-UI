@@ -17,7 +17,7 @@ import type {
   ResearchReports, Portfolio, Balance, PortfolioHistory, PortfolioSummary, PortfolioPerformance,
   AnalyticsSegments, AnalyticsSignals, AnalyticsSummary, AnalyticsTopSegments, AnalyticsHourly,
   PaperStatus, SystemMetrics, TradesLedger, ExecutionOrders,
-  MarketsSummary, MarketPriceHistory, MutationResult,
+  MarketsSummary, MarketPriceHistory, MarketDetail, MutationResult,
 } from '@/types/engine'
 
 import type {
@@ -51,53 +51,64 @@ export interface CreateOrderInput {
 // implementations use apiGetHost(); all others use apiGet() against the /api base.
 
 export interface IEngineService {
-  getHealth():             Promise<ApiResult<EngineHealth>>
-  getRuntime():            Promise<ApiResult<EngineRuntime>>
-  getStats():              Promise<ApiResult<EngineStats>>
-  getConfig():             Promise<ApiResult<EngineConfig>>
-  getSurvival():           Promise<ApiResult<SurvivalStatus>>
-  getPriceHistory():       Promise<ApiResult<PriceHistory>>
-  getMarkets():            Promise<ApiResult<EngineMarkets>>
-  getPositions():          Promise<ApiResult<EnginePositions>>
+  getHealth(signal?: AbortSignal): Promise<ApiResult<EngineHealth>>
+  getRuntime(signal?: AbortSignal): Promise<ApiResult<EngineRuntime>>
+  getStats(signal?: AbortSignal): Promise<ApiResult<EngineStats>>
+  getConfig(signal?: AbortSignal): Promise<ApiResult<EngineConfig>>
+  getSurvival(signal?: AbortSignal): Promise<ApiResult<SurvivalStatus>>
+  getPriceHistory(signal?: AbortSignal): Promise<ApiResult<PriceHistory>>
+  getMarkets(signal?: AbortSignal): Promise<ApiResult<EngineMarkets>>
+  getPositions(signal?: AbortSignal): Promise<ApiResult<EnginePositions>>
   /** `types` maps to the server-side `type` CSV filter (edge, trade, position,
    *  health, error, resolution, survival, paper_trading). */
-  getEvents(limit?: number, types?: readonly string[]): Promise<ApiResult<EngineEvents>>
-  getEdges(limit?: number): Promise<ApiResult<EngineEdges>>
-  getIdentity():           Promise<ApiResult<EngineIdentity>>
-  getExecutionStatus():    Promise<ApiResult<ExecutionStatus>>
-  getExecutionPolicy():    Promise<ApiResult<ExecutionPolicy>>
-  getExecutionTrades():    Promise<ApiResult<ExecutionTrades>>
-  getPaperStats():         Promise<ApiResult<PaperStats>>
+  getEvents(limit?: number, types?: readonly string[], signal?: AbortSignal): Promise<ApiResult<EngineEvents>>
+  getEdges(limit?: number, signal?: AbortSignal): Promise<ApiResult<EngineEdges>>
+  getIdentity(signal?: AbortSignal): Promise<ApiResult<EngineIdentity>>
+  getExecutionStatus(signal?: AbortSignal): Promise<ApiResult<ExecutionStatus>>
+  getExecutionPolicy(signal?: AbortSignal): Promise<ApiResult<ExecutionPolicy>>
+  getExecutionTrades(signal?: AbortSignal): Promise<ApiResult<ExecutionTrades>>
+  getPaperStats(signal?: AbortSignal): Promise<ApiResult<PaperStats>>
 
   // ── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints ────────────────
-  getPositionsHistory(limit?: number, direction?: 'YES' | 'NO'): Promise<ApiResult<PositionsHistory>>
-  getSurvivalPatterns():      Promise<ApiResult<SurvivalPatterns>>
-  getConsensus():             Promise<ApiResult<Consensus>>
-  getConsensusBias():         Promise<ApiResult<ConsensusBias>>
-  getConsensusHistory(limit?: number): Promise<ApiResult<ConsensusHistory>>
-  getResearchReports():       Promise<ApiResult<ResearchReports>>
-  getPortfolio():             Promise<ApiResult<Portfolio>>
-  getBalance():               Promise<ApiResult<Balance>>
-  getPortfolioHistory(limit?: number): Promise<ApiResult<PortfolioHistory>>
-  getPortfolioSummary():      Promise<ApiResult<PortfolioSummary>>
-  getPortfolioPerformance(lookbackHours?: number): Promise<ApiResult<PortfolioPerformance>>
-  getAnalyticsSegments(segmentType?: AnalyticsSegmentType): Promise<ApiResult<AnalyticsSegments>>
-  getAnalyticsSignals():      Promise<ApiResult<AnalyticsSignals>>
-  getAnalyticsSummary():      Promise<ApiResult<AnalyticsSummary>>
+  getPositionsHistory(limit?: number, direction?: 'YES' | 'NO', signal?: AbortSignal): Promise<ApiResult<PositionsHistory>>
+  getSurvivalPatterns(signal?: AbortSignal): Promise<ApiResult<SurvivalPatterns>>
+  getConsensus(signal?: AbortSignal): Promise<ApiResult<Consensus>>
+  getConsensusBias(signal?: AbortSignal): Promise<ApiResult<ConsensusBias>>
+  getConsensusHistory(limit?: number, signal?: AbortSignal): Promise<ApiResult<ConsensusHistory>>
+  getResearchReports(signal?: AbortSignal): Promise<ApiResult<ResearchReports>>
+  getPortfolio(signal?: AbortSignal): Promise<ApiResult<Portfolio>>
+  getBalance(signal?: AbortSignal): Promise<ApiResult<Balance>>
+  getPortfolioHistory(limit?: number, signal?: AbortSignal): Promise<ApiResult<PortfolioHistory>>
+  getPortfolioSummary(signal?: AbortSignal): Promise<ApiResult<PortfolioSummary>>
+  getPortfolioPerformance(lookbackHours?: number, signal?: AbortSignal): Promise<ApiResult<PortfolioPerformance>>
+  getAnalyticsSegments(segmentType?: AnalyticsSegmentType, signal?: AbortSignal): Promise<ApiResult<AnalyticsSegments>>
+  getAnalyticsSignals(signal?: AbortSignal): Promise<ApiResult<AnalyticsSignals>>
+  getAnalyticsSummary(signal?: AbortSignal): Promise<ApiResult<AnalyticsSummary>>
   /** segment_type and metric are REQUIRED by the backend — omitting them 422s. */
-  getAnalyticsTopSegments(segmentType?: AnalyticsSegmentType, metric?: AnalyticsMetric, limit?: number): Promise<ApiResult<AnalyticsTopSegments>>
-  getAnalyticsHourly():       Promise<ApiResult<AnalyticsHourly>>
-  getPaperStatus():           Promise<ApiResult<PaperStatus>>
-  getSystemMetrics():         Promise<ApiResult<SystemMetrics>>
-  getTradesLedger(limit?: number, direction?: 'YES' | 'NO'): Promise<ApiResult<TradesLedger>>
-  getExecutionOrders(status?: 'active' | 'closed'): Promise<ApiResult<ExecutionOrders>>
+  getAnalyticsTopSegments(segmentType?: AnalyticsSegmentType, metric?: AnalyticsMetric, limit?: number, signal?: AbortSignal): Promise<ApiResult<AnalyticsTopSegments>>
+  getAnalyticsHourly(signal?: AbortSignal): Promise<ApiResult<AnalyticsHourly>>
+  getPaperStatus(signal?: AbortSignal): Promise<ApiResult<PaperStatus>>
+  getSystemMetrics(signal?: AbortSignal): Promise<ApiResult<SystemMetrics>>
+  getTradesLedger(limit?: number, direction?: 'YES' | 'NO', signal?: AbortSignal): Promise<ApiResult<TradesLedger>>
+  getExecutionOrders(status?: 'active' | 'closed', signal?: AbortSignal): Promise<ApiResult<ExecutionOrders>>
   /** Order lookup by id. `scope` picks the active/closed variant of the route. */
-  getOrderById(orderId: string, scope?: 'any' | 'active' | 'closed'): Promise<ApiResult<unknown>>
+  getOrderById(orderId: string, scope?: 'any' | 'active' | 'closed', signal?: AbortSignal): Promise<ApiResult<unknown>>
 
   // ── Phase 1 (2026-07-25) — markets recovery + per-market history ───────────
   /** Primary markets source while GET /api/markets hangs. */
-  getMarketsSummary():        Promise<ApiResult<MarketsSummary>>
-  getMarketPriceHistory(marketId: string, limit?: number): Promise<ApiResult<MarketPriceHistory>>
+  getMarketsSummary(signal?: AbortSignal): Promise<ApiResult<MarketsSummary>>
+  getMarketPriceHistory(marketId: string, limit?: number, signal?: AbortSignal): Promise<ApiResult<MarketPriceHistory>>
+
+  // ── 2026-09-07 — single-market detail ──────────────────────────────────────
+  /**
+   * GET /api/markets/:market_id — the market plus its own price history in one
+   * response. Re-confirmed live 2026-09-07 after six weeks marked broken.
+   *
+   * Rejects with NOT_FOUND for an expired id, which is a routine outcome for
+   * 5-minute markets and not a fault — callers should present it as "no longer
+   * active", not as an error.
+   */
+  getMarketDetail(marketId: string, signal?: AbortSignal): Promise<ApiResult<MarketDetail>>
 
   // ── Phase 1 (2026-07-25) — mutation layer ──────────────────────────────────
   // Every one of these changes engine state. Callers must confirm with the
@@ -155,15 +166,15 @@ export interface IEngineService {
   // discovered in the attached collection and verified live. Every one of these
   // returns numbers even when the engine has learned nothing, so the domain
   // models carry explicit `has*`/`initialised` flags — see types/quant.ts.
-  getMathLayersStatus():          Promise<ApiResult<MathLayersStatus>>
-  getMathRecommendations():       Promise<ApiResult<MathRecommendationsEnvelope>>
-  getMathKalman():                Promise<ApiResult<KalmanLayer>>
-  getMathBayesian():              Promise<ApiResult<BayesianLayer>>
-  getMathBrier():                 Promise<ApiResult<BrierLayer>>
-  getMathShapley():               Promise<ApiResult<ShapleyLayer>>
-  getPerformanceByCategory():     Promise<ApiResult<PerformanceBuckets>>
-  getPerformanceByAsset():        Promise<ApiResult<PerformanceBuckets>>
-  getKalmanMultiAsset():          Promise<ApiResult<KalmanLayer>>
+  getMathLayersStatus(signal?: AbortSignal): Promise<ApiResult<MathLayersStatus>>
+  getMathRecommendations(signal?: AbortSignal): Promise<ApiResult<MathRecommendationsEnvelope>>
+  getMathKalman(signal?: AbortSignal): Promise<ApiResult<KalmanLayer>>
+  getMathBayesian(signal?: AbortSignal): Promise<ApiResult<BayesianLayer>>
+  getMathBrier(signal?: AbortSignal): Promise<ApiResult<BrierLayer>>
+  getMathShapley(signal?: AbortSignal): Promise<ApiResult<ShapleyLayer>>
+  getPerformanceByCategory(signal?: AbortSignal): Promise<ApiResult<PerformanceBuckets>>
+  getPerformanceByAsset(signal?: AbortSignal): Promise<ApiResult<PerformanceBuckets>>
+  getKalmanMultiAsset(signal?: AbortSignal): Promise<ApiResult<KalmanLayer>>
 
   peekMathLayersStatus?():        MathLayersStatus | null
   peekMathRecommendations?():     MathRecommendationsEnvelope | null

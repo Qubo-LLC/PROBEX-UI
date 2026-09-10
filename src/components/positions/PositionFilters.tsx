@@ -6,25 +6,33 @@
 // the project's "don't create a store without a second real consumer" rule
 // they stay as local component state rather than growing uiStore.
 
-import { BITCOIN_SEGMENTS, type BitcoinSegment } from '@/types/market'
 import { segmentLabel } from '@/lib/display/market'
 
 export type Side = 'yes' | 'no'
 export type PnlState = 'profit' | 'loss'
+
+// The segment row used to be built from BITCOIN_SEGMENTS — eight bitcoin-specific
+// ids ('price-targets', 'volatility', …). The positions wire's segment field is
+// `asset_category`, whose observed value is 'crypto'. The two vocabularies never
+// intersected, so every segment pill filtered the table down to zero rows. The
+// options are now derived from the positions actually present, which cannot
+// drift from the data because it IS the data.
 
 interface PositionFiltersProps {
   search:        string
   onSearchChange: (v: string) => void
   side:          Side | null
   onSideChange:  (v: Side | null) => void
-  segment:       BitcoinSegment | null
-  onSegmentChange: (v: BitcoinSegment | null) => void
+  segment:       string | null
+  onSegmentChange: (v: string | null) => void
+  /** Segment values observed in the current position set. */
+  segmentOptions: string[]
   pnlState:      PnlState | null
   onPnlChange:   (v: PnlState | null) => void
 }
 
 export function PositionFilters({
-  search, onSearchChange, side, onSideChange, segment, onSegmentChange, pnlState, onPnlChange,
+  search, onSearchChange, side, onSideChange, segment, onSegmentChange, segmentOptions, pnlState, onPnlChange,
 }: PositionFiltersProps) {
   const hasActiveFilter = Boolean(search || side || segment || pnlState)
 
@@ -58,18 +66,22 @@ export function PositionFilters({
         ]} />
 
         {hasActiveFilter && (
-          <button onClick={reset} className="text-xs px-2.5 py-1.5 rounded-md cursor-pointer transition-colors duration-100" style={{ background: 'var(--probex-negative-dim)', color: 'var(--probex-negative)', border: '1px solid rgba(239,68,68,0.15)' }}>
+          <button onClick={reset} className="text-xs px-2.5 py-1.5 rounded-md cursor-pointer transition-colors duration-100 min-h-[24px]" style={{ background: 'var(--probex-negative-dim)', color: 'var(--probex-negative)', border: '1px solid var(--probex-negative-border)' }}>
             Clear
           </button>
         )}
       </div>
 
-      <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar" role="tablist" aria-label="Filter by segment">
-        <SegmentPill label="All" isActive={segment === null} onClick={() => onSegmentChange(null)} />
-        {BITCOIN_SEGMENTS.map((seg) => (
-          <SegmentPill key={seg} label={segmentLabel(seg) ?? seg} isActive={segment === seg} onClick={() => onSegmentChange(segment === seg ? null : seg)} />
-        ))}
-      </div>
+      {/* One category is not a filter — the row only earns its space once the
+          engine actually holds more than one kind of market. */}
+      {segmentOptions.length > 1 && (
+        <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar" role="tablist" aria-label="Filter by segment">
+          <SegmentPill label="All" isActive={segment === null} onClick={() => onSegmentChange(null)} />
+          {segmentOptions.map((seg) => (
+            <SegmentPill key={seg} label={segmentLabel(seg) ?? seg} isActive={segment === seg} onClick={() => onSegmentChange(segment === seg ? null : seg)} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -85,7 +97,7 @@ function PillGroup<T extends string>({ label, value, options, onChange }: { labe
             key={opt.value}
             onClick={() => onChange(isActive ? null : opt.value)}
             aria-pressed={isActive}
-            className="text-xs font-semibold px-2.5 py-1 rounded-full cursor-pointer transition-all duration-100 border"
+            className="text-xs font-semibold px-2.5 py-1 rounded-full cursor-pointer transition-all duration-100 border min-h-[24px]"
             style={isActive
               ? { background: `color-mix(in srgb, ${opt.color} 14%, transparent)`, borderColor: `color-mix(in srgb, ${opt.color} 30%, transparent)`, color: opt.color }
               : { background: 'transparent', borderColor: 'var(--probex-border)', color: 'var(--probex-text-secondary)' }}
@@ -106,7 +118,9 @@ function SegmentPill({ label, isActive, onClick }: { label: string; isActive: bo
       aria-selected={isActive}
       className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap cursor-pointer transition-all duration-120 border"
       style={isActive
-        ? { background: 'var(--probex-primary-dim)', borderColor: 'var(--probex-yes-border)', color: 'var(--probex-primary)' }
+        // --probex-yes-border is the MARKET-SIDE band; a segment pill is
+        // interface chrome and must not borrow it (same correction as Stage 5).
+        ? { background: 'var(--probex-primary-dim)', borderColor: 'var(--probex-border-active)', color: 'var(--probex-primary)' }
         : { background: 'transparent', borderColor: 'var(--probex-border)', color: 'var(--probex-text-secondary)' }}
     >
       {label}

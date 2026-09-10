@@ -40,6 +40,7 @@ export function ConsensusScoreCard() {
       title="Consensus Score"
       provenance={c ? 'live' : 'idle'}
       source="/api/consensus"
+      slice={consensusSlice}
       state={c ? 'live' : 'idle'}
       // The composite score moving is a real engine event worth marking once.
       {...(c ? { updateKey: c.score } : {})}

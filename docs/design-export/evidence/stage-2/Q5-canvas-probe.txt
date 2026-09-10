@@ -1,0 +1,10 @@
+Q-5 canvas probe — 2026-09-09T10:09:23.974Z
+chart canvas 576x156
+40 samples 150ms apart (6s)
+plot strip changes: 25  (4.2/s)
+axis strip changes: 3  (0.5/s)
+distinct axis renderings: 4/40
+
+The curve animates continuously; the price-axis label changes only when a
+confirmed observation lands. Before the fix both were driven by the
+dead-reckoned tip and would change at the same rate.

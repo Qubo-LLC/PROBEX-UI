@@ -33,7 +33,7 @@ export function CapitalLedger() {
       <div className="px-4 py-3 flex flex-col gap-2.5" style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Capital Ledger</h2>
-          <ProvenanceBadge provenance="live" detail="/api/trades/ledger" />
+          <ProvenanceBadge provenance="live" detail="/api/trades/ledger" state={slice} />
         </div>
         {ledger && ledger.count > 0 && (
           <div className="flex items-center gap-4 text-2xs" style={{ color: 'var(--probex-text-muted)' }}>

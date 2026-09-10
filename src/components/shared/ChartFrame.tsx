@@ -110,6 +110,20 @@ export function chartStateFromSlice<T extends { available?: boolean; message?: s
   // The engine's own "I have not computed this" — not an absence of rows.
   if (d && d.available === false) return { state: 'idle', message: d.message ?? null }
   if (rowCount === 0) return { state: 'empty', message: null }
+
+  // ChartFrame has had a 'stale' state and a StaleStrip since it was written,
+  // and nothing ever produced one: this function returned 'live' the moment it
+  // had rows, so every chart in the product rendered a LIVE badge over a series
+  // that had stopped updating. The plumbing existed; only the signal was
+  // missing, and ServiceState now carries it.
+  //
+  // Deliberately reuses the same `isStale` the panels read rather than
+  // introducing a chart-specific notion of freshness — one source of truth, so
+  // a chart and the panel beside it can never disagree about the same endpoint.
+  if (slice.isStale) {
+    return { state: 'stale', message: slice.lastError?.message ?? null }
+  }
+
   return { state: 'live', message: null }
 }
 

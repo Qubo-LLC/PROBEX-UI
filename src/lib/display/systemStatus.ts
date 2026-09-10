@@ -44,6 +44,18 @@ export type SystemState =
    * is dead — the engine's own self-report is not evidence that its routes work.
    */
   | 'endpoints-stalled'
+  /**
+   * The engine answers, no circuit has tripped, but one or more polled slices
+   * last failed to refresh and are showing retained readings.
+   *
+   * Distinct from 'endpoints-stalled', which means the CLIENT has given up and
+   * paused requests after repeated no-response failures. This is the milder,
+   * commoner case the breaker deliberately cannot see: it only counts failures
+   * that cost the backend a worker, so a route answering 500 promptly — like
+   * the three /math-layers routes on 2026-09-07 — clears the streak and never
+   * trips it, while the data on screen is nonetheless not current.
+   */
+  | 'data-stale'
   /** Configured for a real engine, cannot reach it, policy forbids substitution. */
   | 'unreachable'
   /** Explicitly synthetic. Legitimate locally, catastrophic if mistaken for real. */
@@ -59,6 +71,12 @@ export interface SystemStatus {
   state: SystemState
   /** Chip label. Short enough for the top nav at 1280px. */
   label: string
+  /**
+   * One-word form for viewports where the full label does not fit (below the
+   * `sm` breakpoint). Never replaces `label` in the accessible name — the
+   * state must stay readable, and it must never be carried by colour alone.
+   */
+  shortLabel: string
   /** Secondary line — the "why", one clause. */
   detail: string
   tone: StatusTone
@@ -91,6 +109,12 @@ export interface SystemStatusInput {
    * may not know, or may not care, that one of its routes has wedged.
    */
   stalledEndpoints: number
+  /**
+   * Polled slices currently showing retained data because their last refresh
+   * failed (ServiceState.isStale). Defaults to 0 so existing callers and tests
+   * keep their meaning.
+   */
+  staleEndpoints?: number
 }
 
 // ─── Derivation ───────────────────────────────────────────────────────────────
@@ -103,6 +127,7 @@ export interface SystemStatusInput {
  */
 export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
   const { runtime, healthStatus, engineMode, isLoading, isUnreachable, unhealthyProbes, stalledEndpoints } = input
+  const staleEndpoints = input.staleEndpoints ?? 0
 
   // 1 · Synthetic outranks everything. Mock mode is only ever reachable when the
   //     deployment policy permits it (runtime.server.ts enforces that), so this
@@ -111,6 +136,7 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
     return {
       state: 'synthetic',
       label: 'Synthetic data',
+      shortLabel: 'Synthetic',
       detail:
         runtime.requestedMode === 'mock'
           ? 'Mock mode requested — no engine is being contacted.'
@@ -128,6 +154,7 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
     return {
       state: 'unreachable',
       label: 'Engine unreachable',
+      shortLabel: 'No feed',
       detail: `No response from the engine — ${runtime.deployment} never substitutes generated data.`,
       tone: 'danger',
       dataIsLive: false,
@@ -143,6 +170,7 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
     return {
       state: 'unreachable',
       label: 'Engine unreachable',
+      shortLabel: 'No feed',
       detail: 'The engine answered at startup but is not responding to polling.',
       tone: 'danger',
       dataIsLive: false,
@@ -157,6 +185,7 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
     return {
       state: 'loading',
       label: 'Connecting',
+      shortLabel: 'Connecting',
       detail: 'Establishing engine state.',
       tone: 'neutral',
       dataIsLive: false,
@@ -170,6 +199,7 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
     return {
       state: 'engine-offline',
       label: 'Engine offline',
+      shortLabel: 'Offline',
       detail: 'The API is reachable, but the engine reports itself as not running.',
       tone: 'danger',
       dataIsLive: true,
@@ -183,6 +213,7 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
     return {
       state: 'degraded',
       label: 'Degraded',
+      shortLabel: 'Degraded',
       detail:
         unhealthyProbes > 0
           ? `${unhealthyProbes} health ${unhealthyProbes === 1 ? 'probe is' : 'probes are'} failing.`
@@ -205,6 +236,7 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
     return {
       state: 'endpoints-stalled',
       label: 'Endpoints stalled',
+      shortLabel: 'Stalled',
       detail: `${stalledEndpoints} endpoint${stalledEndpoints === 1 ? '' : 's'} stopped responding — requests paused, retrying periodically.`,
       tone: 'warning',
       // What HAS arrived is genuine engine data; this is not synthetic. The
@@ -215,12 +247,37 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
     }
   }
 
+  // 7b · Nothing has wedged, but some readings are no longer current.
+  //
+  //      Ranked below 'endpoints-stalled' (a harder failure) and above the
+  //      healthy branch, because the healthy branch's copy — "Connected to the
+  //      engine" — is the specific claim that must not be made over data that
+  //      stopped refreshing.
+  if (staleEndpoints > 0) {
+    return {
+      state: 'data-stale',
+      label: 'Data not current',
+      shortLabel: 'Stale',
+      detail:
+        `${staleEndpoints} endpoint${staleEndpoints === 1 ? '' : 's'} failed to refresh — ` +
+        'showing the last readings received. Still retrying.',
+      tone: 'warning',
+      // What is on screen came from the engine and is genuine; it is simply
+      // older than it should be. That is not synthetic, and calling it so
+      // would be its own inaccuracy.
+      dataIsLive: true,
+      dataIsSynthetic: false,
+      pulse: false,
+    }
+  }
+
   // 8 · Healthy and reachable — split by what the engine is risking.
   if (healthStatus === 'online' && engineMode !== null) {
     return engineMode === 'live'
       ? {
           state: 'live',
           label: 'Live trading',
+          shortLabel: 'Live',
           detail: 'Connected to the engine — real capital is at risk.',
           tone: 'danger',
           dataIsLive: true,
@@ -230,6 +287,7 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
       : {
           state: 'paper',
           label: 'Paper trading',
+          shortLabel: 'Paper',
           detail: 'Connected to the engine — execution is simulated, data is real.',
           tone: 'positive',
           dataIsLive: true,
@@ -244,6 +302,7 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
   return {
     state: 'unknown',
     label: 'State unknown',
+    shortLabel: 'Unknown',
     detail:
       healthStatus === null
         ? 'The engine is responding, but has not reported its health yet.'

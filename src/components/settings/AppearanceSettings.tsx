@@ -32,6 +32,11 @@ export function AppearanceSettings() {
             <button
               key={t}
               onClick={() => setTheme(t)}
+              // focus-ring is the product's shared keyboard treatment. The
+              // inline `outline: 'none'` that used to sit in this style object
+              // silently defeated it — see the note above the component.
+              className="focus-ring"
+              aria-pressed={isActive}
               style={{
                 background:   'var(--probex-surface)',
                 border:       `1.5px solid ${isActive ? 'var(--probex-primary)' : 'var(--probex-border-default)'}`,
@@ -42,19 +47,21 @@ export function AppearanceSettings() {
                 transition:   'border-color 0.15s, transform 0.12s',
                 transform:    isActive ? 'scale(1.02)' : 'scale(1)',
                 position:     'relative',
-                outline:      'none',
               }}
             >
               {/* Swatch row */}
               <div style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
-                {[meta.primaryColor, meta.secondaryColor, meta.isDark ? '#10B981' : '#059669'].map((c, i) => (
+                {/* Third swatch was a hardcoded emerald literal; it now draws the
+                    theme's own positive token, so the preview shows the palette
+                    the theme actually uses rather than one fixed green. */}
+                {[meta.primaryColor, meta.secondaryColor, 'var(--probex-positive)'].map((c, i) => (
                   <span
                     key={i}
-                    style={{ width: 16, height: 16, borderRadius: 3, background: c, display: 'block', border: '1px solid rgba(128,128,128,0.15)' }}
+                    style={{ width: 16, height: 16, borderRadius: 3, background: c, display: 'block', border: '1px solid var(--probex-border)' }}
                   />
                 ))}
                 {!meta.isDark && (
-                  <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--probex-text-muted)', alignSelf: 'center', marginLeft: 2 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--probex-text-muted)', alignSelf: 'center', marginLeft: 2 }}>
                     LIGHT
                   </span>
                 )}
@@ -64,7 +71,7 @@ export function AppearanceSettings() {
               <div className="text-xs font-semibold mb-0.5" style={{ color: 'var(--probex-text-primary)' }}>
                 {meta.label}
               </div>
-              <div style={{ fontSize: 10, color: 'var(--probex-text-muted)', lineHeight: 1.45 }}>
+              <div style={{ fontSize: 11, color: 'var(--probex-text-muted)', lineHeight: 1.45 }}>
                 {meta.description}
               </div>
 
@@ -74,8 +81,8 @@ export function AppearanceSettings() {
                   style={{
                     position: 'absolute', top: 8, right: 8,
                     background: 'var(--probex-primary)',
-                    color: meta.isDark ? '#000' : '#fff',
-                    fontSize: 9, fontWeight: 700,
+                    color: 'var(--probex-on-accent)',
+                    fontSize: 11, fontWeight: 700,
                     padding: '2px 6px', borderRadius: 99,
                     letterSpacing: '0.06em',
                   }}

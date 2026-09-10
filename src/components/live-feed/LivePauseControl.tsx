@@ -14,6 +14,27 @@ interface LivePauseControlProps {
 
 export function LivePauseControl({ isPaused, onToggle }: LivePauseControlProps) {
   return (
+    <span className="inline-flex items-center gap-2.5">
+      {/* The state, stated. LIVE is a claim about this VIEW, so it is worded as
+          one — and when frozen, the fact that the engine has NOT stopped is
+          said out loud rather than left in a tooltip. Both halves are words, so
+          neither depends on colour. */}
+      <span className="inline-flex items-center gap-1.5">
+        <span
+          className={isPaused ? 'w-1.5 h-1.5 rounded-full inline-block' : 'live-dot w-1.5 h-1.5'}
+          style={{ background: isPaused ? 'var(--probex-warning)' : 'var(--probex-status-live)' }}
+          aria-hidden="true"
+        />
+        <span
+          className="text-2xs font-bold uppercase tracking-wider"
+          style={{ color: isPaused ? 'var(--probex-warning)' : 'var(--probex-status-live)' }}
+        >
+          {isPaused ? 'View frozen' : 'Live'}
+        </span>
+      </span>
+      <span className="t-helper hidden sm:inline">
+        {isPaused ? 'Engine still polling — new activity is arriving' : 'Updating as the engine reports'}
+      </span>
     <button
       type="button"
       onClick={onToggle}
@@ -40,5 +61,6 @@ export function LivePauseControl({ isPaused, onToggle }: LivePauseControlProps) 
         </>
       )}
     </button>
+    </span>
   )
 }

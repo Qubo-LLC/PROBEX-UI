@@ -2,7 +2,7 @@
 // the wire doesn't send (segment/liquidity/sentiment/tags/…) stay null/[] and
 // degrade gracefully in the UI — never fabricated.
 
-import type { EngineMarkets }  from '@/types/engine'
+import type { EngineMarkets, MarketDetailItem }  from '@/types/engine'
 import { parseItems, isRecord, str, num, type ParseResult } from './parse'
 
 export interface EngineMarketItemDTO {
@@ -16,8 +16,17 @@ export interface EngineMarketItemDTO {
   no_price:               number  // 0–1 decimal, = 1 − yes_price
   created_at:             string  // ISO 8601 with Z
   closes_at:              string  // ISO 8601 with Z
-  volume:                 string  // numeric string, e.g. "9.80392" — parse before use
+  /** 2026-09-07: the wire now sends a NUMBER (744.598421); it sent a numeric
+   *  string when this was captured. parseVolume() accepts both, so no consumer
+   *  change was needed — the annotation is corrected rather than the code. */
+  volume:                 number | string
   duration_minutes:       number
+  /** Engine's tier ranking. Confirmed present 2026-09-07, previously undeclared. */
+  market_tier:            number
+  /** 'crypto' | 'macro' | 'politics' | 'sports' | 'entertainment' |
+   *  'science_tech' — the engine's own category vocabulary. Confirmed present
+   *  2026-09-07 and mapped to MarketRow.segment below. */
+  asset_category:         string
 }
 
 /**
@@ -75,12 +84,60 @@ function parseVolume(x: unknown): number | null {
   return null
 }
 
+/**
+ * Projects the confirmed /api/markets/:market_id payload onto the same MarketRow
+ * the list surface uses, so MarketHeader / EngineThesisPanel / RelatedMarkets
+ * work unchanged against a single-market fetch.
+ *
+ * Deliberately a projection rather than a second row type: the detail endpoint
+ * carries a strict SUPERSET of the list item's fields, and giving the detail
+ * page its own row shape would fork every component that renders a market.
+ *
+ * `segment` maps from `asset_category`, which the list mapper cannot do — see
+ * the note there. It is the engine's own category vocabulary ('crypto',
+ * 'macro', 'politics', 'sports', 'entertainment', 'science_tech' — confirmed
+ * via /api/performance/by-category), not a label invented here.
+ */
+export function marketDetailToRow(m: MarketDetailItem): MarketRow {
+  return {
+    id:            m.id,
+    title:         m.question,
+    description:   null,
+    segment:       m.assetCategory,
+    probability:   m.yesPrice,
+    yesPrice:      m.yesPrice * 100,
+    noPrice:       m.noPrice * 100,
+    volume24h:     m.volume,
+    // Genuinely not on this endpoint either — kept null rather than derived.
+    liquidity:     null,
+    openInterest:  null,
+    sentiment:     null,
+    tags:               [],
+    resolutionCriteria: null,
+    closesAt:           Number.isFinite(m.closesAt) ? m.closesAt : null,
+    // The wire has no `status` field, but `closes_at` makes expiry a fact
+    // rather than a guess — see MarketDetailItem.hasClosed.
+    status:             m.hasClosed ? 'closed' : 'open',
+    baselinePrice:      m.baselinePrice,
+    yesTokenId:         m.yesTokenId,
+    noTokenId:          m.noTokenId,
+    durationMinutes:    m.durationMinutes,
+  }
+}
+
 export function parseMarketRows(m: EngineMarkets): ParseResult<MarketRow> {
   return parseItems(m.markets, isMarketItem, (dto) => ({
     id:            dto.id as string,
     title:         str(dto.title) ? dto.title : (dto.question as string),
     description:   str(dto.description) ? dto.description : null,
-    segment:       str(dto.segment) ? dto.segment : null,
+    // `segment` has never existed on this wire; `asset_category` does, and was
+    // being dropped — so every market row carried segment: null while the
+    // engine was sending 'crypto' on each one. That mattered more than it
+    // looks: RelatedMarkets groups by segment, so it had nothing to group on,
+    // and the engine is now genuinely multi-asset (BTC/ETH/SOL markets and
+    // positions were all live on 2026-09-07). `segment` is kept as a fallback
+    // in case a future payload uses that name.
+    segment:       str(dto.asset_category) ? dto.asset_category : (str(dto.segment) ? dto.segment : null),
     // yes_price on the real wire IS the 0–1 probability already.
     probability:   num(dto.yes_price) ? dto.yes_price : (num(dto.probability) ? dto.probability : null),
     yesPrice:      num(dto.yes_price) ? dto.yes_price * 100 : null,

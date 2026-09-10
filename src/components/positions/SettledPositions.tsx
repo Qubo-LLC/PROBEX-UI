@@ -21,6 +21,7 @@ import { AwaitingValue } from '@/components/shared/AwaitingValue'
 import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
 import { TableShell, Thead, Th, Tr, Td } from '@/components/shared/DataTable'
 import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'
+import { marketIdentity } from '@/lib/display/positionDisplay'
 
 const GHOST_ROWS = 4
 const MAX_ROWS   = 30
@@ -62,7 +63,7 @@ export function SettledPositions() {
               </span>
             </div>
           )}
-          <ProvenanceBadge provenance="live" detail="/api/positions/history" />
+          <ProvenanceBadge provenance="live" detail="/api/positions/history" state={historySlice} />
         </div>
       </div>
 
@@ -81,9 +82,17 @@ export function SettledPositions() {
           {rows.length > 0
             ? rows.map((t) => (
                 <Tr key={`${t.marketId}-${t.closedAt}`}>
+                  {/* /api/positions/history carries no `question`, but it does
+                      carry asset_symbol and duration_minutes — so the blotter
+                      can say "BTC 15m" instead of "0x7ac7615f27…". The id stays
+                      in the tooltip, where an id is actually useful. */}
                   <Td align="left">
-                    <span className="truncate block max-w-[180px]" style={{ color: 'var(--probex-text-muted)' }} title={t.marketId}>
-                      {t.marketId.slice(0, 12)}…
+                    <span
+                      className="truncate block max-w-[180px] font-medium"
+                      style={{ color: 'var(--probex-text-primary)' }}
+                      title={t.marketId}
+                    >
+                      {marketIdentity(t.assetSymbol, t.durationMinutes, t.marketId)}
                     </span>
                   </Td>
                   <Td align="center">
@@ -91,7 +100,7 @@ export function SettledPositions() {
                       className="text-2xs font-black uppercase tracking-widest px-1.5 py-0.5 rounded"
                       style={{
                         background: t.direction === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)',
-                        color: t.direction === 'yes' ? '#050816' : '#fff',
+                        color: t.direction === 'yes' ? 'var(--probex-on-yes)' : 'var(--probex-on-no)',
                       }}
                     >
                       {t.direction}

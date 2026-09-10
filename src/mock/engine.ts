@@ -13,7 +13,7 @@ import type {
   ResearchReports, Portfolio, Balance, PortfolioHistory, PortfolioSummary, PortfolioPerformance,
   AnalyticsSegments, AnalyticsSignals, AnalyticsSummary, AnalyticsTopSegments, AnalyticsHourly,
   PaperStatus, SystemMetrics, TradesLedger, ExecutionOrders,
-  MarketsSummary, MarketPriceHistory, MarketHistoryPoint,
+  MarketsSummary, MarketPriceHistory, MarketHistoryPoint, MarketDetail,
 } from '@/types/engine'
 
 import type {
@@ -101,6 +101,18 @@ export const MOCK_ENGINE_CONFIG: EngineConfig = {
   dashboardApiHost:          '0.0.0.0',
   dashboardApiPort:          8000,
   logLevel:                  'INFO',
+
+  // Strategy filter parameters — the values observed live on 2026-09-09, so
+  // mock mode renders the same shape the real engine does.
+  minEdgeYes:                4,
+  minEdgeNo:                 3,
+  minVolume:                 5,
+  minAlignment:              -0.5,
+  blockedHours:              [],
+  edgeConfirmationCount:     1,
+  earlyExitThreshold:        -70,
+  lowLiquidityStartHour:     0,
+  lowLiquidityEndHour:       0,
 }
 
 export const MOCK_SURVIVAL_STATUS: SurvivalStatus = {
@@ -258,7 +270,7 @@ export const MOCK_CONSENSUS: Consensus = {
   reading: {
     scoreTimestamp: NOW, score: -0.125, confidence: 0.333, signalCount: 5,
     signals: { edgeDirection: -0.306, edgeConfidence: 0.36, rsiMomentum: -0.5, macdTrend: 0.0, priceMomentum: 0.0 },
-    btcPrice: 65590.2, interpretation: 'NEUTRAL',
+    assetPrice: 65590.2, assetSymbol: 'BTC', interpretation: 'NEUTRAL',
   },
   timestamp: NOW,
 }
@@ -275,7 +287,10 @@ export const MOCK_CONSENSUS_BIAS: ConsensusBias = {
 }
 
 export const MOCK_CONSENSUS_HISTORY: ConsensusHistory = (() => {
-  const history = Array.from({ length: 20 }, (_, i) => ({ ts: NOW - (20 - i) * 5_000, score: -0.125, confidence: 0.333, btcPrice: 65590.2 }))
+  // One point deliberately has a null price: the live engine renamed this
+  // field out from under the frontend once already, and the mock should
+  // exercise the branch that survives it rather than only the happy path.
+  const history = Array.from({ length: 20 }, (_, i) => ({ ts: NOW - (20 - i) * 5_000, score: -0.125, confidence: 0.333, assetPrice: i === 0 ? null : 65590.2, assetSymbol: 'BTC' }))
   return { available: true, history, timestamp: NOW }
 })()
 
@@ -338,7 +353,7 @@ export const MOCK_ANALYTICS_SUMMARY: AnalyticsSummary = {
 export const MOCK_ANALYTICS_TOP_SEGMENTS: AnalyticsTopSegments = { available: true, topSegments: [], segmentType: 'edge_bucket', metric: 'win_rate', limit: 5, timestamp: NOW }
 export const MOCK_ANALYTICS_HOURLY: AnalyticsHourly = { available: true, hourly: [], count: 0, timestamp: NOW }
 
-export const MOCK_PAPER_STATUS: PaperStatus = { available: true, enabled: true, pendingTrades: 4, completedTrades: 28, timestamp: NOW }
+export const MOCK_PAPER_STATUS: PaperStatus = { available: true, enabled: true, pendingTrades: 4, completedTrades: 28, totalPnl: 12.4, winRate: 0.643, timestamp: NOW }
 
 export const MOCK_SYSTEM_METRICS: SystemMetrics = {
   available: true,
@@ -439,6 +454,43 @@ export function mockMarketPriceHistory(marketId: string, limit = 100): MarketPri
   return { available: true, marketId, history, count: history.length, limit, timestamp: NOW }
 }
 
+/**
+ * GET /api/markets/:market_id — market + its history in one envelope.
+ *
+ * `hasClosed: false` and a future `closesAt`: the mock represents an ACTIVE
+ * market, so the expiry branch in the detail page is exercised by the live
+ * engine's genuinely-expired markets rather than faked here.
+ */
+export function mockMarketDetail(marketId: string): MarketDetail {
+  const history = mockMarketPriceHistory(marketId, 100).history
+  const latest  = history[history.length - 1]
+  return {
+    available: true,
+    market: {
+      id:                  marketId,
+      question:            'Bitcoin Up or Down - mock market',
+      baselinePrice:       64000,
+      baselinePriceSource: 'feed',
+      yesTokenId:          'mock-yes-token',
+      noTokenId:           'mock-no-token',
+      // Domain prices are 0–1, matching the wire; mockMarketPriceHistory
+      // generates its points on a 0–100 scale, so this is not derived from it.
+      yesPrice:            0.62,
+      noPrice:             0.38,
+      createdAt:           NOW - 15 * 60_000,
+      closesAt:            NOW + 5 * 60_000,
+      volume:              latest?.volume ?? 18_000,
+      durationMinutes:     15,
+      marketTier:          1,
+      assetCategory:       'crypto',
+      hasClosed:           false,
+    },
+    history,
+    historyCount: history.length,
+    timestamp:    NOW,
+  }
+}
+
 // ─── Quant surface (2026-08-20) ───────────────────────────────────────────────
 // Shaped from the real captured payloads so mock mode exercises the SAME code
 // paths as live — including the "engine has learned nothing" branches, which is
@@ -469,6 +521,9 @@ function mockKalmanAsset(symbol: string, price: number, regime: string): KalmanA
     marketMaker:              mockMarketMaker,
     timestamp:                NOW,
     initialised:              regime !== 'unknown',
+    // The mock uses a symmetric 0.5/0.5 seed, which IS a partition. The live
+    // engine's values are not (0.88/0.20) — see KalmanAssetState.probabilityYes.
+    probabilitiesArePartition: true,
   }
 }
 

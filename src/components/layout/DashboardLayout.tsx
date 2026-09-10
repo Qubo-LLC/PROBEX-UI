@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, type ReactNode } from 'react'
+import { BottomNav } from './BottomNav'
 import { Sidebar }       from './Sidebar'
 import { TopNavigation } from './TopNavigation'
 import { AuthGate }               from '@/components/providers/AuthGate'
@@ -160,8 +161,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             Individual pages import PageHeader and render their content here.
           */}
           {children}
+          {/* The rail is fixed, so the last ~72px of every page would sit
+              under it. Reserved here rather than in each page, and only at the
+              widths where the rail exists. */}
+          <div
+            className="md:hidden"
+            style={{ height: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))' }}
+            aria-hidden="true"
+          />
         </main>
       </div>
+
+      {/* Mobile navigation rail. The drawer above remains the full index. */}
+      <BottomNav />
 
       {/* ── Skip to content link — accessibility ──────────────────────── */}
       <a

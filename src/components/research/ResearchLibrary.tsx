@@ -26,7 +26,7 @@ export function ResearchLibrary() {
           <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Research Reports</h2>
           <p className="text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>Auto-generated from the engine's current market, edge, and risk state</p>
         </div>
-        <ProvenanceBadge provenance="live" detail="/api/research/reports" />
+        <ProvenanceBadge provenance="live" detail="/api/research/reports" state={slice} />
       </div>
 
       {slice.status === 'error' && (

@@ -23,6 +23,21 @@ export function PerformanceAnalytics() {
   const slice = useApplicationStore((s) => s.engine.portfolioHistory)
   const history = slice.status === 'success' && slice.data ? slice.data.history : []
 
+  // The window these charts actually cover, read off the data rather than
+  // asserted. "Since session start" was wrong: this is the engine's retained
+  // snapshot window, and its first point is a retention boundary — the same
+  // boundary that makes /api/portfolio/summary.initial_value window-relative.
+  const windowLabel = useMemo(() => {
+    if (history.length < 2) return null
+    const first = history[0]
+    const last = history[history.length - 1]
+    if (!first || !last) return null
+    const spanMs = Math.abs(last.ts - first.ts)
+    const mins = Math.round(spanMs / 60000)
+    const span = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${Math.floor(mins / 1440)}d`
+    return `${history.length} snapshots over ${span}, from ${new Date(first.ts).toLocaleString()}`
+  }, [history])
+
   const growthData: LiveChartPoint[] = useMemo(
     () => history.map((p) => ({ tick: new Date(p.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), value: p.totalValue })),
     [history],
@@ -37,7 +52,7 @@ export function PerformanceAnalytics() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
       <LiveChart
         title="Drawdown"
-        subtitle="Peak-to-trough capital decline over time"
+        subtitle="Peak-to-trough decline, measured within the retained window above"
         source="/api/portfolio/history"
         provenance="derived"
         state={state}
@@ -51,7 +66,7 @@ export function PerformanceAnalytics() {
       />
       <LiveChart
         title="Capital Growth"
-        subtitle="Account equity curve since session start"
+        subtitle={windowLabel ?? 'Account equity across the engine\u2019s retained snapshot window'}
         source="/api/portfolio/history"
         state={state}
         message={message}

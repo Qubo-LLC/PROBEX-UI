@@ -90,7 +90,7 @@ export function SidebarItem({
             'pointer-events-none absolute left-full ml-2 z-50',
             'rounded-md px-2.5 py-1.5 text-xs font-medium whitespace-nowrap',
             'opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0',
-            'transition-all duration-150 shadow-surface-lg',
+            'transition-all duration-150 shadow-elev-3',
           )}
           style={{
             background:   'var(--probex-surface-3)',

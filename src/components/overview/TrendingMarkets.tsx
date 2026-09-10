@@ -8,7 +8,6 @@ import { useMemo } from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
 import { parseMarketRows } from '@/lib/mappers/markets'
 import { formatCompact, formatPercent } from '@/lib/utils'
-import { SectionHeader } from './SectionHeader'
 import { TableShell, Thead, Th, Tr, Td } from '@/components/shared/DataTable'
 import { TableSkeleton } from '@/components/ui/LoadingState'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -34,7 +33,10 @@ export function TrendingMarkets() {
 
   return (
     <section>
-      <SectionHeader title="Trending Now" subtitle="The busiest markets by 24h volume" />
+      <div className="mb-3">
+        <h3 className="t-section-title">Trending Now</h3>
+        <p className="t-description mt-0.5">The busiest markets by 24h volume</p>
+      </div>
 
       {marketsSlice.status === 'loading' && <TableSkeleton columns={4} rows={5} />}
 

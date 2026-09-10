@@ -29,7 +29,7 @@ import { normalizeHealthStatus } from './health'
 import { ServiceException } from './response'
 import type {
   EngineHealthDTO, HealthComponentDTO, RuntimeComponentsDTO,
-  EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
+  EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, EngineConfigFilterFieldsDTO, SurvivalDTO, PriceHistoryDTO,
   EngineMarketsDTO, EnginePositionsDTO, EngineEventsDTO, EngineEdgesDTO,
   EngineIdentityDTO, ExecutionStatusDTO, RateLimitBucketDTO,
   ExecutionPolicyDTO, ExecutionTradesDTO, PaperStatsDTO, BucketPerformanceStatDTO,
@@ -54,6 +54,7 @@ import type {
   TradesLedgerDTO, TradesLedger, ExecutionOrdersDTO, ExecutionOrders,
   MarketsSummaryDTO, MarketsSummary, MarketSummaryItemDTO, MarketSummaryItem,
   MarketPriceHistoryDTO, MarketPriceHistory, MarketHistoryPointDTO, MarketHistoryPoint,
+  MarketDetailDTO, MarketDetail, MarketDetailItemDTO, MarketDetailItem,
   SettledTradeDTO, SettledTrade,
   MutationResultDTO, MutationResult,
 } from '@/types/engine'
@@ -62,9 +63,44 @@ import type {
  *  winRates share one convention. */
 const pctToFraction = (pct: number): number => pct / 100
 
+/**
+ * Reads the consensus surface's spot price across the multi-asset rename.
+ *
+ * The engine renamed `btc_price` → `asset_price` on `/api/consensus` and
+ * `/api/consensus/history` when consensus went multi-asset. The old name is
+ * still accepted because this backend has renamed fields under us before and
+ * the fallback costs one `??`.
+ *
+ * Returns null rather than 0 when neither is present: a missing price and a
+ * price of zero are different facts, and it was a non-null assumption here that
+ * crashed the Consensus page with `undefined.toLocaleString()`.
+ */
+function assetPriceOf(p: { asset_price?: number; btc_price?: number }): number | null {
+  const value = p.asset_price ?? p.btc_price
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
 // ─── Time normalization ─────────────────────────────────────────────────────────
 
 export const isoToMs = (iso: string): number => new Date(iso).getTime()
+
+/**
+ * Parse an ISO timestamp that carries NO timezone offset as UTC.
+ *
+ * The engine emits naive strings ("2026-09-09T22:24:43.012114") that are in
+ * fact UTC. `isoToMs` delegates to `new Date()`, and ECMAScript parses an
+ * offset-less date-TIME string as LOCAL time, so those values land off by the
+ * viewer's UTC offset. Measured on a UTC+3 machine: a probe that answered one
+ * second ago read as 3.00 hours old.
+ *
+ * Applied deliberately narrowly — see the note in HealthPanel. `isoToMs` feeds
+ * 58 fields including frozen surfaces, so the global correction is tracked as
+ * its own change rather than made here as a side effect.
+ */
+export const naiveUtcToMs = (iso: string): number => {
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(iso)
+  return new Date(hasZone ? iso : iso + 'Z').getTime()
+}
 export const msToIso = (ms: number): string => new Date(ms).toISOString()
 
 // ─── Two-shape envelope guard ─────────────────────────────────────────────────
@@ -108,7 +144,9 @@ function toHealthComponent(dto: HealthComponentDTO): HealthComponent {
     healthy:   dto.healthy,
     message:   dto.message,
     latencyMs: dto.latency_ms,
-    checkedAt: isoToMs(dto.checked_at),
+    // UTC-aware: see naiveUtcToMs. This field has no other consumer, so the
+    // correction is contained to the System health panel that renders it.
+    checkedAt: naiveUtcToMs(dto.checked_at),
   }
 }
 
@@ -195,6 +233,10 @@ export function toEngineStats(dto: EngineStatsDTO): EngineStats {
 
 export function toEngineConfig(dto: EngineConfigDTO): EngineConfig {
   const c = dto.config
+  // The filter parameters are optional on the wire — see
+  // EngineConfigFilterFieldsDTO. Reading them through that view keeps the
+  // guards honest without widening EngineConfigInnerDTO itself.
+  const f = c as EngineConfigFilterFieldsDTO
   return {
     environment:               c.environment as EngineMode,
     anthropicApiKey:           c.anthropic_api_key,
@@ -211,8 +253,30 @@ export function toEngineConfig(dto: EngineConfigDTO): EngineConfig {
     dashboardApiHost:          c.dashboard_api_host,
     dashboardApiPort:          c.dashboard_api_port,
     logLevel:                  c.log_level,
+
+    // Defensive: the DTO does not declare these (an older capture predates
+    // them), so each is read through a guard rather than asserted. A missing or
+    // wrong-typed field becomes null, never 0 and never undefined.
+    minEdgeYes:            numOrNull(f.min_edge_yes),
+    minEdgeNo:             numOrNull(f.min_edge_no),
+    minVolume:             numOrNull(f.min_volume),
+    minAlignment:          numOrNull(f.min_alignment),
+    blockedHours:          numArrayOrNull(f.blocked_hours),
+    edgeConfirmationCount: numOrNull(f.edge_confirmation_count),
+    earlyExitThreshold:    numOrNull(f.early_exit_threshold),
+    lowLiquidityStartHour: numOrNull(f.low_liquidity_start_hour),
+    lowLiquidityEndHour:   numOrNull(f.low_liquidity_end_hour),
   }
 }
+
+/** Finite number or null. Guards fields the DTO does not declare. */
+const numOrNull = (v: unknown): number | null =>
+  typeof v === 'number' && Number.isFinite(v) ? v : null
+
+/** Array of finite numbers or null. An empty array is meaningful (= none
+ *  configured) and is preserved as []; a non-array becomes null. */
+const numArrayOrNull = (v: unknown): number[] | null =>
+  Array.isArray(v) ? v.filter((x): x is number => typeof x === 'number' && Number.isFinite(x)) : null
 
 // ─── /api/survival ────────────────────────────────────────────────────────────
 
@@ -308,7 +372,15 @@ export function toExecutionStatus(dto: ExecutionStatusDTO): ExecutionStatus {
     totalTrades:        s.total_trades,
     wins:               s.wins,
     losses:             s.losses,
-    winRate:            s.win_rate,
+    // 2026-09-07: this was the ONE win_rate on the wire not being normalised.
+    // It read as 0–1 because the live value has been exactly 0 (paper mode
+    // places no live orders), which is indistinguishable from a fraction and
+    // hid the defect. Every other win_rate the engine sends is 0–100 —
+    // /api/paper-stats sends 74.6, /api/trades/ledger sends 80,
+    // /api/survival/patterns sends 100 — and this field is computed by the same
+    // backend from the same trade set. The first live order would have rendered
+    // a 74.6% win rate as 7460%.
+    winRate:            pctToFraction(s.win_rate),
     totalPnl:           s.total_pnl,
     activePositions:    s.active_positions,
     closedPositions:    s.closed_positions,
@@ -503,7 +575,8 @@ export function toConsensus(dto: ConsensusDTO): Consensus {
         macdTrend: c.signals.macd_trend,
         priceMomentum: c.signals.price_momentum,
       },
-      btcPrice: c.btc_price,
+      assetPrice:  assetPriceOf(c),
+      assetSymbol: c.asset_symbol ?? null,
       interpretation: c.interpretation,
     },
     timestamp: isoToMs(dto.timestamp),
@@ -545,7 +618,10 @@ export function toConsensusBias(dto: ConsensusBiasDTO): ConsensusBias {
 export function toConsensusHistory(dto: ConsensusHistoryDTO): ConsensusHistory {
   return {
     available: dto.available,
-    history: dto.history.map((p) => ({ ts: isoToMs(p.timestamp), score: p.score, confidence: p.confidence, btcPrice: p.btc_price })),
+    history: dto.history.map((p) => ({
+      ts: isoToMs(p.timestamp), score: p.score, confidence: p.confidence,
+      assetPrice: assetPriceOf(p), assetSymbol: p.asset_symbol ?? null,
+    })),
     timestamp: isoToMs(dto.timestamp),
   }
 }
@@ -684,7 +760,9 @@ export function toAnalyticsHourly(dto: AnalyticsHourlyDTO): AnalyticsHourly {
 export function toPaperStatus(dto: PaperStatusDTO): PaperStatus {
   return {
     available: dto.available, enabled: dto.enabled, pendingTrades: dto.pending_trades,
-    completedTrades: dto.completed_trades, timestamp: isoToMs(dto.timestamp),
+    completedTrades: dto.completed_trades,
+    totalPnl: dto.total_pnl, winRate: pctToFraction(dto.win_rate),
+    timestamp: isoToMs(dto.timestamp),
   }
 }
 
@@ -785,6 +863,47 @@ export function toMarketPriceHistory(dto: MarketPriceHistoryDTO): MarketPriceHis
   }
 }
 
+// ─── /api/markets/:market_id ──────────────────────────────────────────────────
+
+export function toMarketDetailItem(dto: MarketDetailItemDTO, now: number = Date.now()): MarketDetailItem {
+  const closesAt = isoToMs(dto.closes_at)
+  return {
+    id:                  dto.id,
+    question:            dto.question,
+    baselinePrice:       dto.baseline_price,
+    baselinePriceSource: dto.baseline_price_source,
+    yesTokenId:          dto.yes_token_id,
+    noTokenId:           dto.no_token_id,
+    yesPrice:            dto.yes_price,
+    noPrice:             dto.no_price,
+    createdAt:           isoToMs(dto.created_at),
+    closesAt,
+    volume:              dto.volume,
+    durationMinutes:     dto.duration_minutes,
+    marketTier:          dto.market_tier,
+    assetCategory:       dto.asset_category,
+    // Not a guess: closes_at is a confirmed wire field and this is a direct
+    // comparison against it. NaN (an unparseable date) yields false — we do not
+    // know it has closed, so we do not claim it.
+    hasClosed:           Number.isFinite(closesAt) && closesAt < now,
+  }
+}
+
+export function toMarketDetail(dto: MarketDetailDTO, now: number = Date.now()): MarketDetail {
+  return {
+    available:    dto.available,
+    // `now` is threaded rather than left to the item adapter's own default so
+    // the expiry derivation is testable against a fixed clock.
+    market:       toMarketDetailItem(requireAvailable(dto.market, '/api/markets/:market_id'), now),
+    // Wire returns newest-first; charts want oldest-first. Same convention as
+    // toMarketPriceHistory, and the item shape is byte-identical to that
+    // endpoint's — confirmed 2026-09-07, so one point adapter serves both.
+    history:      (dto.history ?? []).map(toMarketHistoryPoint).sort((a, b) => a.ts - b.ts),
+    historyCount: dto.history_count,
+    timestamp:    isoToMs(dto.timestamp),
+  }
+}
+
 /**
  * Adapts the historical archive (/api/markets/history/summary) into the same
  * EngineMarkets envelope the markets surface consumes, so a browsable list of
@@ -831,6 +950,12 @@ export function toSettledTrade(dto: SettledTradeDTO): SettledTrade {
     openedAt:        isoToMs(dto.opened_at),
     closedAt:        isoToMs(dto.closed_at),
     won:             dto.won,
+    // Optional at runtime even though the DTO declares them: an older engine
+    // build, or a replayed fixture, can omit them. A missing descriptor must
+    // degrade to null rather than render the string "undefined".
+    assetCategory:   typeof dto.asset_category === 'string' ? dto.asset_category : null,
+    assetSymbol:     typeof dto.asset_symbol === 'string' ? dto.asset_symbol : null,
+    durationMinutes: typeof dto.duration_minutes === 'number' ? dto.duration_minutes : null,
   }
 }
 

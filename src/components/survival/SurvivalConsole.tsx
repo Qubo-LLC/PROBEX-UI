@@ -26,6 +26,7 @@ import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 // State-machine tiles come from the shared severity-ordered list so a new
 // backend state appears here automatically instead of vanishing from the strip.
 const STATE_DESCRIPTIONS: Record<string, string> = {
+  THRIVING: 'Capital above the starting bankroll — the brain is sizing up, not down.',
   HEALTHY:  'Capital intact — full position sizing available.',
   CAUTION:  'Capital drawdown detected — the brain reduces sizing and raises the edge bar.',
   WOUNDED:  'Capital taking damage — sizing curtailed and the edge bar lifted.',

@@ -38,7 +38,9 @@
 // — they are claims about a specific endpoint, not about the data being real.
 
 import { useRuntimeConfig } from '@/providers/RuntimeConfigProvider'
+import { useProvenanceDetailMode } from './ProvenanceScope'
 import { useSystemStatus } from '@/config/hooks/useSystemStatus'
+import type { ServiceState } from '@/lib/services/response'
 
 export type Provenance = 'live' | 'derived' | 'idle' | 'awaiting' | 'stale' | 'synthetic' | 'unreachable'
 
@@ -46,6 +48,18 @@ interface ProvenanceBadgeProps {
   provenance: Provenance
   /** Optional detail shown after the label, e.g. an endpoint id ("CE-2"). */
   detail?:    string
+  /**
+   * The slice this badge describes. When supplied, a 'live' or 'idle' claim is
+   * downgraded to 'stale' while the slice is stale.
+   *
+   * This is the same structural argument the mock/offline downgrade below
+   * makes: 'stale' has existed in this vocabulary since the grammar was
+   * written, but nothing ever produced it, so a panel whose endpoint had
+   * stopped answering kept rendering a green LIVE dot over a retained number.
+   * Resolving it here rather than at the ~17 call sites means no future card
+   * can reintroduce the contradiction by copying the pattern.
+   */
+  state?:     ServiceState<unknown>
   className?: string
 }
 
@@ -72,8 +86,11 @@ const CONFIG: Record<Provenance, { label: string; color: string; dot: boolean; p
   unreachable: { label: 'No feed',   color: 'var(--probex-text-disabled)', dot: true,  pulse: false, title: 'The engine could not be reached — no value is being shown' },
 }
 
-export function ProvenanceBadge({ provenance, detail, className = '' }: ProvenanceBadgeProps) {
+export function ProvenanceBadge({ provenance, detail, state, className = '' }: ProvenanceBadgeProps) {
   const { mode } = useRuntimeConfig()
+  // Instrument surfaces print the endpoint; intelligence surfaces keep the
+  // claim and move the endpoint to the tooltip. See ProvenanceScope.
+  const detailMode = useProvenanceDetailMode()
   const { state: systemState } = useSystemStatus()
 
   // A 'live' claim is only the caller's to make when the app is actually
@@ -105,8 +122,14 @@ export function ProvenanceBadge({ provenance, detail, className = '' }: Provenan
   // rather than about the connection, so it passes through untouched. 'idle' is
   // downgraded alongside 'live' for the same reason: it asserts that a real
   // endpoint answered, which is exactly what is not true here.
+  // Staleness is checked BEFORE the connection-level downgrades on purpose. A
+  // slice that has stopped refreshing is a claim about this specific endpoint
+  // backed by an observed failure, which is more precise than any system-wide
+  // inference — and unlike 'unreachable' it still has a real value on screen to
+  // describe, which is exactly what 'stale' means.
   const resolved: Provenance =
     provenance !== 'live' && provenance !== 'idle' ? provenance
+    : state?.isStale === true ? 'stale'
     : mode === 'mock' ? 'synthetic'
     : mode === 'offline' ? 'unreachable'
     : systemState === 'unreachable' ? 'unreachable'
@@ -116,6 +139,9 @@ export function ProvenanceBadge({ provenance, detail, className = '' }: Provenan
 
   // The endpoint id is only meaningful when a request was actually made to it.
   const shownDetail = resolved === 'synthetic' || resolved === 'unreachable' ? undefined : detail
+  // Printed only where the surface asks for it. The title and the accessible
+  // name below always carry it, so demoting it never loses it.
+  const inlineDetail = detailMode === 'inline' ? shownDetail : undefined
 
   return (
     <span
@@ -132,9 +158,9 @@ export function ProvenanceBadge({ provenance, detail, className = '' }: Provenan
         />
       )}
       <span>{c.label}</span>
-      {shownDetail && (
+      {inlineDetail && (
         <span className="font-medium normal-case" style={{ color: 'var(--probex-text-disabled)' }}>
-          · {shownDetail}
+          · {inlineDetail}
         </span>
       )}
     </span>

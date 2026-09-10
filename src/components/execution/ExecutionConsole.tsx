@@ -8,11 +8,22 @@
 //   3. Is anything throttling it?                        → rate limiters + backoff
 //   4. Are resolutions being tracked?                    → resolution tracker
 //
-// Source: /api/execution/status — the SOURCE OF TRADING TRUTH (spec §6.2).
+// ─── Counter scope (Stage 7) ─────────────────────────────────────────────────
+// /api/execution/status was described here as "the SOURCE OF TRADING TRUTH".
+// The Stage 6 forensic work disproved that: its counters are scoped to the
+// current engine PROCESS and reset on restart. Measured 2026-09-09 it reported
+// total_trades 0 / total_pnl 0.00 while /api/paper-stats reported 3 trades and
+// −17.52 in the same session. Nothing here is relabelled as lifetime or total
+// unless the backend guarantees that meaning — which, for this endpoint, it
+// does not.
+//
 // Truth rules: latency metrics render only after the first execution; a
 // zero-retry session reads "no retries needed", not an empty chart.
 
 import { useApplicationStore } from '@/store/applicationStore'
+import { useWriteGate } from '@/config/hooks/useWriteGate'
+import { ProvenanceScope } from '@/components/shared/ProvenanceScope'
+import type { ServiceState } from '@/lib/services/response'
 import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'
 import { Card }       from '@/components/ui/Card'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -23,6 +34,7 @@ import { ManualOrderPanel } from './ManualOrderPanel'
 import { OrdersTable } from './OrdersTable'
 import { ErrorState } from '@/components/ui/ErrorState'
 import type { RateLimitBucket, ExecutionPolicy, PaperStats, PaperStatus } from '@/types/engine'
+import type { WriteGateReason } from '@/lib/display/writeGate'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
 export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
@@ -35,8 +47,14 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
   const paper       = paperSlice.status === 'success' ? paperSlice.data : null
   const paperStatusSlice = useApplicationStore((s) => s.engine.paperStatus)
   const paperStatus      = paperStatusSlice.status === 'success' ? paperStatusSlice.data : null
+  // The same gate the order controls obey — read here so the page can STATE the
+  // execution posture rather than leaving it implied by a disabled button.
+  const gate = useWriteGate()
 
   return (
+    // Execution reports state; the endpoint that served each reading is lineage,
+    // not headline content. Seven raw paths rendered as body text before this.
+    <ProvenanceScope detail="tooltip">
     <div className={pageShell(embedded, 'gap-4')}>
       {!embedded && (
         <PageHeader
@@ -45,15 +63,15 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
         />
       )}
 
-      {/* Manual controls sit above the telemetry: when an operator opens this
-          page to intervene, the halt control should be the first thing reached,
-          not something to scroll past the metrics for. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-        <EmergencyStopPanel />
-        <ManualOrderPanel />
-      </div>
-
-      <OrdersTable />
+      {/* 0 · Execution posture — the first thing the page says.
+          Every value is a real field: policy.mode, policy.liveTradingEnabled,
+          executionStatus.available, and the write gate's own reason. */}
+      <ExecutionModeBand
+        policy={policy}
+        available={ex?.available ?? null}
+        gateReason={gate.reason}
+        gateDetail={gate.detail}
+      />
 
       {slice.status === 'loading' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -89,17 +107,29 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
               columns to four and every card shifted. Panels keep their frame
               and withhold the figure instead. */}
           <section aria-label="Trading record" className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Panel title="Trading Record" provenance="live" source="/api/execution/status">
+            {/* Scoped title and unit. "Total P&L" on a counter that resets with
+                the process is the exact mislabel the brief forbids — and this
+                one read $0.00 while the paper session below showed −$17.52. */}
+            <Panel
+              title="Engine Process Record"
+              subtitle="Resets when the engine restarts"
+              provenance="live"
+              source="/api/execution/status"
+              slice={slice}
+            >
               <Focal
                 value={formatSignedCurrency(ex.totalPnl)}
-                unit="total P&L"
+                unit="P&L this process"
                 color={
                   ex.totalPnl > 0 ? 'var(--probex-positive)'
                   : ex.totalPnl < 0 ? 'var(--probex-negative)' : undefined
                 }
                 caption={
                   ex.totalTrades === 0
-                    ? <span className="t-helper">No trades executed this session.</span>
+                    ? <span className="t-helper">
+                        No trades executed since the engine last started. Settled history lives on
+                        Positions and the paper session below.
+                      </span>
                     : undefined
                 }
               />
@@ -111,7 +141,7 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
                 />
               )}
               <RowGroup>
-                <Row label="Trades" value={`${ex.totalTrades}`} />
+                <Row label="Trades this process" value={`${ex.totalTrades}`} title="Scoped to the current engine process — not the account's lifetime count" />
                 <Row
                   label="Win rate"
                   value={ex.totalTrades > 0 ? formatPercent(ex.winRate) : '—'}
@@ -125,6 +155,7 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
               title="Account"
               provenance="live"
               source="/api/execution/status"
+              slice={slice}
               action={
                 <StatusChip tone={ex.mode === 'live' ? 'danger' : 'info'} dot={false}>
                   {ex.mode}
@@ -133,7 +164,7 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
             >
               <Focal
                 value={formatCurrency(ex.balance)}
-                unit={ex.mode === 'paper' ? 'paper balance' : 'live balance'}
+                unit={ex.mode === 'paper' ? 'paper balance, this process' : 'live balance, this process'}
               />
               <RowGroup>
                 <Row label="Open positions" value={`${ex.activePositions}`} />
@@ -146,7 +177,7 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
               </RowGroup>
             </Panel>
 
-            <Panel title="Throughput" provenance="live" source="/api/execution/status">
+            <Panel title="Throughput" provenance="live" source="/api/execution/status" slice={slice}>
               <Focal
                 value={ex.totalTrades > 0 ? `${Math.round(ex.avgExecutionMs)}` : '—'}
                 unit={ex.totalTrades > 0 ? 'ms average fill' : 'no fills yet'}
@@ -272,13 +303,107 @@ export function ExecutionConsole({ embedded = false }: EmbeddableProps = {}) {
           </Card>
 
           {/* 5 · Paper session (from /api/paper-stats + /api/paper/status) */}
-          {paper && <PaperSessionCard paper={paper} paperStatus={paperStatus} />}
+          {paper && <PaperSessionCard paper={paper} paperStatus={paperStatus} slice={paperSlice} />}
 
           {/* 6 · Execution policy (from /api/execution/policy, read-only) */}
           {policy && <ExecutionPolicyCard policy={policy} />}
+
         </>
       )}
+
+      {/* 7 · Manual intervention — LAST in reading order, and OUTSIDE the
+          `{ex && …}` guard above.
+          Rank is the only thing Stage 7 changed about these panels: behaviour,
+          gating and confirmation copy are untouched, and crucially they remain
+          reachable when /api/execution/status is unavailable. An operator
+          reaching for the halt control is most likely to do so when something is
+          already wrong — which is exactly when the status endpoint may be the
+          broken thing. EmergencyStopPanel is built for that case: it withholds
+          the blast-radius figures when position state is unknown and keeps the
+          button live, because the engine may still be holding capital. */}
+      <section aria-label="Manual intervention" className="flex flex-col gap-3 pt-2">
+        <div className="flex flex-col gap-1">
+          <h2 className="t-section-title">Manual Intervention</h2>
+          <p className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
+            Operator overrides. The engine trades on its own; everything below acts against it, and
+            each control states what it will do before it does it.
+            {gate.detail !== null && ` ${gate.detail}`}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+          <EmergencyStopPanel />
+          <ManualOrderPanel />
+        </div>
+        <OrdersTable />
+      </section>
     </div>
+    </ProvenanceScope>
+  )
+}
+
+/**
+ * Execution posture, stated in words.
+ *
+ * The brief's requirement is that a reader is never left uncertain whether the
+ * engine is paper, live, disabled, unavailable or degraded. Colour alone cannot
+ * carry that, so every state here is a sentence with an explicit mode word; the
+ * chip tone only reinforces it.
+ *
+ * Sources, all real: /api/execution/policy (mode, live_trading_enabled),
+ * /api/execution/status (available), and the write gate's own reason — which is
+ * already the authority the order controls obey, so the page and the buttons
+ * can never disagree.
+ */
+function ExecutionModeBand({
+  policy, available, gateReason, gateDetail,
+}: {
+  policy: ExecutionPolicy | null
+  available: boolean | null
+  gateReason: WriteGateReason
+  gateDetail: string | null
+}) {
+  // Unknown is not "paper". Until the policy has been read, the band says so.
+  const mode = policy?.mode ?? null
+  const liveEnabled = policy?.liveTradingEnabled ?? null
+
+  const posture: { word: string; tone: 'positive' | 'warning' | 'danger' | 'neutral'; sentence: string } =
+    gateReason === 'engine-unreachable'
+      ? { word: 'UNAVAILABLE', tone: 'danger',
+          sentence: 'The execution engine is unreachable. No execution state can be confirmed and no order can be sent.' }
+    : mode === null || liveEnabled === null
+      ? { word: 'UNCONFIRMED', tone: 'warning',
+          sentence: 'The engine has not yet reported its execution mode. Nothing below is confirmed until it does.' }
+    : mode === 'live' || liveEnabled === true
+      ? { word: 'LIVE', tone: 'danger',
+          sentence: 'The engine is configured for LIVE trading — orders it places risk real capital.' }
+    : available === false
+      ? { word: 'PAPER · ENGINE DISABLED', tone: 'warning',
+          sentence: 'The engine is in PAPER mode and live trading is disabled, but the execution subsystem reports itself unavailable — figures below are its last known state.' }
+      : { word: 'PAPER', tone: 'positive',
+          sentence: 'The engine is in PAPER mode and live trading is disabled. Every order below is simulated; no real capital is at risk.' }
+
+  return (
+    <section
+      aria-label="Execution mode"
+      className="rounded-lg px-4 py-3 flex flex-col gap-2"
+      style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border-default)' }}
+    >
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="t-label">Execution mode</span>
+        <StatusChip tone={posture.tone} dot={false}>{posture.word}</StatusChip>
+        {liveEnabled !== null && (
+          <span className="text-2xs font-semibold" style={{ color: 'var(--probex-text-muted)' }}>
+            live trading {liveEnabled ? 'ENABLED' : 'DISABLED'}
+          </span>
+        )}
+      </div>
+      <p className="text-xs leading-relaxed" style={{ color: 'var(--probex-text-secondary)' }}>
+        {posture.sentence}
+      </p>
+      {gateDetail !== null && gateReason !== 'permitted' && (
+        <p className="t-helper">Manual order flow: {gateDetail}</p>
+      )}
+    </section>
   )
 }
 
@@ -353,7 +478,9 @@ function BucketGauge({ bucket }: { bucket: RateLimitBucket }) {
  * a fresh session with zero trades reads as "no trades resolved yet", never as
  * a wall of zeroes pretending to be performance.
  */
-function PaperSessionCard({ paper, paperStatus }: { paper: PaperStats; paperStatus: PaperStatus | null }) {
+// `slice` is threaded from the parent rather than re-subscribed: the badge must
+// describe the freshness of the SAME read these figures came from.
+function PaperSessionCard({ paper, paperStatus, slice }: { paper: PaperStats; paperStatus: PaperStatus | null; slice: ServiceState<PaperStats> }) {
   const p = paper.paperTrading
   const net = p.currentCapital - p.initialCapital
   return (
@@ -361,6 +488,7 @@ function PaperSessionCard({ paper, paperStatus }: { paper: PaperStats; paperStat
       title="Paper Session"
       provenance="live"
       source="/api/paper-stats"
+      slice={slice}
       action={
         <span className="text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
           started {new Date(p.sessionStart).toLocaleString()}

@@ -21,6 +21,29 @@ const nextConfig: NextConfig = {
   // `trailingSlash` then 308-redirected. The API base is configured at runtime
   // instead — see config/runtime.ts.
 
+  // ─── Root → /dashboard ──────────────────────────────────────────────────────
+  // `basePath: "/dashboard"` means the app owns NOTHING at the true origin root:
+  // `src/app/(dashboard)/page.tsx` is served at `/dashboard`, and `/` is not a
+  // route at all. So `npm run dev` prints "http://localhost:3000" and the first
+  // thing a developer sees there is Next's 404.
+  //
+  // That 404 was repeatedly read as the app being broken — and it looked like it
+  // was, because the 404 page still renders the root layout, which resolves the
+  // runtime config, which ran a doomed 5s backend probe before painting. A
+  // wrong-but-plausible story ("the health probe crashes the render") is easy to
+  // reach from those two facts, and it cost real debugging time.
+  //
+  // In production nginx never routes `/` here, so this is invisible there; it is
+  // purely a local-development papercut, which is exactly why it survived.
+  //
+  // `basePath: false` is required: without it Next prefixes both source and
+  // destination, producing `/dashboard` → `/dashboard/dashboard`.
+  async redirects() {
+    return [
+      { source: '/', destination: '/dashboard', permanent: false, basePath: false as const },
+    ]
+  },
+
   images: {
     // ProbexLogo renders the brand mark at quality 100 (it is a dense render
     // that visibly softens at the default 75). Next 15.5 warns when a quality

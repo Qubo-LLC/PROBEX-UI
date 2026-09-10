@@ -39,9 +39,15 @@ export function AnalyticsEngineStatus() {
 
   const analysed  = summary?.totalTradesAnalyzed ?? 0
   const settled   = ledger?.count ?? 0
-  // The engine claiming zero analysed trades while trades have demonstrably
-  // settled is a backend inconsistency worth stating plainly.
-  const mismatch  = analysed === 0 && settled > 0
+  // The engine analysing far fewer trades than have demonstrably settled is a
+  // backend inconsistency worth stating plainly.
+  //
+  // This used to test `analysed === 0`, which only caught the zero case.
+  // Measured live: analysed 2 against 186 settled — the same inconsistency, and
+  // almost the same magnitude, passing silently because 2 is not 0. The test is
+  // now proportional: flag whenever the analytics engine has seen less than half
+  // of what the ledger reports.
+  const mismatch  = settled > 0 && analysed < settled / 2
   const populated = signals.length > 0 || hourly.length > 0 || top.length > 0
 
   return (
@@ -55,14 +61,17 @@ export function AnalyticsEngineStatus() {
             Segment, signal and hourly attribution computed by the backend
           </p>
         </div>
-        <ProvenanceBadge provenance={mismatch ? 'awaiting' : 'live'} detail="/api/analytics/*" />
+        <ProvenanceBadge provenance={mismatch ? 'awaiting' : 'live'} detail="/api/analytics/*" state={summarySlice} />
       </div>
 
       <div className="p-4 flex flex-col gap-4">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <Metric label="Trades analysed" value={String(analysed)} warn={mismatch} />
           <Metric label="Win rate"  value={summary ? formatPercent(summary.overallWinRate) : '—'} />
-          <Metric label="Total P&L" value={summary ? formatSignedCurrency(summary.totalPnl) : '—'} />
+          {/* NOT the account's total. /api/analytics/summary.total_pnl is the
+              total across the trades THIS engine has analysed — 2 of 186 when
+              measured. Labelled to match "Trades analysed" beside it. */}
+          <Metric label="P&L analysed" value={summary ? formatSignedCurrency(summary.totalPnl) : '—'} />
           <Metric label="Segments"  value={String(summary?.segmentCount ?? 0)} />
           <Metric label="Signals"   value={String(summary?.signalCount ?? 0)} />
           <Metric label="History"   value={String(summary?.historySize ?? 0)} />

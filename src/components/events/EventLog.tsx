@@ -90,10 +90,26 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
                   {slice.data.count} event{slice.data.count === 1 ? '' : 's'} · limit {slice.data.limit}
                 </span>
               )}
-              <ProvenanceBadge provenance="live" detail="/api/events" />
+              <ProvenanceBadge provenance="live" detail="/api/events" state={slice} />
             </span>
           }
         />
+      )}
+
+      {/* Embedded inside the System domain there is no PageHeader, so the
+          lineage badge and the log depth above had nowhere to render — measured
+          0 provenance badges on /system?view=events. They belong to THIS view
+          (not the domain header, which the Health tab shares), so they render
+          here whenever the header is absent. */}
+      {embedded && (
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <span className="t-metadata">
+            {slice.data && slice.data.count > 0
+              ? `${slice.data.count} event${slice.data.count === 1 ? '' : 's'} retained · limit ${slice.data.limit}`
+              : 'Engine event log'}
+          </span>
+          <ProvenanceBadge provenance="live" detail="/api/events" state={slice} />
+        </div>
       )}
 
       {/* Filters render unconditionally. They used to sit inside the `rows`

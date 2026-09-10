@@ -22,6 +22,7 @@ export function BiasBreakdown() {
       title="Bias Breakdown"
       provenance={b ? 'live' : 'idle'}
       source="/api/consensus/bias"
+      slice={slice}
       state={b ? 'live' : 'idle'}
     >
       <div className="flex flex-col gap-3">

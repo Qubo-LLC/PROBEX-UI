@@ -108,7 +108,14 @@ export function TopNavigation() {
       </div>
 
       {/* ── Centre region (col 2): command palette trigger (⌘K) ──────── */}
-      <div className="w-9 sm:w-[340px] md:w-[460px] max-w-full justify-self-center">
+      {/* Fluid with a ceiling, not a fixed width.
+          `md:w-[460px]` claimed a hard 460px starting at exactly 768px — the
+          tightest tablet width — leaving 122px per side column for the brand on
+          one side and BTC price + status chip + profile menu on the other. The
+          right column's contents then overlapped each other and the centre
+          (measured: status chip over session menu by 26×28px at 768×1024).
+          A max-width lets the palette take the space that is actually spare. */}
+      <div className="w-9 sm:w-full sm:max-w-[340px] md:max-w-[460px] min-w-0 justify-self-center">
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}

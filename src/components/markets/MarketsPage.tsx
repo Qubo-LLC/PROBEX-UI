@@ -89,8 +89,9 @@ export function MarketsPage({ embedded = false }: EmbeddableProps = {}) {
               <ProvenanceBadge
                 provenance={marketsUnavailable ? 'unreachable' : 'live'}
                 detail="/api/markets"
+                state={marketsSlice}
               />
-              <ProvenanceBadge provenance="live" detail="/api/edges" />
+              <ProvenanceBadge provenance="live" detail="/api/edges" state={edgesSlice} />
             </span>
           }
         />

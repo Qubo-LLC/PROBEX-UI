@@ -13,7 +13,6 @@ import { useApplicationStore } from '@/store/applicationStore'
 import { parseMarketRows } from '@/lib/mappers/markets'
 import { parseEdgeRows, toEdgeRowMap, type EdgeRow } from '@/lib/mappers/edges'
 import { MARKET_DETAIL_PATH } from '@/config/constants'
-import { SectionHeader } from './SectionHeader'
 import { MarketCard, MarketCardSkeleton } from '@/components/markets/MarketCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -44,7 +43,14 @@ export function FeaturedMarkets() {
 
   return (
     <section>
-      <SectionHeader title="Featured Markets" subtitle="Highest-liquidity markets — accented where the engine sees an edge" />
+      {/* The overview-only SectionHeader is retired: it declared its own
+          `text-sm font-semibold` scale, matching neither .t-section-title nor
+          .t-label, so Overview's two market sections were the only headings in
+          the product at that size. Same two semantic classes as everywhere. */}
+      <div className="mb-3">
+        <h3 className="t-section-title">Featured Markets</h3>
+        <p className="t-description mt-0.5">Highest-liquidity markets — accented where the engine sees an edge</p>
+      </div>
 
       {marketsSlice.status === 'loading' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

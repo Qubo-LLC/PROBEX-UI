@@ -12,17 +12,23 @@ import type { PositionRow } from '@/lib/mappers/positions'
 import type { EdgeRow } from '@/lib/mappers/edges'
 import { TableShell, Thead, Th, Tr, Td } from '@/components/shared/DataTable'
 import { EdgeBadge } from '@/components/shared/EdgeBadge'
+import { formatRuntime, positionCloseState } from '@/lib/display/positionDisplay'
+import { lifecycleLabel, formatCloseTime } from '@/lib/display/marketLifecycle'
 
 interface PositionTableProps {
   positions:   PositionRow[]
   edgeMap:     Map<string, EdgeRow>
+  /** marketId → closes_at. Missing entries mean "not in the engine's current
+   *  market cache", which renders as no claim rather than as "open". */
+  closesAtByMarketId?: Map<string, number | null>
   selectedId?: string | null
   onSelectRow?: (id: string) => void
   /** Phase 6A: tighter row height for the Positions tape. */
   dense?:      boolean
 }
 
-export function PositionTable({ positions, edgeMap, selectedId, onSelectRow, dense = false }: PositionTableProps) {
+export function PositionTable({ positions, edgeMap, closesAtByMarketId, selectedId, onSelectRow, dense = false }: PositionTableProps) {
+  const closes = closesAtByMarketId ?? new Map<string, number | null>()
   return (
     <TableShell label="Open positions">
       <Thead>
@@ -32,7 +38,8 @@ export function PositionTable({ positions, edgeMap, selectedId, onSelectRow, den
         <Th align="right" dense={dense}>Cost / Value</Th>
         <Th align="left" dense={dense}>Edge</Th>
         <Th align="right" dense={dense}>Unrealized P&L</Th>
-        <Th align="right" dense={dense}>Opened</Th>
+        <Th align="right" dense={dense}>Runtime</Th>
+        <Th align="left" dense={dense}>Market State</Th>
       </Thead>
       <tbody>
         {positions.map((p) => {
@@ -60,8 +67,39 @@ export function PositionTable({ positions, edgeMap, selectedId, onSelectRow, den
                   {p.unrealizedPnl !== null ? `${formatSignedCurrency(p.unrealizedPnl)}${p.unrealizedPnlPct !== null ? ` (${formatDelta(p.unrealizedPnlPct)})` : ''}` : '—'}
                 </span>
               </Td>
+              {/* RUNTIME — `time_held_seconds`, a field the contract has always
+                  carried and nothing displayed. The opened timestamp moves to
+                  the tooltip: how long it has been open is the operational
+                  question, the wall-clock moment is the reference. */}
               <Td align="right" dense={dense}>
-                <span className="tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{p.openedAt !== null ? new Date(p.openedAt).toLocaleTimeString() : '—'}</span>
+                <span
+                  className="tabular-nums"
+                  style={{ color: 'var(--probex-text-secondary)' }}
+                  {...(p.openedAt !== null ? { title: `Opened ${new Date(p.openedAt).toLocaleString()}` } : {})}
+                >
+                  {formatRuntime(p.timeHeldSeconds)}
+                </span>
+              </Td>
+              {/* Market state comes from a join that can miss; an unknown
+                  market renders as a dash, never as "open". */}
+              <Td align="left" dense={dense}>
+                {(() => {
+                  const cs = positionCloseState(p.marketId, closes)
+                  if (cs.lifecycle === 'unknown') {
+                    return <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }} title="This market is not in the engine's current market cache, so its close time is unknown.">—</span>
+                  }
+                  const tone =
+                    cs.lifecycle === 'closed' ? 'var(--probex-warning)'
+                    : cs.lifecycle === 'closing' ? 'var(--probex-warning)'
+                    : 'var(--probex-text-secondary)'
+                  return (
+                    <span className="text-2xs flex items-center gap-1.5" style={{ color: tone }}>
+                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: tone }} aria-hidden="true" />
+                      <span className="font-semibold">{lifecycleLabel(cs.lifecycle)}</span>
+                      <span style={{ color: 'var(--probex-text-disabled)' }}>{formatCloseTime(cs.closesAt)}</span>
+                    </span>
+                  )
+                })()}
               </Td>
             </Tr>
           )

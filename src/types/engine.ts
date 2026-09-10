@@ -123,6 +123,25 @@ export interface EngineConfigDTO {
   timestamp: string  // ISO 8601
 }
 
+/**
+ * Strategy filter parameters, confirmed live on /api/config 2026-09-09 and
+ * absent from EngineConfigInnerDTO until Stage 9.
+ *
+ * Optional, not required: an older engine build omits them, and the mapper
+ * degrades each to null rather than to a confident zero.
+ */
+export interface EngineConfigFilterFieldsDTO {
+  min_edge_yes?:             number
+  min_edge_no?:              number
+  min_volume?:               number
+  min_alignment?:            number
+  blocked_hours?:            number[]
+  edge_confirmation_count?:  number
+  early_exit_threshold?:     number
+  low_liquidity_start_hour?: number
+  low_liquidity_end_hour?:   number
+}
+
 // ─── /api/survival ────────────────────────────────────────────────────────────
 
 export interface SurvivalDTO {
@@ -278,6 +297,33 @@ export interface EngineConfig {
   dashboardApiHost:          string
   dashboardApiPort:          number
   logLevel:                  string
+
+  // ── Strategy filter parameters (confirmed live 2026-09-09) ────────────────
+  // Present on the wire, absent from this type until Stage 9. Nullable because
+  // an older engine build omits them, and because "not reported" must never
+  // render as a confident zero.
+  //
+  // ⚠️ The contract gives NAMES and VALUES. It does not document how the three
+  // edge thresholds compose, nor the units of min_alignment / early_exit_threshold.
+  // Consumers must present these as reported and must not assert a rule.
+  /** Minimum edge % required on the YES side. Observed 4. */
+  minEdgeYes:              number | null
+  /** Minimum edge % required on the NO side. Observed 3. */
+  minEdgeNo:               number | null
+  /** Minimum market volume to consider. Observed 5. */
+  minVolume:               number | null
+  /** Alignment gate. Observed −0.5. Unit/scale NOT documented. */
+  minAlignment:            number | null
+  /** Hours of day in which trading is blocked. Observed []. */
+  blockedHours:            number[] | null
+  /** Confirmations required before acting on an edge. Observed 1. */
+  edgeConfirmationCount:   number | null
+  /** Early-exit trigger. Observed −70. Unit NOT documented. */
+  earlyExitThreshold:      number | null
+  /** Low-liquidity window start hour. Observed 0. */
+  lowLiquidityStartHour:   number | null
+  /** Low-liquidity window end hour. Observed 0 (0/0 = no window). */
+  lowLiquidityEndHour:     number | null
 }
 
 export interface SurvivalStatus {
@@ -389,7 +435,10 @@ export interface ExecutionStatusDTO {
     total_trades:          number
     wins:                  number
     losses:                number
-    win_rate:              number   // 0–1
+    // 0–100 (percentage), matching every other win_rate this backend sends.
+    // Was annotated 0–1 while the live value sat at exactly 0 — see the note in
+    // toExecutionStatus (lib/services/dto.ts) for why that hid a real defect.
+    win_rate:              number   // 0–100
     total_pnl:             number
     active_positions:      number
     closed_positions:      number
@@ -782,7 +831,25 @@ export interface ConsensusInnerDTO {
   confidence:    number   // 0–1
   signal_count:  number
   signals:       ConsensusSignalsDTO
-  btc_price:     number
+  /**
+   * ⚠️ RENAMED BY THE BACKEND. This field was `btc_price`; the engine now sends
+   * `asset_price` alongside `asset_symbol` / `asset_category` — the consensus
+   * surface went multi-asset (BTC/ETH/SOL) and the name followed.
+   *
+   * Nothing caught it: a hand-written DTO for an external payload typechecks
+   * `c.btc_price` as `number` while the runtime value is `undefined`. It
+   * reached the UI as `undefined.toLocaleString()` and took the whole Strategy
+   * › Consensus page down through the error boundary. See the note on
+   * ConsensusHistoryPointDTO.
+   *
+   * `btc_price` is kept as an optional legacy fallback: it costs one `??` and
+   * this backend has renamed fields under us before.
+   */
+  asset_price:    number
+  asset_symbol?:  string   // 'BTC' observed
+  asset_category?: string  // 'crypto' observed
+  /** @deprecated Pre-multi-asset name. Absent on the live wire since 2026-09. */
+  btc_price?:     number
   interpretation: string  // e.g. "NEUTRAL" — only value observed so far
 }
 
@@ -816,7 +883,11 @@ export interface ConsensusReading {
   confidence:     number
   signalCount:    number
   signals:        ConsensusSignals
-  btcPrice:       number
+  /** Spot price of the asset this reading is about. Null when the engine
+   *  omitted it — a missing price must not render as 0 or crash a cell. */
+  assetPrice:     number | null
+  /** 'BTC' | 'ETH' | 'SOL' — null when not reported. */
+  assetSymbol:    string | null
   interpretation: string
 }
 
@@ -914,7 +985,14 @@ export interface ConsensusHistoryPointDTO {
   timestamp:  string  // ISO 8601
   score:      number
   confidence: number
-  btc_price:  number
+  /** ⚠️ Renamed from `btc_price` — see ConsensusInnerDTO.asset_price. This
+   *  rename is what crashed HistoricalSnapshots via
+   *  `undefined.toLocaleString()`. */
+  asset_price:     number
+  asset_symbol?:   string
+  asset_category?: string
+  /** @deprecated Pre-multi-asset name. Absent on the live wire since 2026-09. */
+  btc_price?:      number
 }
 
 export interface ConsensusHistoryDTO {
@@ -927,7 +1005,9 @@ export interface ConsensusHistoryPoint {
   ts:         number  // epoch ms
   score:      number
   confidence: number
-  btcPrice:   number
+  /** Null when the engine omitted it — never zero-filled. */
+  assetPrice:  number | null
+  assetSymbol: string | null
 }
 
 export interface ConsensusHistory {
@@ -1328,6 +1408,13 @@ export interface PaperStatusDTO {
   enabled:          boolean
   pending_trades:   number
   completed_trades: number
+  // Both confirmed present on the live wire 2026-09-07 (total_pnl 0,
+  // win_rate 74.6) and previously undeclared, so the adapter dropped them.
+  // They agree with /api/paper-stats for the same session, which makes this
+  // endpoint a complete paper-session summary on its own rather than a
+  // counts-only probe.
+  total_pnl:        number
+  win_rate:         number  // 0–100 (percentage, confirmed — 74.6 matches paper-stats)
   timestamp:        string  // ISO 8601
 }
 
@@ -1336,6 +1423,9 @@ export interface PaperStatus {
   enabled:         boolean
   pendingTrades:   number
   completedTrades: number
+  totalPnl:        number
+  /** 0–1, normalised from the wire's 0–100. */
+  winRate:         number
   timestamp:       number  // epoch ms
 }
 
@@ -1539,6 +1629,89 @@ export interface MarketPriceHistory {
   timestamp: number  // epoch ms
 }
 
+// ─── /api/markets/:market_id ──────────────────────────────────────────────────
+//
+// Confirmed live 2026-09-07: 200 on 4/4 attempts, ~1.2s, 32.7KB, carrying the
+// market AND 100 history points in a single response.
+//
+// This route was marked 'backend-error' ("Still broken: hangs with no
+// response") in the endpoint registry, and MarketDetailPage carried the comment
+// "No single-market-by-id endpoint exists". Both were true when written and
+// neither was re-probed. The consequence: market detail looked the market up
+// inside the /api/markets envelope, which only contains what the engine is
+// scanning right now — so a closed or expired market could not be displayed at
+// all, and a 32KB single-call payload was being reassembled from two other
+// endpoints.
+//
+// A 404 is a normal, frequent outcome here rather than a fault: these are
+// 5-minute markets and ids expire constantly. `{"detail":"Market X not found"}`
+// — confirmed shape.
+
+export interface MarketDetailItemDTO {
+  id:                    string
+  question:              string
+  baseline_price:        number
+  baseline_price_source: string   // e.g. "feed"
+  yes_token_id:          string
+  no_token_id:           string
+  yes_price:             number   // 0–1
+  no_price:              number   // 0–1
+  created_at:            string   // ISO 8601
+  closes_at:             string   // ISO 8601
+  volume:                number
+  duration_minutes:      number
+  /** Engine's own tier ranking for the market. Confirmed present 2026-09-07. */
+  market_tier:           number
+  /** 'crypto' observed; the engine's category vocabulary spans six values —
+   *  see /api/performance/by-category. */
+  asset_category:        string
+}
+
+export interface MarketDetailDTO {
+  available:     boolean
+  market:        MarketDetailItemDTO
+  history:       MarketHistoryPointDTO[]
+  history_count: number
+  timestamp:     string  // ISO 8601
+}
+
+export interface MarketDetailItem {
+  id:                  string
+  question:            string
+  baselinePrice:       number
+  baselinePriceSource: string
+  yesTokenId:          string
+  noTokenId:           string
+  /** 0–1 probability, as the wire sends it. */
+  yesPrice:            number
+  noPrice:             number
+  createdAt:           number  // epoch ms
+  closesAt:            number  // epoch ms
+  volume:              number
+  durationMinutes:     number
+  marketTier:          number
+  assetCategory:       string
+  /**
+   * True when `closesAt` is in the past.
+   *
+   * Derived here rather than in a component because it is the frontend's only
+   * confirmed signal for D-4: the engine's /api/health reports `api_access`
+   * unhealthy with "Market data stale (24623.8s old, 10 markets cached)", but
+   * /api/markets and this route both return those cached markets with no
+   * staleness field of their own. `closes_at` IS on the wire, so expiry is
+   * computable from confirmed data without inventing anything.
+   */
+  hasClosed:           boolean
+}
+
+export interface MarketDetail {
+  available:    boolean
+  market:       MarketDetailItem
+  history:      MarketHistoryPoint[]
+  historyCount: number
+  timestamp:    number  // epoch ms
+}
+
 // ─── Settled trades (shared by /api/trades/ledger and /api/positions/history) ──
 // Both endpoints return an IDENTICAL item shape — confirmed live 2026-07-25.
 // One domain type serves both; ledger additionally carries a `summary`.
@@ -1556,6 +1729,13 @@ export interface SettledTradeDTO {
   opened_at:         string        // ISO 8601
   closed_at:         string        // ISO 8601
   won:               boolean
+
+  // Confirmed live 2026-09-09. The settled wire carries the same three
+  // descriptive fields as the open-position wire; neither DTO declared them,
+  // which is why the blotter had only a hex id to show as the market.
+  asset_category:    string
+  asset_symbol:      string
+  duration_minutes:  number
 }
 
 export interface SettledTrade {
@@ -1571,6 +1751,9 @@ export interface SettledTrade {
   openedAt:        number   // epoch ms
   closedAt:        number   // epoch ms
   won:             boolean
+  assetCategory:   string | null
+  assetSymbol:     string | null
+  durationMinutes: number | null
 }
 
 // ─── Mutation responses ───────────────────────────────────────────────────────

@@ -24,6 +24,13 @@ const config: Config = {
         "surface-1":      "var(--probex-surface)",
         "surface-2":      "var(--probex-surface-2)",
         "surface-3":      "var(--probex-surface-3)",
+        // New steps. surface-lowest is the RECESSED plane (table headers,
+        // input troughs, probe rows) that the ladder never had; surface-raised
+        // is a name for the existing surface-2 value so call sites can migrate
+        // gradually; surface-overlay is the modal/palette plane.
+        "surface-lowest": "var(--probex-surface-lowest)",
+        "surface-raised": "var(--probex-surface-raised)",
+        "surface-overlay":"var(--probex-surface-overlay)",
 
         // Border system
         "border-subtle":  "var(--probex-border)",
@@ -40,6 +47,18 @@ const config: Config = {
         // Semantic
         "yes":            "var(--probex-yes)",
         "no":             "var(--probex-no)",
+        // Ink for text placed ON a filled accent. Per theme, because the
+        // correct ink flips with the accent's luminance.
+        "on-accent":      "var(--probex-on-accent)",
+        "on-yes":         "var(--probex-on-yes)",
+        "on-no":          "var(--probex-on-no)",
+        // The six data states must never collapse into one another, so each
+        // gets its own token rather than borrowing positive/warning/muted.
+        "status-live":      "var(--probex-status-live)",
+        "status-stale":     "var(--probex-status-stale)",
+        "status-degraded":  "var(--probex-status-degraded)",
+        "status-offline":   "var(--probex-status-offline)",
+        "status-synthetic": "var(--probex-status-synthetic)",
         "positive":       "var(--probex-positive)",
         "negative":       "var(--probex-negative)",
         "warning":        "var(--probex-warning)",
@@ -68,7 +87,10 @@ const config: Config = {
       },
 
       fontSize: {
-        "2xs": ["0.625rem", { lineHeight: "1rem" }],
+        // 11px floor. Was 0.625rem/10px, and 231 call sites use it for
+        // provenance, freshness, endpoint paths and circuit state — meaning
+        // carried below the size at which it can be read reliably.
+        "2xs": ["0.6875rem", { lineHeight: "1rem" }],
         xs:    ["0.75rem",  { lineHeight: "1rem" }],
         sm:    ["0.8125rem", { lineHeight: "1.25rem" }],
         base:  ["0.875rem", { lineHeight: "1.5rem" }],
@@ -94,14 +116,18 @@ const config: Config = {
       },
 
       // ─── Border Radius ───────────────────────────────────────────────────
+      // Three steps in use, seven declared. The keys are KEPT (removing them
+      // would break 68 rounded-lg call sites for no gain) and re-valued onto
+      // the three-step system instead: 4px sub-components, 6px panels and
+      // chart frames, 8px modals and overlays, rounded-full for telemetry dots.
       borderRadius: {
-        DEFAULT: "6px",
-        sm:      "4px",
-        md:      "8px",
-        lg:      "10px",
-        xl:      "12px",
-        "2xl":   "16px",
-        "3xl":   "20px",
+        DEFAULT: "6px",   // panels, chart frames, table shells
+        sm:      "4px",   // badges, chips, inputs, buttons
+        md:      "8px",   // modals, palette, overlays
+        lg:      "6px",   // was 10px -> panel step
+        xl:      "8px",   // was 12px -> overlay step
+        "2xl":   "8px",   // was 16px
+        "3xl":   "8px",   // was 20px
       },
 
       // ─── Animation ───────────────────────────────────────────────────────
@@ -125,8 +151,10 @@ const config: Config = {
       // drop shadow with an inset top highlight so surfaces read as milled
       // rather than blurred. Tokens live in styles/probex-tokens.css.
       boxShadow: {
-        "surface": "0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px var(--probex-border)",
-        "surface-lg": "0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px var(--probex-border)",
+        // `surface` / `surface-lg` were removed here: they were a SECOND
+        // elevation vocabulary competing with the canonical elev-* scale,
+        // and elev-* is the one that pairs a drop shadow with an inset top
+        // highlight (the milled-panel look). Do not reintroduce them.
         "elev-1": "var(--probex-elev-1)",
         "elev-2": "var(--probex-elev-2)",
         "elev-3": "var(--probex-elev-3)",

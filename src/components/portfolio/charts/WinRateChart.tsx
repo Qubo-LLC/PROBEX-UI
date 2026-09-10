@@ -29,7 +29,8 @@ export function WinRateChart({ height = 160 }: { height?: number }) {
       variant="area"
       height={height}
       bare
-      color="var(--probex-yes)"
+      // --probex-yes is the MARKET-SIDE band. A win rate is not a YES.
+      color="var(--probex-primary)"
       yTickFormatter={(v) => `${Math.round(v * 100)}%`}
       valueFormatter={(v) => `${(v * 100).toFixed(1)}%`}
     />

@@ -16,10 +16,13 @@ import { DomainPage } from '@/components/layout/DomainPage'
 import { MarketsPage } from './MarketsPage'
 import { MarketsArchive } from './MarketsArchive'
 import { WatchlistPage } from '@/components/watchlist/WatchlistPage'
+import { ProvenanceScope } from '@/components/shared/ProvenanceScope'
+import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
 import type { TabDef } from '@/components/ui/Tabs'
 
 export function MarketsDomain() {
   const marketsSlice = useApplicationStore((s) => s.engine.markets)
+  const edgesSlice   = useApplicationStore((s) => s.engine.edges)
   const watchlist    = usePreferencesStore((s) => s.watchlist)
 
   const liveCount    = marketsSlice.status === 'success' ? marketsSlice.data?.count ?? 0 : 0
@@ -32,15 +35,33 @@ export function MarketsDomain() {
   ]
 
   return (
+    // Markets is an intelligence surface: it answers which markets matter, not
+    // which endpoint produced the row. Every badge keeps its word and moves the
+    // path to its tooltip and accessible name. One declaration covers all three
+    // views, because they render inside this component.
+    <ProvenanceScope detail="tooltip">
     <DomainPage
       title="Markets"
       subtitle="Bitcoin 5-minute markets — live scanning, your watchlist, and the historical archive"
       tabs={tabs}
+      actions={
+        <span className="flex items-center gap-3">
+          {/* Lineage tracks THIS endpoint, not the app as a whole: a
+              markets-only outage must not sit under a green LIVE badge. */}
+          <ProvenanceBadge
+            provenance={marketsSlice.status === 'error' ? 'unreachable' : 'live'}
+            detail="/api/markets"
+            state={marketsSlice}
+          />
+          <ProvenanceBadge provenance="live" detail="/api/edges" state={edgesSlice} />
+        </span>
+      }
       render={(active) => {
         if (active === 'watchlist') return <WatchlistPage embedded />
         if (active === 'archive')   return <MarketsArchive />
         return <MarketsPage embedded />
       }}
     />
+    </ProvenanceScope>
   )
 }

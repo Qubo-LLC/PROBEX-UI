@@ -22,10 +22,15 @@ export function useSystemStatus(): SystemStatus {
   const stats = useApplicationStore((s) => s.engine.stats)
   const identity = useApplicationStore((s) => s.engine.identity)
   const survival = useApplicationStore((s) => s.engine.survival)
-  // Not a data slice — a clock. Every store write bumps it, so subscribing here
-  // is what makes the circuit-breaker read below refresh on the polling cadence
-  // instead of freezing at whatever it was on mount.
-  const lastRefreshed = useApplicationStore((s) => s.lastRefreshed)
+  // The whole endpoint map — used both as the staleness source below and as the
+  // clock that keeps the circuit-breaker read current.
+  //
+  // `lastRefreshed` used to serve as that clock, and cannot any more: it now
+  // advances only on a SUCCESSFUL refresh (see applicationStore), so during an
+  // outage it deliberately freezes — which is exactly when the breaker snapshot
+  // most needs to keep updating. `engine` changes on every store write, outage
+  // included, so it provides the same cadence the clock used to.
+  const engine = useApplicationStore((s) => s.engine)
 
   const healthStatus = health.data?.status ?? null
   const engineMode = identity.data?.mode ?? null
@@ -54,7 +59,23 @@ export function useSystemStatus(): SystemStatus {
   // first paint the map is empty, so SSR and hydration agree.
   const stalledEndpoints = useMemo(
     () => circuitSnapshot().filter((c) => c.open).length,
-    [lastRefreshed],
+    [engine],
+  )
+
+  // Slices showing retained data because their last refresh failed.
+  //
+  // 2026-09-07: this is the signal the comment above says the store could not
+  // provide. It can now — ServiceState carries `isStale` — and it covers a case
+  // the breaker structurally cannot: the breaker only counts failures that cost
+  // the backend a worker (no response at all), so an endpoint answering 500
+  // promptly never trips it while its data goes just as stale.
+  //
+  // Counted across the whole store rather than a chosen subset: any endpoint
+  // that stops refreshing is worth one line in the top-nav chip, and hand-picking
+  // which ones "matter" is how a silent failure gets built in.
+  const staleEndpoints = useMemo(
+    () => Object.values(engine).filter((slice) => slice.isStale).length,
+    [engine],
   )
 
   return useMemo(
@@ -67,7 +88,8 @@ export function useSystemStatus(): SystemStatus {
         isUnreachable,
         unhealthyProbes,
         stalledEndpoints,
+        staleEndpoints,
       }),
-    [runtime, healthStatus, engineMode, isLoading, isUnreachable, unhealthyProbes, stalledEndpoints],
+    [runtime, healthStatus, engineMode, isLoading, isUnreachable, unhealthyProbes, stalledEndpoints, staleEndpoints],
   )
 }

@@ -39,16 +39,22 @@ export function PortfolioOverview() {
 
   const totalValue = openPositions.reduce((s, p) => s + (p.currentValue ?? 0), 0)
 
+  // Grouped by UNDERLYING, not by segment. `asset_category` is 'crypto' for
+  // every position the engine currently takes, so a category breakdown is a
+  // single 100% row that tells the reader nothing; `asset_symbol` (BTC, ETH)
+  // is the axis on which this account actually has different exposures.
+  // Before Stage 6 this grouped on `segment`, which the mapper hardcoded to
+  // null — so the card always rendered one "Unknown segment · 100%" row.
   const exposure = useMemo(() => {
-    const bySegment = new Map<string, number>()
+    const byAsset = new Map<string, number>()
     for (const p of openPositions) {
-      const key = p.segment ?? 'unknown'
-      bySegment.set(key, (bySegment.get(key) ?? 0) + (p.currentValue ?? 0))
+      const key = p.assetSymbol ?? p.segment ?? 'Unknown'
+      byAsset.set(key, (byAsset.get(key) ?? 0) + (p.currentValue ?? 0))
     }
-    return [...bySegment.entries()]
+    return [...byAsset.entries()]
       .map(([segment, value]) => ({ segment, value, pct: totalValue > 0 ? value / totalValue : 0 }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 3)
+      .slice(0, 4)
   }, [openPositions, totalValue])
 
   const alignment = useMemo(() => {
@@ -98,8 +104,9 @@ export function PortfolioOverview() {
               {exposure.map((slice, i) => (
                 <div key={slice.segment} className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: SEGMENT_COLORS[i % SEGMENT_COLORS.length] }} aria-hidden="true" />
-                  <span className="text-xs flex-1 truncate" style={{ color: 'var(--probex-text-secondary)' }}>{segmentLabel(slice.segment) ?? 'Unknown segment'}</span>
-                  <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{Math.round(slice.pct * 100)}%</span>
+                  <span className="text-xs flex-1 truncate" style={{ color: 'var(--probex-text-secondary)' }}>{segmentLabel(slice.segment) ?? 'Unknown'}</span>
+                  <span className="text-xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{formatCurrency(slice.value)}</span>
+                  <span className="text-xs font-semibold tabular-nums w-10 text-right" style={{ color: 'var(--probex-text-primary)' }}>{Math.round(slice.pct * 100)}%</span>
                 </div>
               ))}
             </div>

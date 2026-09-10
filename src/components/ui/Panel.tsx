@@ -28,6 +28,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Card } from './Card'
 import { ProvenanceBadge, type Provenance } from '@/components/shared/ProvenanceBadge'
+import { FreshnessIndicator } from '@/components/shared/FreshnessIndicator'
+import type { ServiceState } from '@/lib/services/response'
 
 // ─── Panel shell ──────────────────────────────────────────────────────────────
 
@@ -42,6 +44,19 @@ interface PanelProps {
   subtitle?: ReactNode
   /** Data lineage for the panel as a whole. */
   provenance?: Provenance
+  /**
+   * The slice feeding this panel. Optional, and purely for truthfulness: when
+   * supplied, a `live` provenance claim is downgraded to `stale` while the
+   * slice is stale, and a freshness line is rendered beside the badge.
+   *
+   * Without it a panel keeps rendering a green LIVE dot over a reading the
+   * engine stopped sending — which is the contradiction the lineage grammar
+   * exists to prevent, and which end-to-end fault injection on 2026-09-07
+   * confirmed was happening.
+   */
+  slice?: ServiceState<unknown>
+  /** Poll cadence for this panel's slice, when known — enables 'aging'. */
+  sliceIntervalMs?: number
   /** Endpoint id shown beside the badge. */
   source?: string
   /** Optional status chip / control in the header's right slot. */
@@ -101,9 +116,13 @@ interface PanelProps {
 
 export type PanelState = 'live' | 'idle' | 'attention' | 'unavailable'
 
+// Horizontal padding exceeds vertical. Panels are built from label -> value
+// rows, and a row needs room at its ends more than above and below; symmetric
+// padding spends vertical space the figures could be using.
+// dense 6/10, standard 12/16, focal 20.
 const DENSITY_PADDING = {
-  standard: 'p-4',
-  dense:    'p-3',
+  standard: 'py-3 px-4',
+  dense:    'py-1.5 px-2.5',
   focal:    'p-5',
 } as const
 
@@ -149,6 +168,8 @@ export function Panel({
   recessed = false,
   state = 'live',
   updateKey,
+  slice,
+  sliceIntervalMs,
 }: PanelProps) {
   // One-shot ring when the watched value actually changes. Skipped on the first
   // render: a panel appearing is not a value changing, and flashing every panel
@@ -188,10 +209,26 @@ export function Panel({
           <h3 className="t-card-title">{title}</h3>
           {subtitle && <p className="t-helper">{subtitle}</p>}
         </div>
-        <span className="flex items-center gap-2 flex-shrink-0">
+        {/* `flex-wrap` and a dropped `flex-shrink-0`: adding the freshness line
+            gave this row a third and sometimes fourth item, and at panel width
+            (four across on Overview) a non-shrinking row overlapped the title
+            instead of yielding. Wrapping puts the freshness line under the badge
+            rather than through the heading. `justify-end` keeps a wrapped row
+            right-aligned under the badge it belongs to. */}
+        <span className="flex items-center justify-end gap-x-2 gap-y-0.5 flex-wrap min-w-0">
           {action}
           {provenance && (
-            <ProvenanceBadge provenance={provenance} {...(source !== undefined && { detail: source })} />
+            <ProvenanceBadge
+              provenance={provenance}
+              {...(source !== undefined && { detail: source })}
+              {...(slice !== undefined && { state: slice })}
+            />
+          )}
+          {slice !== undefined && (
+            <FreshnessIndicator
+              state={slice}
+              {...(sliceIntervalMs !== undefined && { expectedIntervalMs: sliceIntervalMs })}
+            />
           )}
         </span>
       </div>

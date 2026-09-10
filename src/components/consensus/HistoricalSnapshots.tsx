@@ -29,7 +29,7 @@ export function HistoricalSnapshots() {
           <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Historical Snapshots</h2>
           <p className="text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>Consensus state at key points in the recent window</p>
         </div>
-        <ProvenanceBadge provenance="live" detail="/api/consensus/history" />
+        <ProvenanceBadge provenance="live" detail="/api/consensus/history" state={slice} />
       </div>
 
       {rows.length === 0 ? (
@@ -51,8 +51,17 @@ export function HistoricalSnapshots() {
                 </span>
                 <span className="text-sm font-bold tabular-nums w-12 flex-shrink-0" style={{ color: scoreColor }}>{row.score.toFixed(2)}</span>
                 <span className="text-xs tabular-nums w-12 flex-shrink-0" style={{ color: 'var(--probex-text-secondary)' }}>{Math.round(row.confidence * 100)}%</span>
+                {/* One missing field must degrade one cell, not the page.
+                    `row.btcPrice.toLocaleString()` threw here when the engine
+                    renamed btc_price → asset_price, and the TypeError took the
+                    whole Strategy › Consensus route down through the error
+                    boundary ("This page hit a snag"). The value is now nullable
+                    at the type level, so this branch is enforced rather than
+                    remembered. */}
                 <span className="text-2xs font-semibold px-2 py-0.5 rounded flex-shrink-0 tabular-nums" style={{ background: 'var(--probex-surface-2)', color: 'var(--probex-text-muted)' }}>
-                  ${row.btcPrice.toLocaleString()}
+                  {row.assetPrice !== null
+                    ? `${row.assetSymbol ? `${row.assetSymbol} ` : '$'}${row.assetPrice.toLocaleString()}`
+                    : '—'}
                 </span>
               </div>
             )

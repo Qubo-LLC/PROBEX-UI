@@ -10,7 +10,8 @@
 // out from the field — the hybrid identity, expressed with real data only.
 // Numbers are mono (technical identity); a skeleton covers the loading state.
 
-import { formatCompact, probabilityColorVar } from '@/lib/utils'
+import { formatCompact } from '@/lib/utils'
+import { marketLifecycle, formatCloseTime, closeTimestamp, lifecycleLabel } from '@/lib/display/marketLifecycle'
 import { segmentLabel } from '@/lib/display/market'
 import type { MarketRow } from '@/lib/mappers/markets'
 import type { EdgeRow } from '@/lib/mappers/edges'
@@ -71,11 +72,15 @@ export function MarketCard({ market, edge, variant = 'grid', onClick, className 
   if (variant === 'list') return <ListRow market={market} edge={edge} onClick={onClick} className={className} />
 
   const category = segmentLabel(market.segment)
-  const yesColor = market.probability !== null ? probabilityColorVar(market.probability) : 'var(--probex-text-muted)'
   const accent   = edgeAccent(edge)
-  const closes   = market.closesAt !== null
-    ? new Date(market.closesAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    : null
+
+  // Lifecycle from the real closes_at. A market that has already resolved is
+  // still returned by /api/markets — the forensic audit caught one being served
+  // half an hour after it closed — so the card has to say so rather than
+  // present it as an ordinary opportunity.
+  const life   = marketLifecycle(market.closesAt)
+  const closed = life === 'closed'
+  const closes = formatCloseTime(market.closesAt)
 
   return (
     <div
@@ -83,21 +88,39 @@ export function MarketCard({ market, edge, variant = 'grid', onClick, className 
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(market.id) } : undefined}
-      className={`flex flex-col gap-2.5 p-3.5 focus-ring ${onClick ? 'card-interactive' : 'card'} ${className}`}
+      className={`flex flex-col gap-2.5 p-3.5 focus-ring ${onClick && !closed ? 'card-interactive' : 'card'} ${className}`}
+      // A resolved market is not an opportunity. It stays readable and stays
+      // reachable (its history is still worth opening), but it loses the raised
+      // interactive treatment so it cannot be mistaken for a live candidate.
+      aria-describedby={undefined}
       // Engine-edge accent: a top border in the edge colour when the AI is
       // acting on this market. Inline so it survives the hover border change.
       style={accent ? { borderTop: `2px solid ${accent}` } : undefined}
     >
       {/* Top: category tag + watchlist */}
       <div className="flex items-center justify-between gap-2">
-        {category ? (
-          <span
-            className="text-2xs font-bold uppercase tracking-wider rounded-full px-2 py-0.5"
-            style={{ color: 'var(--probex-primary)', background: 'var(--probex-primary-dim)', border: '1px solid var(--probex-yes-border)' }}
-          >
-            {category}
-          </span>
-        ) : <span />}
+        <span className="flex items-center gap-1.5 min-w-0">
+          {category && (
+            <span
+              className="text-2xs font-bold uppercase tracking-wider rounded-sm px-2 py-0.5"
+              // The border was --probex-yes-border: the MARKET-SIDE token, on a
+              // category tag that has nothing to do with a market side. Brand
+              // text now carries a brand-tinted edge.
+              style={{ color: 'var(--probex-primary)', background: 'var(--probex-primary-dim)', border: '1px solid var(--probex-border-active)' }}
+            >
+              {category}
+            </span>
+          )}
+          {closed && (
+            <span
+              className="text-2xs font-bold uppercase tracking-wider rounded-sm px-2 py-0.5"
+              style={{ color: 'var(--probex-text-muted)', background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}
+              title={closeTimestamp(market.closesAt)}
+            >
+              {lifecycleLabel(life)}
+            </span>
+          )}
+        </span>
         <WatchlistButton marketId={market.id} />
       </div>
 
@@ -111,7 +134,7 @@ export function MarketCard({ market, edge, variant = 'grid', onClick, className 
 
       {/* YES / NO bars */}
       {market.probability !== null ? (
-        <ProbBars prob={market.probability} color={yesColor} />
+        <ProbBars prob={market.probability} />
       ) : (
         <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>Awaiting price data</p>
       )}
@@ -119,14 +142,20 @@ export function MarketCard({ market, edge, variant = 'grid', onClick, className 
       {edge && <EngineStrip edge={edge} />}
 
       {/* Footer: volume + closes */}
-      {(market.volume24h !== null || closes) && (
-        <div className="flex items-center justify-between text-2xs pt-2" style={{ borderTop: '1px solid var(--probex-border)', color: 'var(--probex-text-muted)' }}>
-          {market.volume24h !== null ? (
-            <span>Vol <strong className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>${formatCompact(market.volume24h)}</strong></span>
-          ) : <span />}
-          {closes && <span>Closes <strong className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>{closes}</strong></span>}
-        </div>
-      )}
+      <div className="flex items-center justify-between text-2xs pt-2" style={{ borderTop: '1px solid var(--probex-border)', color: 'var(--probex-text-muted)' }}>
+        {market.volume24h !== null ? (
+          <span>Vol <strong className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>${formatCompact(market.volume24h)}</strong></span>
+        ) : <span />}
+        {/* "Sep 9" told an operator nothing about a 15-minute market — every one
+            of them closes today. Time remaining is the fact that matters. */}
+        <span
+          className="font-mono tabular-nums"
+          style={{ color: closed ? 'var(--probex-text-disabled)' : 'var(--probex-text-secondary)' }}
+          title={closeTimestamp(market.closesAt)}
+        >
+          {closes}
+        </span>
+      </div>
     </div>
   )
 }
@@ -177,7 +206,9 @@ function ListRow({ market, edge, onClick, className }: { market: MarketRow; edge
       </div>
       <div className="flex items-center gap-4 flex-shrink-0">
         {market.probability !== null && (
-          <span className="text-base font-bold font-mono tabular-nums" style={{ color: probabilityColorVar(market.probability) }}>
+          // Same correction as the grid card: the YES price is a market side,
+          // not a financial direction.
+          <span className="text-base font-bold font-mono tabular-nums" style={{ color: 'var(--probex-yes)' }}>
             {Math.round(market.probability * 100)}¢
           </span>
         )}
@@ -187,24 +218,37 @@ function ListRow({ market, edge, onClick, className }: { market: MarketRow; edge
   )
 }
 
-function ProbBars({ prob, color }: { prob: number; color: string }) {
+/**
+ * The two market sides, in the two market-side colours.
+ *
+ * This previously coloured the YES row with probabilityColorVar(), which
+ * returns --probex-positive above 65c, --probex-warning above 45c and
+ * --probex-negative below it. So a YES at 70c was green and a YES at 30c was
+ * red: the FINANCIAL-DIRECTION band painting a MARKET SIDE. A cheap YES is not
+ * a loss, and the same card's EngineStrip was already using --probex-yes /
+ * --probex-no correctly two elements away.
+ *
+ * NO had no colour at all — it borrowed text-muted while --probex-no existed
+ * and was in use elsewhere. Both sides now use their own token, in every theme.
+ */
+function ProbBars({ prob }: { prob: number }) {
   const pct = Math.round(prob * 100)
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-1.5">
-        <span className="text-2xs font-bold tracking-wider w-6" style={{ color }}>YES</span>
-        <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }}>
-          <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color }} />
-        </div>
-        <span className="text-2xs font-bold font-mono w-8 text-right tabular-nums" style={{ color }}>{pct}¢</span>
+      <SideBar label="YES" cents={pct} color="var(--probex-yes)" />
+      <SideBar label="NO" cents={100 - pct} color="var(--probex-no)" />
+    </div>
+  )
+}
+
+function SideBar({ label, cents, color }: { label: string; cents: number; color: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-2xs font-bold tracking-wider w-6" style={{ color }}>{label}</span>
+      <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-surface-2)' }}>
+        <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${cents}%`, background: color }} />
       </div>
-      <div className="flex items-center gap-1.5">
-        <span className="text-2xs font-bold tracking-wider w-6" style={{ color: 'var(--probex-text-muted)' }}>NO</span>
-        <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }}>
-          <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${100 - pct}%`, background: 'var(--probex-text-disabled)' }} />
-        </div>
-        <span className="text-2xs font-bold font-mono w-8 text-right tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{100 - pct}¢</span>
-      </div>
+      <span className="text-2xs font-bold font-mono w-8 text-right tabular-nums" style={{ color }}>{cents}¢</span>
     </div>
   )
 }

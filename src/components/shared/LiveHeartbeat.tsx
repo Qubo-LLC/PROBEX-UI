@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
+import { formatAge } from '@/lib/display/freshness'
 
 export function LiveHeartbeat() {
   const lastRefreshed = useApplicationStore((s) => s.lastRefreshed)
@@ -22,8 +23,12 @@ export function LiveHeartbeat() {
 
   if (lastRefreshed === null) return null
 
-  const seconds = Math.max(0, Math.floor((Date.now() - lastRefreshed) / 1000))
-  const label = seconds < 2 ? 'just now' : `${seconds}s ago`
+  const ageMs   = Math.max(0, Date.now() - lastRefreshed)
+  const seconds = Math.floor(ageMs / 1_000)
+  // Shared with every per-panel FreshnessIndicator so the top nav and the
+  // panels below it phrase the same fact the same way — and so a long outage
+  // reads "8m ago" rather than an unbounded "487s ago".
+  const label = formatAge(ageMs)
   const fresh = seconds < 3
 
   return (

@@ -29,7 +29,11 @@ import type {
   PerformanceByCategoryDTO, PerformanceByAssetDTO, PerformanceBuckets,
   MarketMakerMetricsDTO, MarketMakerMetrics,
 } from '@/types/quant'
-import { isKalmanInitialised } from '@/types/quant'
+import { isKalmanInitialised, probabilitiesArePartition } from '@/types/quant'
+
+/** win_rate is 0–100 on the wire everywhere; normalize to the 0–1 convention
+ *  every domain type in this app uses. Mirrors dto.ts's helper. */
+const pctToFraction = (pct: number): number => pct / 100
 
 /** ISO 8601 → epoch ms. Mirrors dto.ts's helper; NaN-safe for absent values. */
 function isoToMs(iso: string | undefined | null): number {
@@ -72,6 +76,10 @@ export function toKalmanAssetState(symbol: string, dto: KalmanAssetStateDTO): Ka
     marketMaker:              toMarketMaker(dto.market_maker_metrics),
     timestamp:                isoToMs(dto.timestamp),
     initialised:              isKalmanInitialised(dto.regime),
+    // Computed here, once, so no consumer has to remember that these two do
+    // not sum to 1 (live: 0.88 + 0.20 = 1.08). See the field docs on
+    // KalmanAssetState.probabilityYes.
+    probabilitiesArePartition: probabilitiesArePartition(dto.probability_yes, dto.probability_no),
   }
 }
 
@@ -290,9 +298,21 @@ function toPerformanceBucket(key: string, dto: PerformanceBucketDTO): Performanc
     wins:            dto.wins,
     losses:          dto.losses,
     totalPnl:        dto.total_pnl,
-    // The wire already sends a 0–1 fraction here (unlike /api/paper-stats,
-    // which sends 0–100) — confirmed against the live payload, so no scaling.
-    winRate:         dto.win_rate,
+    // 2026-09-07 CORRECTION. The comment that stood here claimed "the wire
+    // already sends a 0–1 fraction (unlike /api/paper-stats) — confirmed
+    // against the live payload, so no scaling". That confirmation was made
+    // when every category bucket was empty, so every win_rate was 0 — a value
+    // that is identical in both conventions and therefore confirms neither.
+    //
+    // The live payload now reads `categories.crypto.win_rate: 74.6`, matching
+    // /api/paper-stats' 74.6 for the same trades. It is a percentage like every
+    // other win_rate this backend sends, and rendering it unscaled would have
+    // printed 7460%.
+    //
+    // Worth noting as a method point: a zero cannot confirm a unit. Fields were
+    // re-derived against a populated payload rather than trusted to the earlier
+    // note.
+    winRate:         pctToFraction(dto.win_rate),
     avgEdgePct:      dto.avg_edge_pct,
     activePositions: dto.active_positions,
     closedPositions: dto.closed_positions,

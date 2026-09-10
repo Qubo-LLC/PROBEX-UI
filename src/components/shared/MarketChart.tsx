@@ -52,6 +52,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   createChart, AreaSeries, ColorType, CrosshairMode, LineType,
+  type IPriceLine,
   type IChartApi, type ISeriesApi, type UTCTimestamp,
 } from 'lightweight-charts'
 import { ChartFrame, type ChartState, type ChartVariant } from './ChartFrame'
@@ -86,8 +87,11 @@ function readTokens() {
     upDim:   v('--probex-positive-dim', 'rgba(16,185,129,0.15)'),
     downDim: v('--probex-negative-dim', 'rgba(239,68,68,0.15)'),
     grid:    v('--probex-chart-grid', 'rgba(255,255,255,0.05)'),
-    axis:    v('--probex-chart-axis', 'rgba(255,255,255,0.2)'),
+    // --probex-chart-axis is no longer read: axis borders are hidden on both
+    // stacks now (recharts already set axisLine={false}). Kept in the token file
+    // for any future chart that wants a visible rule.
     text:    v('--probex-text-muted', '#8891a5'),
+    cross:   v('--probex-border-strong', 'rgba(255,255,255,0.22)'),
     mono:    v('--font-mono', 'monospace'),
   }
 }
@@ -159,7 +163,31 @@ function MarketChartCanvas({ points, up, height = 140 }: MarketChartCanvasProps)
   const chartRef     = useRef<IChartApi | null>(null)
   const seriesRef    = useRef<ISeriesApi<'Area'> | null>(null)
   const rafRef       = useRef(0)
+  // Q-5: the axis label that reports the current price. It is driven from
+  // the CONFIRMED anchor, never from the animated tip, so it can only ever
+  // show a number the engine actually sent.
+  const priceLineRef = useRef<IPriceLine | null>(null)
   const anim         = useRef<Anim>({ display: 0, anchorV: 0, anchorT: 0, anchorAtMs: 0, velocity: 0, tipTime: 0, firstTime: 0, lastFrameMs: 0, seeded: false })
+
+  // ─── Chart epoch — the fix for the blank-canvas-after-remount bug ──────────
+  // Measured: change the viewport mid-session and the chart went blank and
+  // STAYED blank until the next confirmed sample arrived.
+  //
+  // The cause is a dependency gap between this file's two effects. The create
+  // effect below owns the chart and its cleanup resets `anim` to seeded:false;
+  // the arrival effect further down is the only caller of `setData()`, and it
+  // is keyed on `[points, up]`. So when the chart is recreated — a remount, or
+  // a height change — the new series starts empty while `points` keeps its
+  // identity, the arrival effect does not re-run, and nothing ever seeds it.
+  // The canvas is mounted and correctly sized, drawing nothing.
+  //
+  // On a healthy 2s feed that self-heals within one poll, which is why it read
+  // as a flicker; on a stalled or slow feed it is permanent.
+  //
+  // Bumping this on every creation gives the arrival effect a reason to re-run
+  // and re-seed from the points already in hand. No skeleton, no refetch, and
+  // no state that did not already exist — the data is re-drawn, not re-fetched.
+  const [chartEpoch, setChartEpoch] = useState(0)
 
   // ── Create the chart once (recreate only on height change) ────────────────
   useEffect(() => {
@@ -194,19 +222,51 @@ function MarketChartCanvas({ points, up, height = 140 }: MarketChartCanvasProps)
       // attributionLogo: the TradingView logo is disabled (the library's
       // optional courtesy mark, not a legal requirement); attribution lives in
       // Settings › About instead.
-      layout:          { background: { type: ColorType.Solid, color: 'transparent' }, textColor: t.text, fontSize: 10, fontFamily: t.mono, attributionLogo: false },
-      grid:            { vertLines: { color: t.grid }, horzLines: { color: t.grid } },
-      timeScale:       { timeVisible: true, secondsVisible: false, borderColor: t.axis, lockVisibleTimeRangeOnResize: true },
-      rightPriceScale: { borderColor: t.axis, scaleMargins: { top: 0.18, bottom: 0.12 } },
-      crosshair:       { mode: CrosshairMode.Magnet },
+      layout:          { background: { type: ColorType.Solid, color: 'transparent' }, textColor: t.text, fontSize: 11, fontFamily: t.mono, attributionLogo: false },
+      // Vertical gridlines OFF and axis borders hidden, to match the recharts
+      // surfaces: they draw horizontal lines only and no axis rule, and two
+      // charts on one page disagreeing about their own frame is the loudest
+      // inconsistency in the product's chart language.
+      grid:            { vertLines: { visible: false }, horzLines: { color: t.grid } },
+      // ─── Why secondsVisible is now true ─────────────────────────────────
+      // The viewport is a fixed 10-minute window (WINDOW_SEC) fed by 2-second
+      // samples, so with `secondsVisible: false` every tick inside a minute
+      // formatted to the same HH:mm string — measured at 1440px, the axis
+      // printed "11:53" eight times in a row and "11:54" twice. An axis that
+      // repeats one label across most of its width states nothing about where
+      // you are in the series, and reads as broken.
+      //
+      // This adds no precision that is not already there: the samples carry
+      // second-level timestamps, and the library is now allowed to show them
+      // rather than truncating every tick to its minute. It also self-corrects
+      // the density — HH:mm:ss labels are wider, so lightweight-charts spaces
+      // ticks further apart and draws fewer of them.
+      timeScale:       { timeVisible: true, secondsVisible: true, borderVisible: false, lockVisibleTimeRangeOnResize: true },
+      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.18, bottom: 0.12 } },
+      crosshair:       {
+        mode: CrosshairMode.Magnet,
+        vertLine: { color: t.cross, width: 1, style: 2, labelVisible: false },
+        horzLine: { color: t.cross, width: 1, style: 2, labelVisible: false },
+      },
       handleScroll:    false,
       handleScale:     false,
     })
 
     const s = chart.addSeries(AreaSeries, {
       lineColor: t.up, lineWidth: 2, topColor: t.upDim, bottomColor: 'transparent',
-      lineType: LineType.Curved, lastValueVisible: true,
-      priceLineVisible: true, priceLineColor: t.up, priceLineWidth: 1, priceLineStyle: 2,
+      lineType: LineType.Curved,
+      // ── Q-5 · the curve may move; the NUMBER may not ──────────────────
+      // lastValueVisible and priceLineVisible both report the series' last
+      // point, and that point is the dead-reckoned tip: the price axis was
+      // therefore printing an unconfirmed, extrapolated figure and updating
+      // it at 60fps. The curve is a projection the viewer reads as motion;
+      // a number on an axis is read as a measurement.
+      //
+      // Both are off. A price line pinned to the confirmed anchor is created
+      // below instead, and it moves only when the engine sends a new
+      // observation.
+      lastValueVisible: false,
+      priceLineVisible: false,
     })
 
     chartRef.current  = chart
@@ -288,12 +348,21 @@ function MarketChartCanvas({ points, up, height = 140 }: MarketChartCanvasProps)
     }
     rafRef.current = requestAnimationFrame(frame)
 
+    // A fresh, empty series now exists. Tell the arrival effect so it seeds it
+    // from the points already held, rather than waiting for the next poll.
+    // This runs once per creation (deps are [height]), so it cannot loop.
+    setChartEpoch((e) => e + 1)
+
     return () => {
       cancelAnimationFrame(rafRef.current)
       // chart.remove() tears down the library's own autoSize observer with it.
       chart.remove()
       chartRef.current  = null
       seriesRef.current = null
+      // Owned by the series, which chart.remove() has just disposed; drop the
+      // handle so the next mount creates a fresh one rather than re-pricing a
+      // line that no longer exists.
+      priceLineRef.current = null
       anim.current = { display: 0, anchorV: 0, anchorT: 0, anchorAtMs: 0, velocity: 0, tipTime: 0, firstTime: 0, lastFrameMs: 0, seeded: false }
     }
   }, [height])
@@ -303,7 +372,7 @@ function MarketChartCanvas({ points, up, height = 140 }: MarketChartCanvasProps)
     const s = seriesRef.current
     if (!s || points.length === 0) return
     const t = readTokens()
-    s.applyOptions({ lineColor: up ? t.up : t.down, topColor: up ? t.upDim : t.downDim, priceLineColor: up ? t.up : t.down })
+    s.applyOptions({ lineColor: up ? t.up : t.down, topColor: up ? t.upDim : t.downDim })
 
     const a = anim.current
     const last  = points[points.length - 1]
@@ -323,6 +392,8 @@ function MarketChartCanvas({ points, up, height = 140 }: MarketChartCanvasProps)
       a.seeded  = true
     } else {
       // History integrity: before appending newer points, write the old tip
+      // NOTE: reached only when the SAME chart instance receives newer points.
+      // After a recreation `seeded` is false and the branch above re-seeds.
       // back to its EXACT confirmed value (it is still the series' last point,
       // so update() at the same time is legal). Only then append the new
       // confirmed points. Result: no projected value ever persists.
@@ -341,7 +412,27 @@ function MarketChartCanvas({ points, up, height = 140 }: MarketChartCanvasProps)
     a.anchorT    = last.time
     a.anchorAtMs = performance.now()
     a.tipTime    = last.time
-  }, [points, up])
+
+    // Q-5 · the confirmed read-out. Created once, then re-priced ONLY here —
+    // inside the confirmed-arrival effect — so the axis label steps from one
+    // observation to the next and never travels through the values the tip
+    // animates across between them.
+    const lineColor = up ? t.up : t.down
+    if (priceLineRef.current === null) {
+      priceLineRef.current = s.createPriceLine({
+        price: last.value,
+        color: lineColor,
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: '',
+      })
+    } else {
+      priceLineRef.current.applyOptions({ price: last.value, color: lineColor })
+    }
+    // `chartEpoch` is what makes a recreated chart re-seed immediately instead
+    // of waiting for the next confirmed sample. See its declaration above.
+  }, [points, up, chartEpoch])
 
   // No aria-hidden here any more: ChartFrame wraps this element in a labelled
   // role="img", which both names the plot AND makes its canvas subtree

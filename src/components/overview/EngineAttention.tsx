@@ -18,6 +18,8 @@
 // lib/mappers/overview from real endpoint errors, feed state, survival severity,
 // failing probes and active backoff. Never invented.
 
+import Link from 'next/link'
+import { ROUTES } from '@/config/constants'
 import { useCommandCenter } from '@/config/hooks/useServices'
 import type { AttentionItem } from '@/lib/mappers/overview'
 
@@ -50,6 +52,15 @@ export function EngineAttention() {
         <h2 className="t-card-title" style={{ color }}>
           {vm.attention.length} {vm.attention.length === 1 ? 'item needs' : 'items need'} attention
         </h2>
+        {/* Where the full diagnostic lives. The band says THAT something is
+            wrong; System says what the probe actually reported. */}
+        <Link
+          href={ROUTES.SYSTEM}
+          className="focus-ring ml-auto text-2xs font-semibold no-underline whitespace-nowrap"
+          style={{ color: 'var(--probex-text-muted)' }}
+        >
+          System console →
+        </Link>
       </div>
 
       <ul className="list-none p-0 m-0 flex flex-col gap-1">
@@ -64,7 +75,10 @@ export function EngineAttention() {
 function AttentionRow({ item }: { item: AttentionItem }) {
   const color = item.severity === 'critical' ? 'var(--probex-negative)' : 'var(--probex-warning)'
   return (
-    <li className="flex items-baseline gap-2 flex-wrap">
+    // The engine's own words are kept — on the element, not in the layout.
+    // An operator who wants the probe's exact reading hovers or opens System;
+    // one who wants to know whether anything is wrong reads the line.
+    <li className="flex items-baseline gap-2 flex-wrap" {...(item.detail ? { title: item.detail } : {})}>
       <span
         className="w-1 h-1 rounded-full inline-block flex-shrink-0 translate-y-[-2px]"
         style={{ background: color }}
@@ -73,11 +87,6 @@ function AttentionRow({ item }: { item: AttentionItem }) {
       <span className="text-xs font-semibold" style={{ color }}>
         {item.message}
       </span>
-      {item.detail && (
-        <span className="text-2xs font-mono" style={{ color: 'var(--probex-text-muted)' }}>
-          {item.detail}
-        </span>
-      )}
     </li>
   )
 }

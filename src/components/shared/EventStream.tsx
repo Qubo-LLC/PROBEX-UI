@@ -20,7 +20,7 @@
 // stable colour and icon while severity keeps the accent rail. Both come from
 // the wire — no event is assigned a category it did not declare.
 
-import type { ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { DedupedEventRow } from '@/lib/mappers/events'
 
 // ─── Severity (the accent rail) ───────────────────────────────────────────────
@@ -52,11 +52,21 @@ const G = (d: string) => (
 
 const CATEGORY: Record<string, CategoryStyle> = {
   edge:          { label: 'Edge',       color: 'var(--probex-primary)',   glyph: G('m13 2-10 12h9l-1 8 10-12h-9z') },
-  trade:         { label: 'Trade',      color: 'var(--probex-positive)',  glyph: G('M3 17 9 11l4 4 8-8M21 7v6M21 7h-6') },
+  // Was --probex-positive. A trade is not a GAIN; execution and financial
+  // direction are different bands, and green-because-something-happened is
+  // exactly the pattern the token architecture exists to prevent. Valence is
+  // carried by the severity rail, which reads the engine's own severity.
+  trade:         { label: 'Trade',      color: 'var(--probex-secondary)', glyph: G('M3 17 9 11l4 4 8-8M21 7v6M21 7h-6') },
   position:      { label: 'Position',   color: 'var(--probex-secondary)', glyph: G('M4 6h16M4 12h16M4 18h10') },
-  resolution:    { label: 'Resolution', color: 'var(--probex-yes)',       glyph: G('M20 6 9 17l-5-5') },
+  // Was --probex-yes — the MARKET-SIDE colour, on an event category that has
+  // nothing to do with which side of a market was taken. A resolution row and
+  // a YES position were the same cyan.
+  resolution:    { label: 'Resolution', color: 'var(--probex-text-secondary)', glyph: G('M20 6 9 17l-5-5') },
   survival:      { label: 'Survival',   color: 'var(--probex-warning)',   glyph: G('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10') },
-  health:        { label: 'Health',     color: 'var(--probex-positive)',  glyph: G('M22 12h-4l-3 9L9 3l-3 9H2') },
+  // Was --probex-positive. A health event is as often a probe FAILING as
+  // recovering; a permanently green badge told the operator the opposite half
+  // the time. Neutral identity, valence from the severity rail.
+  health:        { label: 'Health',     color: 'var(--probex-text-secondary)', glyph: G('M22 12h-4l-3 9L9 3l-3 9H2') },
   error:         { label: 'Error',      color: 'var(--probex-negative)',  glyph: G('M12 8v5M12 17h.01') },
   paper_trading: { label: 'Paper',      color: 'var(--probex-text-muted)', glyph: G('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z') },
 }
@@ -97,7 +107,16 @@ export function metaChips(row: DedupedEventRow): Array<{ label: string; tone?: '
 
 // ─── Row ──────────────────────────────────────────────────────────────────────
 
-export function EventRowItem({ row, compact = false }: { row: DedupedEventRow; compact?: boolean }) {
+export function EventRowItem({
+  row,
+  compact = false,
+  arriving = false,
+}: {
+  row: DedupedEventRow
+  compact?: boolean
+  /** True only for a row that was not in the previous render. */
+  arriving?: boolean
+}) {
   const accent = severityColor(row.severity)
   const cat = categoryFor(row.type)
   const chips = metaChips(row)
@@ -105,7 +124,7 @@ export function EventRowItem({ row, compact = false }: { row: DedupedEventRow; c
 
   return (
     <div
-      className={`flex items-start gap-3 rounded-lg text-xs ${compact ? 'px-3 py-2' : 'px-3 py-2.5'}`}
+      className={`flex items-start gap-3 rounded-lg text-xs ${compact ? 'px-3 py-2' : 'px-3 py-2.5'}${arriving ? ' event-arrive' : ''}`}
       style={{
         background: 'var(--probex-surface)',
         border: '1px solid var(--probex-border)',
@@ -188,11 +207,37 @@ export function EventRowItem({ row, compact = false }: { row: DedupedEventRow; c
 // ─── Stream ───────────────────────────────────────────────────────────────────
 
 export function EventStream({ rows, compact = false }: { rows: DedupedEventRow[]; compact?: boolean }) {
+  // Which rows are genuinely NEW. Seeded on the first render with everything
+  // already on screen, so a page load does not animate fourteen rows at once —
+  // an entrance that fires for history is decoration, not information.
+  //
+  // The set is the source of truth for "has this been seen", and it only ever
+  // grows within a mounted stream; rows that scroll out of the window are not
+  // re-animated if the engine repeats them, because their id is already in it.
+  const seen = useRef<Set<string> | null>(null)
+  const [arriving, setArriving] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (seen.current === null) {
+      seen.current = new Set(rows.map((r) => r.id))
+      return
+    }
+    const fresh = rows.filter((r) => !seen.current!.has(r.id)).map((r) => r.id)
+    if (fresh.length === 0) return
+    for (const id of fresh) seen.current.add(id)
+    setArriving(new Set(fresh))
+  }, [rows])
+
   return (
-    <div className="flex flex-col gap-1.5">
+    // A list, so a screen reader can report how many activity groups there are
+    // and step through them. It was a div of divs, which announces as a run-on
+    // block with no structure and no count.
+    <ul className="flex flex-col gap-1.5 list-none m-0 p-0">
       {rows.map((row) => (
-        <EventRowItem key={row.id} row={row} compact={compact} />
+        <li key={row.id}>
+          <EventRowItem row={row} compact={compact} arriving={arriving.has(row.id)} />
+        </li>
       ))}
-    </div>
+    </ul>
   )
 }

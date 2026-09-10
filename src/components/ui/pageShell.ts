@@ -17,9 +17,12 @@ export interface EmbeddableProps {
 /**
  * Outer class for an embeddable view.
  *
- * @param gap Tailwind gap token the view uses between its sections.
+ * @param gap Tailwind gap token the view uses between its sections. `gap-0` is
+ *   for a page that owns its own vertical rhythm — System separates its
+ *   sections with ruled dividers that carry their own margins, and a flex gap
+ *   on top of those would double the spacing on one side of every rule.
  */
-export function pageShell(embedded: boolean, gap: 'gap-3' | 'gap-4' | 'gap-5' = 'gap-4'): string {
+export function pageShell(embedded: boolean, gap: 'gap-0' | 'gap-3' | 'gap-4' | 'gap-5' = 'gap-4'): string {
   return embedded
     ? `flex flex-col ${gap}`
     : `page-container flex flex-col ${gap} pb-8 animate-fade-in-up`

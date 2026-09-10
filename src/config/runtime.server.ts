@@ -244,13 +244,32 @@ async function probeBackend(
  *
  * Decision table:
  *
- *   requested  backend    environment    → resolved
+ *   requested  backend    deployment     → resolved
  *   ─────────  ─────────  ─────────────    ────────
  *   live       (n/a)      any            → live      (explicit; never probed)
- *   mock       (n/a)      any            → mock      (explicit; loudly flagged in prod)
+ *   mock       (n/a)      dev/test       → mock      (explicit opt-in only)
+ *   mock       (n/a)      staging/prod   → FATAL     (assertDeploymentPolicy throws)
  *   auto       healthy    any            → live
- *   auto       unhealthy  development    → mock      (offline-friendly local work)
- *   auto       unhealthy  production     → offline   (NEVER mock — no fake trades)
+ *   auto       unhealthy  any            → offline   (NEVER mock — see below)
+ *
+ * ─── Why `auto` no longer falls back to mock in development ──────────────────
+ * It used to: `auto` + unreachable + development resolved to `mock`, on the
+ * reasoning that it kept local work possible offline. In practice it did the
+ * opposite of what a cockpit needs.
+ *
+ * A developer running `npm run dev` against a misconfigured or down backend got
+ * a dashboard that looked entirely healthy — populated balances, positions,
+ * P&L, a green status chip — with one line in the terminal explaining that none
+ * of it was real. That is precisely the failure mode this product exists to
+ * prevent, reproduced in the environment where the product is built. It also
+ * hid a stale `PROBEX_API_BASE_URL` for weeks: the app "worked", so nobody
+ * looked, and the value it was pointing at had not existed for some time.
+ *
+ * Mock is still fully supported and is still the right tool for UI work with no
+ * backend — it just has to be ASKED for now (`PROBEX_API_MODE=mock`). A backend
+ * outage and a deliberate decision to use synthetic data are different events
+ * and must not resolve to the same state. `offline` is what an unreachable
+ * engine means, in every deployment.
  */
 export async function resolveRuntimeConfig(origin: string | null): Promise<RuntimeConfig> {
   const now = Date.now()
@@ -322,14 +341,32 @@ async function computeConfig(origin: string | null, key: string): Promise<Runtim
     if (probe.healthy) {
       mode   = 'live'
       reason = 'Backend reachable.'
-    } else if (!mockAllowed) {
-      // Authorised by DEPLOYMENT POLICY, never by NODE_ENV: a deploy that cannot
-      // reach its engine reports that fact instead of inventing plausible trades.
-      mode   = 'offline'
-      reason = `Backend unreachable — ${deployment} deployments never substitute mock data.`
     } else {
-      mode   = 'mock'
-      reason = `Backend unreachable in ${deployment} — falling back to mock data.`
+      // An unreachable engine resolves to `offline` in EVERY deployment,
+      // development included. See the decision-table note above for why the
+      // development mock fallback was removed.
+      mode   = 'offline'
+      // Deliberately does NOT promise last-known-good data. This resolution
+      // happens at page render, when the client store may be empty — a cold
+      // start against a dead engine has no prior reading to show, and claiming
+      // one would be its own small fabrication. Retention is the per-slice
+      // freshness system's job (lib/display/freshness.ts) and it says so itself
+      // when there IS something retained.
+      reason = 'Backend unreachable — no synthetic data is being substituted.'
+
+      // Actionable, and only in the environments where a human is watching a
+      // terminal. The old fallback made this situation invisible; naming the
+      // opt-in here is what keeps `offline` from feeling like a dead end.
+      if (mockAllowed) {
+        console.error(
+          '[Probex] Engine unreachable — running in OFFLINE mode. Nothing on screen will be ' +
+          'fabricated.\n' +
+          `  • To work against the real engine, set PROBEX_API_BASE_URL (currently "${baseUrl}").\n` +
+          '  • To work with synthetic data instead, set PROBEX_API_MODE=mock explicitly.\n' +
+          '  Mock is no longer entered automatically: a backend outage and a decision to use ' +
+          'fake data are different events and must not look identical.',
+        )
+      }
     }
   }
 

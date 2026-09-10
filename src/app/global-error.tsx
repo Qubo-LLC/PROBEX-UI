@@ -27,7 +27,7 @@ export default function GlobalError({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#050816',
+          background: '#03050D',
           color: '#e6e8ee',
           // Literal stack, not var(--font-sans): global-error replaces the root
           // layout when it fires, so globals.css may not have applied. Named

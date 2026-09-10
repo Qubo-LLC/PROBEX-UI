@@ -31,6 +31,7 @@ import type {
   ConsensusHistory,
   ResearchReports,
   Balance,
+  Portfolio,
   PortfolioHistory,
   PortfolioSummary,
   AnalyticsSignals,
@@ -67,6 +68,9 @@ export interface EngineEndpoints {
   paperStats:      ServiceState<PaperStats>
 
   // Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints
+  /** /api/portfolio — the PERSISTED capital snapshot. Distinct from
+   *  executionStatus, which is process-scoped and resets on engine restart. */
+  portfolio:            ServiceState<Portfolio>
   positionsHistory:     ServiceState<PositionsHistory>
   survivalPatterns:     ServiceState<SurvivalPatterns>
   consensus:            ServiceState<Consensus>
@@ -99,10 +103,43 @@ export interface EngineEndpoints {
 interface ApplicationStore {
   /** Live ServiceState<T> for each engine endpoint. */
   engine:        EngineEndpoints
-  /** Epoch ms of the most recent store write; null until first update. */
+  /**
+   * Epoch ms of the most recent SUCCESSFUL refresh; null until the first one.
+   *
+   * ─── Why not "the most recent store write" ─────────────────────────────────
+   * It was, and that made the top-nav heartbeat lie. `updateEngine` is called
+   * on every state transition — including the transition that marks a slice
+   * STALE because its refresh just failed. So a cockpit whose backend had gone
+   * away kept writing to the store, kept bumping this value, and kept
+   * displaying "Updated just now" beside panels that were simultaneously
+   * reporting "Stale · 29s ago".
+   *
+   * Caught in end-to-end fault injection on 2026-09-07, not by a unit test: the
+   * two components were individually correct and disagreed only once they were
+   * on screen together.
+   *
+   * It now advances only when a slice actually came back fresh, which is what
+   * every consumer already assumed it meant.
+   */
   lastRefreshed: number | null
   /** Merge a partial endpoint update into the store. */
   updateEngine:  (updates: Partial<EngineEndpoints>) => void
+}
+
+/**
+ * Did this batch contain at least one genuinely fresh response?
+ *
+ * A slice qualifies when it holds data and is not stale. `loading` and `error`
+ * do not count (nothing arrived), and neither does a stale slice — that is the
+ * absence of a refresh, which is the whole point.
+ */
+function hasFreshUpdate(updates: Partial<EngineEndpoints>): boolean {
+  return Object.values(updates).some(
+    (slice) =>
+      slice !== undefined &&
+      (slice.status === 'success' || slice.status === 'empty') &&
+      !slice.isStale,
+  )
 }
 
 // ─── Initial state (all endpoints start as 'loading') ────────────────────────
@@ -123,6 +160,7 @@ const initialEndpoints: EngineEndpoints = {
   executionPolicy: loadingState<ExecutionPolicy>(),
   paperStats:      loadingState<PaperStats>(),
 
+  portfolio:            loadingState<Portfolio>(),
   positionsHistory:     loadingState<PositionsHistory>(),
   survivalPatterns:     loadingState<SurvivalPatterns>(),
   consensus:            loadingState<Consensus>(),
@@ -155,6 +193,8 @@ export const useApplicationStore = create<ApplicationStore>((set) => ({
   updateEngine:  (updates) =>
     set((prev) => ({
       engine:        { ...prev.engine, ...updates },
-      lastRefreshed: Date.now(),
+      // Held at its previous value when nothing actually refreshed, so
+      // "last updated" stays true rather than tracking store activity.
+      lastRefreshed: hasFreshUpdate(updates) ? Date.now() : prev.lastRefreshed,
     })),
 }))

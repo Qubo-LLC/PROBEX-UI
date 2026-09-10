@@ -73,7 +73,7 @@ export function OrdersTable() {
               </button>
             ))}
           </div>
-          <ProvenanceBadge provenance="live" detail="/api/execution/orders" />
+          <ProvenanceBadge provenance="live" detail="/api/execution/orders" state={slice} />
         </div>
       </div>
 

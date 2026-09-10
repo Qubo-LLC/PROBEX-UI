@@ -15,12 +15,13 @@
 import axios, {
   AxiosError,
   type AxiosInstance,
+  type AxiosRequestConfig,
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios'
 import { env } from '@/config/env'
 import { readRuntimeConfig } from '@/config/runtime'
-import { ServiceException } from '@/lib/services/response'
+import { ServiceException, CANCELED_CODE } from '@/lib/services/response'
 import { diagnostics } from '@/lib/diagnostics'
 import {
   circuitKey, isCircuitOpen, circuitCooldownSeconds,
@@ -116,6 +117,20 @@ function attachResponseInterceptor(client: AxiosInstance, label: string): void {
       const endpoint   = meta?.endpoint ?? (error.config?.url ?? '')
       const status     = error.response?.status ?? 0
 
+      // A cancellation is OUR OWN doing — the caller unmounted or superseded the
+      // request — so it is not evidence about the backend and must not be
+      // treated as one. It deliberately skips the circuit breaker: an aborted
+      // request looks exactly like a network failure (no response, no status),
+      // and counting it would let ordinary route changes trip circuits and
+      // suppress endpoints that were never unhealthy. It is still recorded in
+      // diagnostics, where seeing cancellations is useful.
+      if (isCancellation(error)) {
+        diagnostics.recordCompleted(method, endpoint, 0, durationMs)
+        return Promise.reject(
+          new ServiceException(CANCELED_CODE, 'Request canceled', false),
+        )
+      }
+
       diagnostics.recordCompleted(method, endpoint, status, durationMs)
 
       // Only the failure modes that COST the backend a worker feed the breaker.
@@ -151,6 +166,20 @@ export const apiClient: AxiosInstance = axios.create({
 
 attachRequestInterceptor(apiClient, 'LIVE')
 attachResponseInterceptor(apiClient, 'LIVE')
+
+// ─── Cancellation ────────────────────────────────────────────────────────────
+
+/**
+ * True when a request ended because it was aborted via its AbortSignal.
+ *
+ * Axios reports this as `ERR_CANCELED`, which is distinct from `ECONNABORTED`
+ * (the timeout). Both arrive with no `response`, so the code is the only thing
+ * that separates "we stopped caring" from "the engine never answered" — and
+ * those two must never be conflated: one is routine, the other is a fault.
+ */
+function isCancellation(error: AxiosError): boolean {
+  return error.code === 'ERR_CANCELED' || error.name === 'CanceledError'
+}
 
 // ─── Error normalizer ────────────────────────────────────────────────────────
 
@@ -188,11 +217,33 @@ attachResponseInterceptor(hostClient, 'LIVE')
 
 // ─── Typed helpers ───────────────────────────────────────────────────────────
 
+/**
+ * Builds the per-request Axios config.
+ *
+ * `signal` is threaded through the READ helpers only. Aborting a GET is always
+ * safe — the response is discarded and nothing changed server-side. Aborting a
+ * POST is not: the request may already have reached the engine and been
+ * applied, and the caller has no way to tell which. Mutations therefore have no
+ * cancellation path on purpose (useMutation drops concurrent invocations
+ * instead of racing them).
+ */
+function requestConfig(
+  params?: Record<string, string | number | boolean | undefined>,
+  signal?: AbortSignal,
+): AxiosRequestConfig | undefined {
+  if (params === undefined && signal === undefined) return undefined
+  const config: AxiosRequestConfig = {}
+  if (params !== undefined) config.params = params
+  if (signal !== undefined) config.signal = signal
+  return config
+}
+
 export async function apiGet<T>(
   path: string,
   params?: Record<string, string | number | boolean | undefined>,
+  signal?: AbortSignal,
 ): Promise<T> {
-  const res = await apiClient.get<T>(path, params ? { params } : undefined)
+  const res = await apiClient.get<T>(path, requestConfig(params, signal))
   return res.data
 }
 
@@ -205,7 +256,8 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
 export async function apiGetHost<T>(
   path: string,
   params?: Record<string, string | number | boolean | undefined>,
+  signal?: AbortSignal,
 ): Promise<T> {
-  const res = await hostClient.get<T>(path, params ? { params } : undefined)
+  const res = await hostClient.get<T>(path, requestConfig(params, signal))
   return res.data
 }

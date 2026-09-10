@@ -18,6 +18,7 @@
 import { useEffect, useState } from 'react'
 import { services } from '@/lib/services'
 import { readEphemeral } from '@/lib/api/resourceLifecycle'
+import { isCanceledError } from '@/lib/services/response'
 import { LiveChart, type LiveChartPoint } from '@/components/shared/LiveChart'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -40,6 +41,11 @@ export function MarketCharts({ marketId }: { marketId: string }) {
 
   useEffect(() => {
     let active = true
+    // Market detail is the read most likely to be abandoned mid-flight — the
+    // operator clicks through a market list. Aborting on navigation stops the
+    // previous market's history from occupying an engine worker that the market
+    // now on screen needs.
+    const controller = new AbortController()
     setLoading(true)
     setError(null)
     setExpired(false)
@@ -49,17 +55,22 @@ export function MarketCharts({ marketId }: { marketId: string }) {
     // very failure mode this page exists to avoid. Refreshing the id is correct
     // for "give me the current market" reads; this is "give me THIS market".
     readEphemeral(marketId, (id) =>
-      services.engine.getMarketPriceHistory(id, SNAPSHOT_LIMIT).then((r) => r.data),
+      services.engine
+        .getMarketPriceHistory(id, SNAPSHOT_LIMIT, controller.signal)
+        .then((r) => r.data),
     )
       .then((outcome) => {
         if (!active) return
         if (outcome.kind === 'ok')            setData(outcome.value)
         else if (outcome.kind === 'expired')  setExpired(true)
-        else                                  setError(outcome.error.message)
+        // readEphemeral folds an abort into `unavailable` like any other
+        // failure, so it is filtered here rather than there: cancelling is the
+        // caller's own act and must not surface as "market history unavailable".
+        else if (!isCanceledError(outcome.error)) setError(outcome.error.message)
       })
       .finally(() => { if (active) setLoading(false) })
 
-    return () => { active = false }
+    return () => { active = false; controller.abort() }
   }, [marketId])
 
   const history = data?.history ?? []
@@ -123,8 +134,13 @@ export function MarketCharts({ marketId }: { marketId: string }) {
           <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>
             Price &amp; Volume History
           </h3>
-          <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
-            {history.length} snapshot{history.length === 1 ? '' : 's'} · /api/markets/:id/history
+          <span
+            className="text-2xs"
+            style={{ color: 'var(--probex-text-disabled)' }}
+            title="Source: /api/markets/:id/history"
+            aria-label={`${history.length} snapshot${history.length === 1 ? '' : 's'} from /api/markets/:id/history`}
+          >
+            {history.length} snapshot{history.length === 1 ? '' : 's'}
           </span>
         </div>
 

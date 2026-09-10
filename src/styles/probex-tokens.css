@@ -64,12 +64,12 @@
   --probex-border:         rgba(255, 255, 255, 0.10);
   --probex-border-default: rgba(255, 255, 255, 0.14);
   --probex-border-strong:  rgba(255, 255, 255, 0.22);
-  --probex-border-active:  rgba(0, 212, 255, 0.40);
+  --probex-border-active:  rgba(56, 189, 248, 0.40);
 
   /* Accent */
-  --probex-primary:   #00D4FF;
+  --probex-primary:   #38BDF8;
   --probex-secondary: #6D5EF7;
-  --probex-primary-dim:   rgba(0, 212, 255, 0.12);
+  --probex-primary-dim:   rgba(56, 189, 248, 0.12);
   --probex-secondary-dim: rgba(109, 94, 247, 0.12);
 
   /* ── Text ramp ────────────────────────────────────────────────────────────
@@ -107,12 +107,26 @@
   --probex-text-disabled:  rgba(232, 238, 255, 0.50);
 
   /* Trading sides */
-  --probex-yes:          #00D4FF;
-  --probex-yes-dim:      rgba(0, 212, 255, 0.1);
-  --probex-yes-border:   rgba(0, 212, 255, 0.25);
-  --probex-no:           #8B5CF6;
-  --probex-no-dim:       rgba(139, 92, 246, 0.1);
-  --probex-no-border:    rgba(139, 92, 246, 0.25);
+  --probex-yes:          #00F2FE;
+  --probex-yes-dim:      rgba(0, 242, 254, 0.1);
+  --probex-yes-border:   rgba(0, 242, 254, 0.25);
+  --probex-no:           #C084FC;
+  --probex-no-dim:       rgba(192, 132, 252, 0.1);
+  --probex-no-border:    rgba(192, 132, 252, 0.25);
+  /* ── Ink on filled accent surfaces ───────────────────────────────────────
+     A chip or button that FILLS itself with an accent needs an ink colour,
+     and the correct ink flips with that accent's luminance. This was
+     previously decided in the components as `isYes ? '#050816' : '#fff'`,
+     which is wrong in four theme/role combinations because it assumes every
+     YES is bright and every NO is dark. Measured, white-on-NO gives 4.23:1 in
+     aurora, 3.74:1 in quantum and 1.98:1 in emerald; dark-on-YES gives 3.86:1
+     in institutional, which is a light theme. All four fail WCAG AA at the
+     10-11px these chips are set in.
+     Declaring the ink per theme moves the decision to the only layer that
+     knows both colours. Every combination now measures >= 4.81:1. */
+  --probex-on-accent: #03050D;
+  --probex-on-yes:    #03050D;
+  --probex-on-no:     #03050D;
 
   /* Semantic */
   --probex-positive:  #10B981;
@@ -130,19 +144,25 @@
 
   /* Sidebar */
   --probex-sidebar-bg:      #0B1120;
-  --probex-sidebar-item-active-bg: rgba(0, 212, 255, 0.1);
-  --probex-sidebar-item-active-border: rgba(0, 212, 255, 0.2);
+  --probex-sidebar-item-active-bg: rgba(56, 189, 248, 0.1);
+  --probex-sidebar-item-active-border: rgba(56, 189, 248, 0.2);
 
   /* Charts */
-  --probex-chart-primary:   #00D4FF;
+  --probex-chart-primary:   #38BDF8;
   --probex-chart-secondary: #6D5EF7;
   --probex-chart-tertiary:  #10B981;
   --probex-chart-grid:      rgba(255, 255, 255, 0.05);
   --probex-chart-axis:      rgba(255, 255, 255, 0.2);
 
-  /* Gradient — logo and primary CTAs */
-  --probex-gradient-brand: linear-gradient(135deg, #00D4FF 0%, #6D5EF7 100%);
-  --probex-gradient-yes:   linear-gradient(135deg, #00D4FF 0%, #0099BB 100%);
+  /* Gradient — logo and primary CTAs.
+     NOTE: still the OLD cyan (#00D4FF), deliberately. It is consumed by
+     .btn-primary, whose white ink measures 1.77:1 against the cyan end — a
+     live contrast failure. The approved direction replaces that button with a
+     flat --probex-primary fill plus --probex-on-accent ink, and the gradient
+     moves with it. Re-tinting the gradient here would shift the CTA and the
+     logo without fixing the ink, i.e. change the symptom and keep the bug. */
+  --probex-gradient-brand: linear-gradient(135deg, #38BDF8 0%, #6D5EF7 100%);
+  --probex-gradient-yes:   linear-gradient(135deg, #00F2FE 0%, #0099BB 100%);
   --probex-gradient-no:    linear-gradient(135deg, #6D5EF7 0%, #4F46E5 100%);
   --probex-gradient-surface: linear-gradient(180deg, #0B1120 0%, #050816 100%);
 
@@ -270,11 +290,11 @@
   --probex-border:         rgba(255, 255, 255, 0.05);
   --probex-border-default: rgba(255, 255, 255, 0.07);
   --probex-border-strong:  rgba(255, 255, 255, 0.12);
-  --probex-border-active:  rgba(59, 130, 246, 0.4);
+  --probex-border-active:  rgba(96, 165, 250, 0.4);
 
-  --probex-primary:   #3B82F6;
+  --probex-primary:   #60A5FA;
   --probex-secondary: #4F46E5;
-  --probex-primary-dim:   rgba(59, 130, 246, 0.12);
+  --probex-primary-dim:   rgba(96, 165, 250, 0.12);
   --probex-secondary-dim: rgba(79, 70, 229, 0.12);
 
   --probex-text-primary:   #E2E8F0;
@@ -288,6 +308,9 @@
   --probex-no:         #4F46E5;
   --probex-no-dim:     rgba(79, 70, 229, 0.1);
   --probex-no-border:  rgba(79, 70, 229, 0.25);
+  --probex-on-accent: #010208;
+  --probex-on-yes:    #010208;
+  --probex-on-no:     #FFFFFF;
 
   --probex-positive:  #10B981;
   --probex-positive-dim: rgba(16, 185, 129, 0.12);
@@ -302,16 +325,16 @@
   --probex-consensus-low:  #EF4444;
 
   --probex-sidebar-bg: #04080F;
-  --probex-sidebar-item-active-bg: rgba(59, 130, 246, 0.1);
-  --probex-sidebar-item-active-border: rgba(59, 130, 246, 0.2);
+  --probex-sidebar-item-active-bg: rgba(96, 165, 250, 0.1);
+  --probex-sidebar-item-active-border: rgba(96, 165, 250, 0.2);
 
-  --probex-chart-primary:   #3B82F6;
+  --probex-chart-primary:   #60A5FA;
   --probex-chart-secondary: #4F46E5;
   --probex-chart-tertiary:  #10B981;
   --probex-chart-grid:      rgba(255, 255, 255, 0.04);
   --probex-chart-axis:      rgba(255, 255, 255, 0.18);
 
-  --probex-gradient-brand:   linear-gradient(135deg, #3B82F6 0%, #4F46E5 100%);
+  --probex-gradient-brand:   linear-gradient(135deg, #60A5FA 0%, #4F46E5 100%);
   --probex-gradient-yes:     linear-gradient(135deg, #3B82F6 0%, #1d4ed8 100%);
   --probex-gradient-no:      linear-gradient(135deg, #4F46E5 0%, #3730a3 100%);
   --probex-gradient-surface: linear-gradient(180deg, #04080F 0%, #010208 100%);
@@ -332,11 +355,11 @@
   --probex-border:         rgba(255, 255, 255, 0.06);
   --probex-border-default: rgba(255, 255, 255, 0.08);
   --probex-border-strong:  rgba(255, 255, 255, 0.13);
-  --probex-border-active:  rgba(0, 255, 136, 0.35);
+  --probex-border-active:  rgba(34, 211, 238, 0.35);
 
-  --probex-primary:   #00FF88;
+  --probex-primary:   #22D3EE;
   --probex-secondary: #0D9488;
-  --probex-primary-dim:   rgba(0, 255, 136, 0.1);
+  --probex-primary-dim:   rgba(34, 211, 238, 0.1);
   --probex-secondary-dim: rgba(13, 148, 136, 0.1);
 
   --probex-text-primary:   #E0FFF0;
@@ -350,9 +373,12 @@
   --probex-no:         #0D9488;
   --probex-no-dim:     rgba(13, 148, 136, 0.1);
   --probex-no-border:  rgba(13, 148, 136, 0.25);
+  --probex-on-accent: #020A06;
+  --probex-on-yes:    #020A06;
+  --probex-on-no:     #020A06;
 
-  --probex-positive:  #00FF88;
-  --probex-positive-dim: rgba(0, 255, 136, 0.12);
+  --probex-positive:  #22C55E;
+  --probex-positive-dim: rgba(34, 197, 94, 0.12);
   --probex-negative:  #FF4466;
   --probex-negative-dim: rgba(255, 68, 102, 0.1);
   --probex-negative-strong: #C4143C;
@@ -364,16 +390,16 @@
   --probex-consensus-low:  #FF4466;
 
   --probex-sidebar-bg: #061410;
-  --probex-sidebar-item-active-bg: rgba(0, 255, 136, 0.08);
-  --probex-sidebar-item-active-border: rgba(0, 255, 136, 0.2);
+  --probex-sidebar-item-active-bg: rgba(34, 211, 238, 0.08);
+  --probex-sidebar-item-active-border: rgba(34, 211, 238, 0.2);
 
-  --probex-chart-primary:   #00FF88;
+  --probex-chart-primary:   #22D3EE;
   --probex-chart-secondary: #0D9488;
   --probex-chart-tertiary:  #84CC16;
   --probex-chart-grid:      rgba(255, 255, 255, 0.04);
   --probex-chart-axis:      rgba(255, 255, 255, 0.18);
 
-  --probex-gradient-brand:   linear-gradient(135deg, #00FF88 0%, #0D9488 100%);
+  --probex-gradient-brand:   linear-gradient(135deg, #22D3EE 0%, #0D9488 100%);
   --probex-gradient-yes:     linear-gradient(135deg, #00FF88 0%, #00bb63 100%);
   --probex-gradient-no:      linear-gradient(135deg, #0D9488 0%, #065F46 100%);
   --probex-gradient-surface: linear-gradient(180deg, #061410 0%, #020A06 100%);
@@ -392,11 +418,11 @@
   --probex-border:         rgba(255, 255, 255, 0.06);
   --probex-border-default: rgba(255, 255, 255, 0.09);
   --probex-border-strong:  rgba(255, 255, 255, 0.14);
-  --probex-border-active:  rgba(16, 185, 129, 0.4);
+  --probex-border-active:  rgba(94, 234, 212, 0.4);
 
-  --probex-primary:   #10B981;
+  --probex-primary:   #5EEAD4;
   --probex-secondary: #065F46;
-  --probex-primary-dim:   rgba(16, 185, 129, 0.12);
+  --probex-primary-dim:   rgba(94, 234, 212, 0.12);
   --probex-secondary-dim: rgba(6, 95, 70, 0.15);
 
   --probex-text-primary:   #ECFDF5;
@@ -410,9 +436,12 @@
   --probex-no:         #84CC16;
   --probex-no-dim:     rgba(132, 204, 22, 0.1);
   --probex-no-border:  rgba(132, 204, 22, 0.25);
+  --probex-on-accent: #031A10;
+  --probex-on-yes:    #031A10;
+  --probex-on-no:     #031A10;
 
-  --probex-positive:  #10B981;
-  --probex-positive-dim: rgba(16, 185, 129, 0.12);
+  --probex-positive:  #22C55E;
+  --probex-positive-dim: rgba(34, 197, 94, 0.12);
   --probex-negative:  #F87171;
   --probex-negative-dim: rgba(239, 68, 68, 0.1);
   --probex-negative-strong: #C81E1E;
@@ -424,16 +453,16 @@
   --probex-consensus-low:  #EF4444;
 
   --probex-sidebar-bg: #062318;
-  --probex-sidebar-item-active-bg: rgba(16, 185, 129, 0.1);
-  --probex-sidebar-item-active-border: rgba(16, 185, 129, 0.22);
+  --probex-sidebar-item-active-bg: rgba(94, 234, 212, 0.1);
+  --probex-sidebar-item-active-border: rgba(94, 234, 212, 0.22);
 
-  --probex-chart-primary:   #10B981;
+  --probex-chart-primary:   #5EEAD4;
   --probex-chart-secondary: #84CC16;
   --probex-chart-tertiary:  #06B6D4;
   --probex-chart-grid:      rgba(255, 255, 255, 0.04);
   --probex-chart-axis:      rgba(255, 255, 255, 0.18);
 
-  --probex-gradient-brand:   linear-gradient(135deg, #10B981 0%, #065F46 100%);
+  --probex-gradient-brand:   linear-gradient(135deg, #5EEAD4 0%, #065F46 100%);
   --probex-gradient-yes:     linear-gradient(135deg, #10B981 0%, #059669 100%);
   --probex-gradient-no:      linear-gradient(135deg, #84CC16 0%, #4D7C0F 100%);
   --probex-gradient-surface: linear-gradient(180deg, #062318 0%, #031A10 100%);
@@ -452,11 +481,11 @@
   --probex-border:         rgba(15, 23, 42, 0.08);
   --probex-border-default: rgba(15, 23, 42, 0.12);
   --probex-border-strong:  rgba(15, 23, 42, 0.2);
-  --probex-border-active:  rgba(37, 99, 235, 0.4);
+  --probex-border-active:  rgba(3, 105, 161, 0.4);
 
-  --probex-primary:   #2563EB;
+  --probex-primary:   #0369A1;
   --probex-secondary: #4F46E5;
-  --probex-primary-dim:   rgba(37, 99, 235, 0.08);
+  --probex-primary-dim:   rgba(3, 105, 161, 0.08);
   --probex-secondary-dim: rgba(79, 70, 229, 0.08);
 
   --probex-text-primary:   #0F172A;
@@ -470,6 +499,9 @@
   --probex-no:         #4F46E5;
   --probex-no-dim:     rgba(79, 70, 229, 0.08);
   --probex-no-border:  rgba(79, 70, 229, 0.22);
+  --probex-on-accent: #FFFFFF;
+  --probex-on-yes:    #FFFFFF;
+  --probex-on-no:     #FFFFFF;
 
   --probex-positive:  #047857;
   --probex-positive-dim: rgba(5, 150, 105, 0.1);
@@ -484,16 +516,16 @@
   --probex-consensus-low:  #DC2626;
 
   --probex-sidebar-bg: #FFFFFF;
-  --probex-sidebar-item-active-bg: rgba(37, 99, 235, 0.07);
-  --probex-sidebar-item-active-border: rgba(37, 99, 235, 0.18);
+  --probex-sidebar-item-active-bg: rgba(3, 105, 161, 0.07);
+  --probex-sidebar-item-active-border: rgba(3, 105, 161, 0.18);
 
-  --probex-chart-primary:   #2563EB;
+  --probex-chart-primary:   #0369A1;
   --probex-chart-secondary: #4F46E5;
   --probex-chart-tertiary:  #059669;
   --probex-chart-grid:      rgba(15, 23, 42, 0.05);
   --probex-chart-axis:      rgba(15, 23, 42, 0.3);
 
-  --probex-gradient-brand:   linear-gradient(135deg, #2563EB 0%, #4F46E5 100%);
+  --probex-gradient-brand:   linear-gradient(135deg, #0369A1 0%, #4F46E5 100%);
   --probex-gradient-yes:     linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
   --probex-gradient-no:      linear-gradient(135deg, #4F46E5 0%, #3730a3 100%);
   --probex-gradient-surface: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
@@ -544,6 +576,9 @@
   --probex-no:           #C2410C;
   --probex-no-dim:       rgba(194, 65, 12, 0.14);
   --probex-no-border:    rgba(194, 65, 12, 0.32);
+  --probex-on-accent: #0B0705;
+  --probex-on-yes:    #0B0705;
+  --probex-on-no:     #FFFFFF;
 
   --probex-positive:  #10B981;
   --probex-positive-dim: rgba(16, 185, 129, 0.12);
@@ -647,4 +682,120 @@
   --probex-surface:   #1B1310;
   --probex-surface-2: #261A13;
   --probex-surface-3: #33251A;
+}
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   OBSIDIAN COCKPIT — FOUNDATION LAYER
+   ═════════════════════════════════════════════════════════════════════════
+   Appended after every theme block and after the institutional refinement
+   layer, so these reach all six palettes rather than only the default.
+
+   Two things are added here, both structural:
+
+   1. TWO NEW SURFACE STEPS. The ladder was bg → surface → surface-2 →
+      surface-3, which has no RECESSED step and no OVERLAY step. A table
+      header, an input trough and a probe row all want to sit BELOW the panel
+      they are in; today they borrow surface-2, which sits above it, so an
+      inset well reads as a raised chip. `surface-lowest` is that missing
+      step, and it is what lets a row read as an instrument slot.
+      `surface-overlay` is the plane for modals and the command palette,
+      which currently reuse surface-3 and so cannot be distinguished from a
+      hovered row.
+
+      `surface-raised` is introduced as a NAME for the existing surface-2
+      value, not a new colour. Renaming surface-2 outright would touch 73 call
+      sites across 48 files, which is route work, not foundation. Both names
+      resolve to the same colour until those sites migrate.
+
+   2. THE FIVE DATA-STATE COLOURS. live / stale / degraded / offline /
+      synthetic previously had no tokens at all — ProvenanceBadge composed
+      them from positive/warning/muted, which is why DEGRADED and STALE are
+      currently the same amber and why OFFLINE and SYNTHETIC have no colour of
+      their own. These six states must never collapse into each other, so
+      each now has a token, per theme.
+
+      Values are tuned per theme against that theme's OWN surface, not copied:
+      emerald's surface is the lightest of the dark themes and #F43F5E
+      measures 4.01:1 on it, so emerald's offline is lifted to #FB7185
+      (5.47:1). Institutional is the light theme and takes darkened variants
+      throughout. Every combination measures >= 4.47:1.
+───────────────────────────────────────────────────────────────────────── */
+
+[data-theme="aurora"], :root {
+  --probex-surface-lowest:  #060A14;
+  --probex-surface-raised:  var(--probex-surface-2);
+  --probex-surface-overlay: #182744;
+
+  --probex-status-live:      #10B981;
+  --probex-status-stale:     #F59E0B;
+  --probex-status-degraded:  #FB923C;
+  --probex-status-offline:   #F43F5E;
+  --probex-status-synthetic: #818CF8;
+}
+
+[data-theme="midnight"] {
+  --probex-surface-lowest:  #050912;
+  --probex-surface-raised:  var(--probex-surface-2);
+  --probex-surface-overlay: #1E2C46;
+
+  --probex-status-live:      #10B981;
+  --probex-status-stale:     #F59E0B;
+  --probex-status-degraded:  #FB923C;
+  --probex-status-offline:   #F43F5E;
+  --probex-status-synthetic: #818CF8;
+}
+
+[data-theme="quantum"] {
+  --probex-surface-lowest:  #06110C;
+  --probex-surface-raised:  var(--probex-surface-2);
+  --probex-surface-overlay: #1D4235;
+
+  --probex-status-live:      #10B981;
+  --probex-status-stale:     #F59E0B;
+  --probex-status-degraded:  #FB923C;
+  --probex-status-offline:   #F43F5E;
+  --probex-status-synthetic: #818CF8;
+}
+
+[data-theme="emerald"] {
+  --probex-surface-lowest:  #072418;
+  --probex-surface-raised:  var(--probex-surface-2);
+  --probex-surface-overlay: #1E5740;
+
+  --probex-status-live:      #10B981;
+  --probex-status-stale:     #F59E0B;
+  --probex-status-degraded:  #FB923C;
+  /* Lifted from #F43F5E: emerald's surface (#0B2E20) is the lightest of the
+     dark themes and the standard crimson measures 4.01:1 on it. */
+  --probex-status-offline:   #FB7185;
+  --probex-status-synthetic: #818CF8;
+}
+
+[data-theme="ember"] {
+  --probex-surface-lowest:  #120C09;
+  --probex-surface-raised:  var(--probex-surface-2);
+  --probex-surface-overlay: #3D2C1F;
+
+  --probex-status-live:      #10B981;
+  --probex-status-stale:     #F59E0B;
+  --probex-status-degraded:  #FB923C;
+  --probex-status-offline:   #F43F5E;
+  --probex-status-synthetic: #818CF8;
+}
+
+/* The light theme. A recessed well is DARKER than the panel here, which is
+   the inverse of every other theme — the reason these are per-theme values
+   rather than one shared alpha. Status hues are darkened to clear 4.5:1 on
+   white rather than reused from the dark set. */
+[data-theme="institutional"] {
+  --probex-surface-lowest:  #E8EDF3;
+  --probex-surface-raised:  var(--probex-surface-2);
+  --probex-surface-overlay: #FFFFFF;
+
+  --probex-status-live:      #047857;
+  --probex-status-stale:     #854D0E;
+  --probex-status-degraded:  #C2410C;
+  --probex-status-offline:   #BE123C;
+  --probex-status-synthetic: #4338CA;
 }

@@ -93,7 +93,13 @@ export function SystemStatusIndicator() {
         {/* The label itself carries the provenance in the states where it
             matters ("Synthetic data", "Engine unreachable"), so no second badge
             is stacked beside it. */}
-        <span className="text-2xs font-semibold uppercase tracking-wider whitespace-nowrap">
+        {/* The short form below `sm`, the full one above it. Both are the
+            same claim; the accessible name on the button always carries the
+            full label, so nothing is lost at any width. */}
+        <span className="text-2xs font-semibold uppercase tracking-wider whitespace-nowrap sm:hidden">
+          {status.shortLabel}
+        </span>
+        <span className="text-2xs font-semibold uppercase tracking-wider whitespace-nowrap hidden sm:inline">
           {status.label}
         </span>
         <svg

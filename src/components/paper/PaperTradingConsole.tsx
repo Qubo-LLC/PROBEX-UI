@@ -7,6 +7,8 @@
 // both are shown rather than silently reconciled.
 
 import { useApplicationStore } from '@/store/applicationStore'
+import type { ServiceState } from '@/lib/services/response'
+import type { PaperStats } from '@/types/engine'
 import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'
 import { survivalStateColor } from '@/lib/display/engine'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -141,8 +143,8 @@ export function PaperTradingConsole({ embedded = false }: EmbeddableProps = {}) 
 
           {/* 5 · Edge bucket + hourly performance */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-            <BucketTable title="By Edge Bucket" source="/api/paper-stats" buckets={p.edgeBuckets} />
-            <BucketTable title="By Hour of Day" source="/api/paper-stats" buckets={p.hourlyPerformance} formatKey={(k) => `${k}:00`} />
+            <BucketTable title="By Edge Bucket" source="/api/paper-stats" slice={statsSlice} buckets={p.edgeBuckets} />
+            <BucketTable title="By Hour of Day" source="/api/paper-stats" slice={statsSlice} buckets={p.hourlyPerformance} formatKey={(k) => `${k}:00`} />
           </div>
         </>
       )}
@@ -165,13 +167,16 @@ export function PaperTradingConsole({ embedded = false }: EmbeddableProps = {}) 
 // Delegates to the shared severity source so this timeline can never drift
 // from the rest of the survival UI (it previously mis-coloured DEAD as grey).
 const stateColorVar = survivalStateColor
-function BucketTable({ title, source, buckets, formatKey }: { title: string; source: string; buckets: Record<string, BucketPerformanceStat>; formatKey?: (key: string) => string }) {
+// `slice` is threaded in rather than re-subscribed here: the badge must
+// describe the freshness of the SAME read the parent rendered these buckets
+// from, and a second subscription could resolve a tick apart.
+function BucketTable({ title, source, slice, buckets, formatKey }: { title: string; source: string; slice: ServiceState<PaperStats>; buckets: Record<string, BucketPerformanceStat>; formatKey?: (key: string) => string }) {
   const entries = Object.entries(buckets)
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h3 className="t-card-title">{title}</h3>
-        <ProvenanceBadge provenance="live" detail={source} />
+        <ProvenanceBadge provenance="live" detail={source} state={slice} />
       </div>
       {entries.length === 0 ? (
         <EmptyState size="sm" title="No data yet" description="Populates as trades settle in this bucket." />

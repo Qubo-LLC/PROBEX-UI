@@ -92,7 +92,7 @@ export function ManualOrderPanel() {
             asserted a data feed that does not exist and weakened the badge
             everywhere else it appears. The write target is still disclosed —
             MutationButton prints it beside the engine's own response. */}
-        <ProvenanceBadge provenance="live" detail="/api/edges" />
+        <ProvenanceBadge provenance="live" detail="/api/edges" state={edgesSlice} />
       </div>
 
       <div className="p-4 flex flex-col gap-3.5">

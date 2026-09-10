@@ -23,7 +23,20 @@ export function ConfigPanel() {
     )
   }
 
-  if (!cfg) return null
+  // SLOW-tier poll (30s) — same reason as RuntimePanel.
+  if (!cfg) {
+    return (
+      <Card>
+        <div className="flex items-center justify-between">
+          <h3 className="t-card-title">Configuration</h3>
+          <span className="t-metadata">awaiting /api/config</span>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
+          Reading engine configuration… this endpoint is polled every 30 seconds.
+        </p>
+      </Card>
+    )
+  }
 
   const rows: Array<{ label: string; value: string; group: string }> = [
     { group: 'Trading', label: 'Environment',           value: cfg.environment.toUpperCase() },

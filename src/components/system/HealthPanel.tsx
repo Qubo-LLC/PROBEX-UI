@@ -3,11 +3,18 @@
 // HealthPanel — /health rendered natively (replaces the legacy admin
 // SystemHealth mapping). Per-component truth: one failing probe colours its
 // own row, never the whole panel.
+//
+// ─── Counter scope (Stage 8) ─────────────────────────────────────────────────
+// checks / warnings / errors / restarts are PROCESS-scoped. Verified: the engine
+// restarted mid-stage and 61 seconds later reported health_checks 8, warnings 0,
+// errors 0, restarts 0, where the Stage 1 capture had 5,488 / 5,482 / 0 / 0 over
+// ~11h. `restarts` is therefore NOT a count of engine restarts — it was 0
+// immediately after one — it counts restarts the monitor performed in-process.
+// The group is labelled with the window it actually describes.
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatUptime } from '@/lib/display/engine'
 import { cn } from '@/lib/utils'
-import { Card }       from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { StatusChip, toneForStatus } from '@/components/ui/StatusChip'
 
@@ -27,11 +34,9 @@ export function HealthPanel() {
 
   if (!health) {
     return (
-      <Card>
-        <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
-          Running health check… the engine’s probe cycle takes ~5 seconds.
-        </p>
-      </Card>
+      <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
+        Running health check… the engine’s probe cycle takes ~5 seconds.
+      </p>
     )
   }
 
@@ -39,11 +44,15 @@ export function HealthPanel() {
   const allHealthy   = healthyCount === health.components.length
 
   return (
-    <Card className="flex flex-col gap-5">
+    // No Card. This is one of five ruled sections on an instrument page, and a
+    // bordered surface around it would say it is a separate subject from the
+    // runtime and market-data readings beside it. It is not — they are three
+    // readings of one machine, and what separates them is a rule and a heading.
+    <section aria-label="Service health" className="flex flex-col gap-5">
       {/* Header row: overall status + uptime + monitor counters */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <h3 className="t-card-title">Health</h3>
+          <h2 className="t-section-title">Service health</h2>
           {/* Tone and liveness come from the canonical status; the LABEL is the
               engine's own word, so the panel still reports what it actually
               said ("healthy") rather than the app's internal spelling. */}
@@ -57,15 +66,37 @@ export function HealthPanel() {
             {healthyCount}/{health.components.length} probes healthy
           </span>
         </div>
-        <div className="flex items-center gap-4">
-          <Counter label="uptime" value={formatUptime(health.uptimeSeconds)} />
-          <Counter label="checks" value={health.stats.healthChecks.toLocaleString()} />
-          <Counter
-            label="errors"
-            value={health.stats.errors.toLocaleString()}
-            {...(health.stats.errors > 0 ? { tone: 'var(--probex-warning)' } : {})}
-          />
-          <Counter label="restarts" value={String(health.stats.restarts)} />
+        {/* The monitor's own counters, with the window they describe stated
+            once for the group rather than implied per number. `warnings` is
+            included: it was mapped and never rendered, and on the Stage 1
+            capture it was the most telling figure on the page — 5,482 warnings
+            against 5,488 checks. */}
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-4">
+            <Counter label="uptime" value={formatUptime(health.uptimeSeconds)} />
+            <Counter label="checks" value={health.stats.healthChecks.toLocaleString()} />
+            <Counter
+              label="warnings"
+              value={health.stats.warnings.toLocaleString()}
+              {...(health.stats.warnings > 0 ? { tone: 'var(--probex-warning)' } : {})}
+            />
+            <Counter
+              label="errors"
+              value={health.stats.errors.toLocaleString()}
+              {...(health.stats.errors > 0 ? { tone: 'var(--probex-negative)' } : {})}
+            />
+            <Counter
+              label="restarts"
+              value={String(health.stats.restarts)}
+              title="Component restarts performed by the health monitor inside this process — not a count of engine restarts"
+            />
+          </div>
+          {/* Scope named explicitly. These are the health MONITOR's own probe
+              counters — not engine event records, which the Recent incidents
+              section below reports from a different subsystem. Without the
+              distinction stated, "3,263 warnings" here and "no warnings" there
+              read as a contradiction. */}
+          <span className="t-metadata">health-monitor probe cycles, since this engine process started</span>
         </div>
       </div>
 
@@ -111,6 +142,18 @@ export function HealthPanel() {
               <span className="flex-1 truncate" style={{ color: 'var(--probex-text-muted)' }} title={c.message}>
                 {c.message}
               </span>
+              {/* Last signal — `checked_at` has always been on the wire and in
+                  the DTO, and was never displayed. On a diagnostic surface the
+                  age of a probe reading is part of the reading: a "healthy"
+                  answer from four minutes ago is not the same claim as one from
+                  two seconds ago. */}
+              <span
+                className="tabular-nums flex-shrink-0 text-right"
+                style={{ minWidth: '5rem', color: 'var(--probex-text-disabled)' }}
+                title={`Checked ${new Date(c.checkedAt).toLocaleString()}`}
+              >
+                {formatSignalAge(c.checkedAt)}
+              </span>
               {latency !== null && (
                 <span
                   className={cn(
@@ -135,6 +178,15 @@ export function HealthPanel() {
         })}
       </div>
 
+      {/* When nearly every check warns, the ratio is the finding. Stated only
+          when it is actually high, so a healthy engine carries no extra noise. */}
+      {health.stats.healthChecks > 0 && health.stats.warnings / health.stats.healthChecks >= 0.5 && (
+        <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+          {health.stats.warnings.toLocaleString()} of {health.stats.healthChecks.toLocaleString()} checks
+          raised a warning this process — {Math.round((health.stats.warnings / health.stats.healthChecks) * 100)}% of them.
+        </p>
+      )}
+
       {/* Last warning / error, when the monitor has them */}
       {(health.stats.lastError || health.stats.lastWarning) && (
         <div className="flex flex-wrap gap-x-6 gap-y-1.5">
@@ -150,15 +202,28 @@ export function HealthPanel() {
           )}
         </div>
       )}
-    </Card>
+    </section>
   )
+}
+
+/** How long ago a probe last answered. Seconds matter here — this is the one
+ *  surface where a stale reading is itself the diagnosis. */
+function formatSignalAge(checkedAt: number, now: number = Date.now()): string {
+  const secs = Math.max(0, Math.round((now - checkedAt) / 1000))
+  if (!Number.isFinite(secs)) return '—'
+  if (secs < 2) return 'just now'
+  if (secs < 60) return `${secs}s ago`
+  const mins = Math.floor(secs / 60)
+  if (mins < 60) return `${mins}m ago`
+  const h = Math.floor(mins / 60)
+  return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`
 }
 
 /** Header counter: value dominant, label recessive beneath it. Reads as a
  *  monitoring readout rather than as a run-on sentence of stats. */
-function Counter({ label, value, tone }: { label: string; value: string; tone?: string }) {
+function Counter({ label, value, tone, title }: { label: string; value: string; tone?: string; title?: string }) {
   return (
-    <span className="flex flex-col items-end leading-tight">
+    <span className="flex flex-col items-end leading-tight" {...(title !== undefined ? { title } : {})}>
       <span
         className="text-xs font-semibold tabular-nums"
         style={{ color: tone ?? 'var(--probex-text-secondary)' }}

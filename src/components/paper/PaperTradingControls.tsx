@@ -47,7 +47,10 @@ export function PaperTradingControls() {
               : 'Reading engine state…'}
           </p>
         </div>
-        <ProvenanceBadge provenance="live" detail="/api/paper/*" />
+        {/* The detail names the MUTATION family, but the sentence beside it
+            ("running · N pending · N total") is polled read state — so the badge
+            must reflect that read's freshness, not the buttons'. */}
+        <ProvenanceBadge provenance="live" detail="/api/paper/*" state={statusSlice} />
       </div>
 
       <div className="p-4 flex flex-col gap-4">

@@ -18,8 +18,10 @@ interface MarketHeaderProps {
 
 export function MarketHeader({ market, edge }: MarketHeaderProps) {
   const router = useRouter()
+  // A calendar date answers nothing for a market measured in minutes; the full
+  // timestamp does. Kept in the same slot, at the same weight.
   const resolves = market.closesAt !== null
-    ? new Date(market.closesAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    ? new Date(market.closesAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     : null
 
   return (

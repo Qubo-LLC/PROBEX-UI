@@ -7,7 +7,8 @@
 // market item and is restored unchanged. Thesis + resolution criteria
 // render only when the engine actually provided that text — never invented.
 
-import { formatCompact, probabilityColorVar } from '@/lib/utils'
+import { formatCompact } from '@/lib/utils'
+import { marketLifecycle, formatCloseTime } from '@/lib/display/marketLifecycle'
 import type { MarketRow } from '@/lib/mappers/markets'
 import type { EdgeRow } from '@/lib/mappers/edges'
 
@@ -26,13 +27,16 @@ function Metric({ label, value, accent }: { label: string; value: string; accent
 }
 
 export function EngineThesisPanel({ market, edge }: EngineThesisPanelProps) {
-  const daysLeft = market.closesAt !== null
-    ? Math.max(0, Math.ceil((market.closesAt - Date.now()) / 86_400_000))
-    : null
+  // Day granularity is the wrong unit for a 15-minute market: every one of
+  // them reads "0d" from the moment it opens, and a closed one still reads
+  // "0d" rather than saying it is over.
+  const life = marketLifecycle(market.closesAt)
+  const closeLabel = market.closesAt !== null ? formatCloseTime(market.closesAt) : null
 
   const metrics: Array<{ label: string; value: string; accent?: string }> = []
   if (market.probability !== null) {
-    metrics.push({ label: 'YES Price', value: `${Math.round(market.probability * 100)}¢`, accent: probabilityColorVar(market.probability) })
+    // Market side, not financial direction — see the note in MarketCard's ProbBars.
+    metrics.push({ label: 'YES Price', value: `${Math.round(market.probability * 100)}¢`, accent: 'var(--probex-yes)' })
   }
   if (edge) {
     metrics.push({ label: 'Edge Strength', value: `${edge.edgePct.toFixed(1)}%`, accent: edge.direction === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)' })
@@ -40,7 +44,13 @@ export function EngineThesisPanel({ market, edge }: EngineThesisPanelProps) {
   if (market.volume24h !== null) metrics.push({ label: '24h Volume', value: `$${formatCompact(market.volume24h)}` })
   if (market.openInterest !== null) metrics.push({ label: 'Open Interest', value: `$${formatCompact(market.openInterest)}` })
   if (market.liquidity !== null) metrics.push({ label: 'Liquidity', value: `$${formatCompact(market.liquidity)}` })
-  if (daysLeft !== null) metrics.push({ label: 'Resolves In', value: `${daysLeft}d` })
+  if (closeLabel !== null) {
+    metrics.push({
+      label: life === 'closed' ? 'Closed' : 'Resolves',
+      value: closeLabel.replace(/^clos(es|ed) /, ''),
+      ...(life === 'closed' ? { accent: 'var(--probex-text-muted)' } : {}),
+    })
+  }
 
   return (
     <div className="px-6 py-5 flex flex-col gap-5" style={{ borderBottom: '1px solid var(--probex-border)' }}>

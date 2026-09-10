@@ -40,6 +40,13 @@ export function KellyUtilization() {
   const effectiveKelly = cfg.kellyFraction * sv.kellyModifier
   const utilization = cfg.kellyFraction > 0 ? effectiveKelly / cfg.kellyFraction : 1
 
+  // The survival brain can raise the modifier ABOVE 1.0, which means the engine
+  // is sized beyond the configured Kelly fraction. That is not a healthy full
+  // gauge, and it must not read as one: the ring keeps the positive treatment
+  // for the part that is inside the limit, the excess is drawn in the attention
+  // tone, and the sublabel says so in words so the state survives greyscale.
+  const overLimit = utilization > 1
+
   return (
     <div className="rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
       <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
@@ -51,12 +58,21 @@ export function KellyUtilization() {
         <RadialGauge
           value={utilization}
           color={utilization >= 1 ? 'var(--probex-positive)' : utilization >= 0.5 ? 'var(--probex-warning)' : 'var(--probex-negative)'}
+          overflowColor="var(--probex-warning)"
           size={120}
           strokeWidth={8}
-          ariaLabel={`Kelly utilization: ${Math.round(utilization * 100)}%`}
+          ariaLabel={
+            overLimit
+              ? `Kelly utilization: ${Math.round(utilization * 100)}%, above the configured maximum`
+              : `Kelly utilization: ${Math.round(utilization * 100)}%`
+          }
         >
           <span className="text-2xl font-black tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{Math.round(utilization * 100)}%</span>
-          <span className="t-label">Utilized</span>
+          {overLimit ? (
+            <span className="t-label" style={{ color: 'var(--probex-warning)' }}>Over limit</span>
+          ) : (
+            <span className="t-label">Utilized</span>
+          )}
         </RadialGauge>
 
         <div className="flex-1 w-full grid grid-cols-2 gap-2">

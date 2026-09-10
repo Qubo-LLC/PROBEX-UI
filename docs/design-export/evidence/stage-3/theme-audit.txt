@@ -1,0 +1,102 @@
+═══ SEMANTIC ARCHITECTURE AUDIT — all six themes ═══
+
+── AURORA ──────────────────────────────────────────────────────────
+   bg #03050D   surface #0C1424   primary #38BDF8   yes #00F2FE   no #C084FC
+   ok   primary vs YES          dE  36.54   #38BDF8 / #00F2FE
+   ok   YES vs NO               dE  96.30
+   ok   positive vs negative    dE 104.21
+   ok   YES vs POSITIVE        dE  43.36
+   ok   NO vs NEGATIVE         dE  77.11
+   ok   data states (worst pair) dE  18.14  stale/degraded
+   ok   text-primary            15.87:1  (#E8EEFF on #0C1424)
+   ok   text-secondary           8.57:1  (#aab1c2 on #0C1424)
+   ok   text-muted               6.61:1  (#949bac on #0C1424)
+   ok   status text (worst)       5.01:1  offline
+   ok   on-yes on yes           14.67:1
+   ok   on-no on no              7.71:1
+   ok   on-accent on primary     9.50:1
+
+── MIDNIGHT ────────────────────────────────────────────────────────
+   bg #010208   surface #0A1220   primary #60A5FA   yes #3B82F6   no #4F46E5
+   ok   primary vs YES          dE  23.74   #60A5FA / #3B82F6
+   ok   YES vs NO               dE  39.14
+   ok   positive vs negative    dE 104.21
+   ok   YES vs POSITIVE        dE 108.32
+   ok   NO vs NEGATIVE         dE 107.14
+   ok   data states (worst pair) dE  18.14  stale/degraded
+   ok   text-primary            15.21:1  (#E2E8F0 on #0A1220)
+   ok   text-secondary           8.21:1  (#a6acb6 on #0A1220)
+   ok   text-muted               6.69:1  (#949ba5 on #0A1220)
+   ok   status text (worst)       5.11:1  offline
+   ok   on-yes on yes            5.63:1
+   ok   on-no on no              6.29:1
+   ok   on-accent on primary     8.15:1
+
+── QUANTUM ─────────────────────────────────────────────────────────
+   bg #020A06   surface #0B1E18   primary #22D3EE   yes #00FF88   no #0D9488
+   ok   primary vs YES          dE  81.34   #22D3EE / #00FF88
+   ok   YES vs NO               dE  69.64
+   ok   positive vs negative    dE 134.35
+   ok   YES vs POSITIVE        dE  23.09
+   ok   NO vs NEGATIVE         dE 109.80
+   ok   data states (worst pair) dE  18.14  stale/degraded
+   ok   text-primary            16.27:1  (#E0FFF0 on #0B1E18)
+   ok   text-secondary           8.88:1  (#a4c0b4 on #0B1E18)
+   ok   text-muted               6.71:1  (#8da79c on #0B1E18)
+   ok   status text (worst)       4.71:1  offline
+   ok   on-yes on yes           14.93:1
+   ok   on-no on no              5.35:1
+   ok   on-accent on primary    11.08:1
+
+── EMERALD ─────────────────────────────────────────────────────────
+   bg #031A10   surface #0B2E20   primary #5EEAD4   yes #10B981   no #84CC16
+   ok   primary vs YES          dE  27.39   #5EEAD4 / #10B981
+   ok   YES vs NO               dE  54.80
+   ok   positive vs negative    dE 114.53
+   ok   YES vs POSITIVE        dE  24.78
+   ok   NO vs NEGATIVE         dE 109.27
+   ok   data states (worst pair) dE  18.14  stale/degraded
+   ok   text-primary            13.98:1  (#ECFDF5 on #0B2E20)
+   ok   text-secondary           7.91:1  (#adc3b9 on #0B2E20)
+   ok   text-muted               6.39:1  (#99b0a6 on #0B2E20)
+   ok   status text (worst)       4.94:1  synthetic
+   ok   on-yes on yes            7.14:1
+   ok   on-no on no              9.17:1
+   ok   on-accent on primary    12.25:1
+
+── INSTITUTIONAL ───────────────────────────────────────────────────
+   bg #F1F5F9   surface #FFFFFF   primary #0369A1   yes #2563EB   no #4F46E5
+   ok   primary vs YES          dE  50.66   #0369A1 / #2563EB
+   ok   YES vs NO               dE  21.04
+   ok   positive vs negative    dE 110.34
+   ok   YES vs POSITIVE        dE 108.14
+   ok   NO vs NEGATIVE         dE 127.26
+   ok   data states (worst pair) dE  33.01  degraded/offline
+   ok   text-primary            17.85:1  (#0F172A on #FFFFFF)
+   ok   text-secondary           8.86:1  (#444a59 on #FFFFFF)
+   ok   text-muted               7.13:1  (#525866 on #FFFFFF)
+   ok   status text (worst)       5.18:1  degraded
+   ok   on-yes on yes            5.17:1
+   ok   on-no on no              6.29:1
+   ok   on-accent on primary     5.93:1
+
+── EMBER ───────────────────────────────────────────────────────────
+   bg #0B0705   surface #1B1310   primary #F26419   yes #FBBF24   no #C2410C
+   ok   primary vs YES          dE  49.10   #F26419 / #FBBF24
+   ok   YES vs NO               dE  58.16
+   ok   positive vs negative    dE 104.21
+   ok   YES vs POSITIVE        dE  86.62
+   ok   NO vs NEGATIVE         dE  33.83
+   ok   data states (worst pair) dE  18.14  stale/degraded
+   ok   text-primary            16.06:1  (#FBEEE2 on #1B1310)
+   ok   text-secondary           8.70:1  (#bcb1a7 on #1B1310)
+   ok   text-muted               6.90:1  (#a89d94 on #1B1310)
+   ok   status text (worst)       4.99:1  offline
+   ok   on-yes on yes           12.02:1
+   ok   on-no on no              5.18:1
+   ok   on-accent on primary     6.32:1
+
+═══ PROBLEMS ═══
+  none
+
+  total: 0

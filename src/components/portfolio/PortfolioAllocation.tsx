@@ -124,7 +124,7 @@ function SideRow({ label, color, count, value, pnl, total }: { label: string; co
   const isProfit = pnl >= 0
   return (
     <div className="flex items-center gap-2">
-      <span className="text-2xs font-black uppercase tracking-widest px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: color, color: label === 'YES' ? '#050816' : '#fff' }}>{label}</span>
+      <span className="text-2xs font-black uppercase tracking-widest px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: color, color: label === 'YES' ? 'var(--probex-on-yes)' : 'var(--probex-on-no)' }}>{label}</span>
       <span className="text-xs flex-1" style={{ color: 'var(--probex-text-secondary)' }}>{count} positions · {formatCurrency(value)}</span>
       <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{pct.toFixed(0)}%</span>
       <span className="text-xs font-semibold tabular-nums w-16 text-right" style={{ color: isProfit ? 'var(--probex-positive)' : 'var(--probex-negative)' }}>{isProfit ? '+' : ''}{formatCurrency(pnl)}</span>

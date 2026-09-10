@@ -18,6 +18,26 @@
   --probex-positive-border: color-mix(in srgb, var(--probex-positive) 25%, transparent);
   --probex-negative-border: color-mix(in srgb, var(--probex-negative) 28%, transparent);
   --probex-warning-border:  color-mix(in srgb, var(--probex-warning) 30%, transparent);
+
+  /* ─── Certainty ink ─────────────────────────────────────────────────────
+     The certainty scale needs its OWN steps, not the general text ramp.
+     Measured on the first build, the scale borrowed --probex-text-secondary /
+     -muted / -disabled, whose alphas are 0.72 / 0.64 / 0.52 — an eight-point
+     gap between "derived" and "stale" that no reader can perceive. Those
+     tokens are tuned for prose hierarchy, where the steps are meant to be
+     subtle; certainty is a claim about whether a number is TRUE, and its steps
+     must be obvious.
+
+     Derived from --probex-text-primary via color-mix, like the tone borders
+     above, so all five themes adapt with no per-theme entries.
+
+     `stale` deliberately stops at 54% rather than continuing the ramp down: a
+     stale figure is a RETAINED READING the operator still has to be able to
+     read. Only `absent` — which renders a placeholder glyph, not a value —
+     goes dim enough to recede. */
+  --probex-certainty-derived: color-mix(in srgb, var(--probex-text-primary) 68%, transparent);
+  --probex-certainty-stale:   color-mix(in srgb, var(--probex-text-primary) 54%, transparent);
+  --probex-certainty-absent:  color-mix(in srgb, var(--probex-text-primary) 28%, transparent);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -61,6 +81,12 @@
    tabular figures, so the tabular-nums alignment the metric typography
    depends on holds regardless of which one wins. */
 :root {
+  /* --font-display is the interface face. It aliases the sans stack today
+     because no font binary ships in this repository; when Geist is vendored
+     (next/font/local, never fonts.googleapis.com — see the note above) this is
+     the single declaration that changes. Declaring the seam now means the swap
+     is one line rather than an audit. */
+  --font-display: var(--font-sans);
   --font-sans:
     system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
     "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
@@ -356,36 +382,82 @@
     color: var(--probex-text-muted);
   }
 
+  /* The border shift is a good affordance and it stays. What it cannot do is
+     be the ONLY focus indication: it is a 1px colour change from
+     --probex-border-default to --probex-border-active, and the blanket
+     `outline: none` removed the ring that every other control in the product
+     gets. Keyboard users had no visible focus on any text input.
+
+     A text field is always focus-visible when focused (it accepts keyboard
+     input), so the ring shows on click too — which is correct for an input and
+     matches .focus-ring elsewhere: 2px, offset 2px, --probex-primary. */
   .input-base:focus {
-    outline: none;
     border-color: var(--probex-border-active);
   }
 
+  .input-base:focus-visible {
+    outline: 2px solid var(--probex-primary);
+    outline-offset: 2px;
+  }
+
   /* ── Button variants ────────────────────────────────────── */
+  /* The primary CTA. Was a brand gradient carrying white text, which measured
+     1.77:1 at the cyan end — a WCAG failure on the product's most-clicked
+     control, and one a single ink colour cannot fix because the two ends of a
+     gradient want different inks.
+
+     A flat --probex-primary fill has one ink question with one answer, and
+     --probex-on-accent is declared per theme to answer it. Measured after the
+     change: 9.50:1 (aurora) through 5.17:1 (institutional), every theme.
+
+     Hover raises brightness rather than lowering opacity: opacity fades the
+     ink and the fill together, which cost contrast exactly when the pointer
+     was on the control. No lift, no scale — a workstation control should not
+     move under the cursor. */
   .btn-primary {
-    @apply rounded-md px-4 py-2 text-sm font-semibold transition-all duration-150 cursor-pointer;
-    background: var(--probex-gradient-brand);
-    color: #ffffff;
+    @apply rounded-sm px-4 py-2 text-sm font-semibold cursor-pointer;
+    background: var(--probex-primary);
+    color: var(--probex-on-accent);
+    border: 1px solid transparent;
+    transition: filter var(--motion-fast) var(--motion-ease),
+                background-color var(--motion-fast) var(--motion-ease);
   }
 
-  .btn-primary:hover {
-    opacity: 0.88;
-    transform: translateY(-1px);
+  .btn-primary:hover  { filter: brightness(1.08); }
+  .btn-primary:active { filter: brightness(0.92); }
+
+  /* The ring cannot sit ON the fill — it is the same colour as the fill. The
+     2px offset puts it on the surface behind the button, which is where it is
+     visible. Same geometry as .focus-ring so focus reads identically product-wide. */
+  .btn-primary:focus-visible {
+    outline: 2px solid var(--probex-primary);
+    outline-offset: 2px;
+    border-radius: inherit;
   }
 
-  .btn-primary:active {
-    opacity: 0.78;
-    transform: translateY(0);
+  .btn-primary:disabled,
+  .btn-primary[aria-disabled='true'] {
+    filter: none;
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 
   .btn-yes {
     @apply rounded-md px-4 py-2 text-sm font-bold transition-all duration-150 cursor-pointer;
     background: var(--probex-gradient-yes);
-    color: var(--probex-bg);
+    color: var(--probex-on-yes);
   }
 
   .btn-yes:hover { opacity: 0.88; }
 
+  /* NOTE — .btn-no keeps a literal white and is NOT re-pointed at
+     --probex-on-no. It is painted with --probex-gradient-no (the SECONDARY
+     violet #6D5EF7 -> #4F46E5), not with --probex-no (#8B5CF6), so the
+     market-NO ink token does not describe this surface. Measured on this
+     gradient: white 4.57:1 / 6.29:1 (passes); --probex-on-no would be 4.45:1 /
+     3.24:1 in aurora (fails). Pointing it at the token would be a regression.
+     The gradient/token mismatch itself is real and is logged for the palette
+     stage. */
   .btn-no {
     @apply rounded-md px-4 py-2 text-sm font-bold transition-all duration-150 cursor-pointer;
     background: var(--probex-gradient-no);
@@ -727,6 +799,34 @@
     color: var(--probex-text-primary);
     font-feature-settings: "tnum" 1;
   }
+
+  /* ── The two registers the scale was missing ───────────────────────────
+     The numeric scale was barbell-shaped: t-metric-lg (4xl) at one end, then
+     a jump straight to t-metric-sm (base) and the 11px axis tick. A page that
+     wanted to say "this figure outranks that one" had no step to move down
+     to, so it reached for a CONTAINER instead — a card around the important
+     thing. That is one of the two mechanical causes of the card grid (the
+     other was provenance living inside Panel).
+
+     `display` is the page's single hero figure — one per page, never two.
+     It is fluid rather than fixed because at 375px a 3.25rem price is wider
+     than the viewport; clamp() lets it shrink without a breakpoint. */
+  .t-metric-display {
+    @apply font-bold tabular-nums leading-none;
+    font-size: clamp(2.25rem, 1.6rem + 2.6vw, 3.25rem);
+    letter-spacing: -0.035em;
+    color: var(--probex-text-primary);
+    font-feature-settings: "tnum" 1;
+  }
+  /* Between t-metric (2xl) and t-metric-sm (base) — the register a secondary
+     figure sits at when it must read as secondary WITHOUT being boxed. */
+  .t-metric-md {
+    @apply text-lg font-bold tabular-nums;
+    letter-spacing: -0.02em;
+    color: var(--probex-text-primary);
+    font-feature-settings: "tnum" 1;
+  }
+
   /* Units and suffixes ride alongside a metric at reduced weight, so "$" and
      "ms" never compete with the digits they qualify. */
   .t-unit {
@@ -755,6 +855,102 @@
   .t-helper {
     @apply text-2xs leading-relaxed;
     color: var(--probex-text-disabled);
+  }
+
+  /* ─────────────────────────────────────────────────────────────────────
+     CERTAINTY SCALE
+     ─────────────────────────────────────────────────────────────────────
+     How well a number is KNOWN, expressed as a property of the number
+     rather than as a chip beside it.
+
+     ── The problem this replaces ────────────────────────────────────────
+     ProvenanceBadge renders INSIDE Panel, StatCard and ChartFrame, so the
+     only way to make a figure legally truthful was to put it in a box. The
+     measured result was ~110 rendered badges, of which the overwhelming
+     majority said "Live" — an affirmation the reader establishes once per
+     page and then never needs re-asserted. Repeating it a hundred times did
+     not make the product feel live; it made "Live" stop meaning anything.
+
+     ── The asymmetry that makes this safe ───────────────────────────────
+     Quiet the AFFIRMATIONS. Keep the WARNINGS loud.
+
+       confirmed  the default — full contrast, no ornament, no class
+       derived    computed from live values, not measured
+       stale      the source stopped updating; the value is retained
+       absent     nothing arrived, and the slot says so at its real size
+
+     'synthetic' and 'unreachable' deliberately have NO class here. Those are
+     warnings — that the number was fabricated locally, or that no number
+     exists — and they keep the full ProvenanceBadge treatment. A reader must
+     never have to notice a contrast step to learn that a figure is fake.
+
+     ── Accessibility (WCAG 1.4.1 — colour is not a sole carrier) ─────────
+     Every state below pairs its contrast shift with a NON-COLOUR carrier:
+
+       derived  a hairline rule before the value, drawn with a background on
+                an empty pseudo-element (no `content` string, so nothing is
+                injected into the accessibility tree) — plus the word
+                "Derived" in the accessible name supplied by <Figure>.
+       stale    <Figure> requires a visible age string beside the value. The
+                dimming is redundant reinforcement, never the only signal.
+       absent   renders the engine's own reason as visible text.
+
+     So the contrast step is always the SECOND signal, never the first. This
+     is the constraint the scale was approved under and it is load-bearing:
+     a certainty state with no textual carrier is a bug, not a style choice.
+  ───────────────────────────────────────────────────────────────────────── */
+
+  /* ── Three signals per step, never one ────────────────────────────────
+     Colour, WEIGHT and an ornament move together at every level — the same
+     rule the type scale above follows, and the reason the scale is legible
+     without being colour-dependent. The metric classes set font-weight 700,
+     so each step down is also a visible weight step: 700 → 600 → 500 → 400.
+
+     Weight is what makes this work at a glance. Alpha alone put four states
+     inside a 20-point band; alpha plus weight plus ornament separates them
+     even in greyscale, and the textual carrier <Figure> requires means the
+     visual treatment is never the only signal. */
+
+  /* Computed client-side from live values — labelled, not measured.
+     ── Why there is no leading hairline any more ────────────────────────────
+     The first version drew a 4px rule just left of the value. Rendered against
+     a NUMBER it read as a minus sign: "Markets readable — 27" was measured on
+     a 375px screen looking like a negative figure. An ornament that changes
+     what a number appears to say is worse than no ornament.
+     The non-colour carrier moved to the label instead, where <Figure> prints
+     the word "derived" — explicit, unambiguous, and better for assistive tech
+     than a decorative rule ever was. */
+  .c-derived {
+    color: var(--probex-certainty-derived);
+    font-weight: 600;
+  }
+
+  /* Last known value — the source has stopped updating. <Figure> renders the
+     age beside it; the type system makes that mandatory, so this class cannot
+     appear without one.
+
+     The dotted underline is the greyscale-safe carrier: it says "this number
+     is qualified" even where colour and weight are unavailable. */
+  .c-stale {
+    color: var(--probex-certainty-stale);
+    font-weight: 500;
+    text-decoration: underline dotted currentColor;
+    text-underline-offset: 0.28em;
+    text-decoration-thickness: 1px;
+  }
+
+  /* The engine answered and reports nothing computed yet, or nothing arrived.
+     The slot keeps the size the figure WOULD occupy, so the layout does not
+     reflow when the value lands and the reader can see that something is
+     meant to be here.
+
+     This is the one step allowed to go genuinely dim, because what it renders
+     is a PLACEHOLDER, not a value — the meaning is in the reason text beneath
+     it, which sits at full helper contrast. */
+  .c-absent {
+    color: var(--probex-certainty-absent);
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
   }
 
   /* ── Elevation utilities ──────────────────────────────────────────────
@@ -795,7 +991,10 @@
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-md font-semibold uppercase whitespace-nowrap;
     padding: 3px 8px;
-    font-size: 0.625rem;
+    /* 11px floor. This declared its own size rather than using the 2xs
+       token, so raising the token left .chip behind at 10px — found by
+       measuring the smallest rendered font, not by reading the config. */
+    font-size: 0.6875rem;
     letter-spacing: 0.06em;
     line-height: 1.2;
     color: var(--chip-color, var(--probex-text-secondary));
@@ -914,8 +1113,21 @@
 :root[data-liveness="inert"] .live-dot,
 :root[data-liveness="inert"] .chip-dot-live,
 :root[data-liveness="inert"] .pulse-ring,
+:root[data-liveness="inert"] .event-arrive,
 :root[data-liveness="inert"] .animate-brand-pulse {
   animation: none !important;
+}
+
+/* An event row entering the stream. One-shot and short: it says "this row was
+   not here a moment ago", which is a claim about the ENGINE, so it belongs in
+   the liveness gate above — under synthetic or unreachable data nothing has
+   arrived and nothing should appear to.
+
+   Deliberately not a highlight or a colour flash. The stream is read by
+   scanning, and a row that changes colour after landing pulls the eye back to
+   something already read. It fades and settles once, then holds still. */
+.event-arrive {
+  animation: fade-in-up var(--motion-med) var(--motion-ease) both;
 }
 
 /* `.pulse-ring` joined the gate in Wave 2B. It says "a live value just changed",

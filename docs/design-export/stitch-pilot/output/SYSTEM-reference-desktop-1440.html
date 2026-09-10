@@ -1,0 +1,269 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>PROBEX System — design reference</title>
+<style>
+:root{
+  --bg:#03050D; --lowest:#060A14; --surface:#0C1424; --raised:#121D33; --overlay:#182744;
+  --primary:#38BDF8; --yes:#00F2FE; --no:#C084FC;
+  --live:#10B981; --stale:#F59E0B; --degraded:#FB923C; --offline:#F43F5E; --synthetic:#818CF8;
+  --tp:#F1F5F9; --ts:#94A3B8; --tm:#64748B; --td:#334155;
+  --hair:rgba(255,255,255,.07); --sub:rgba(255,255,255,.12); --int:rgba(255,255,255,.20);
+  --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono","Segoe UI Mono",Consolas,monospace;
+  --sans:system-ui,"Segoe UI Variable Text","Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--tp);font-family:var(--sans);font-size:13px;line-height:18px}
+.app{display:grid;grid-template-columns:216px 1fr;height:900px}
+
+/* ── sidebar ───────────────────────────────────────────────── */
+.side{background:var(--lowest);border-right:1px solid var(--hair);padding:0 8px;display:flex;flex-direction:column}
+.brand{height:52px;display:flex;align-items:center;gap:8px;padding:0 8px;border-bottom:1px solid var(--hair);margin:0 -8px 10px;padding-left:16px}
+.mark{width:20px;height:20px;border-radius:4px;background:linear-gradient(135deg,var(--primary),var(--no))}
+.brand b{font-size:13px;letter-spacing:.08em}
+.grp{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--td);padding:12px 8px 5px}
+.nav{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:4px;color:var(--ts);font-size:13px}
+.nav.on{background:var(--raised);color:var(--tp);box-shadow:inset 2px 0 0 var(--primary)}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--tm);flex:none}
+.nav.on .dot{background:var(--primary)}
+.side-foot{margin-top:auto;border-top:1px solid var(--hair);margin-inline:-8px;padding:9px 16px;font-family:var(--mono);font-size:11px;color:var(--tm);display:flex;justify-content:space-between}
+
+/* ── header ────────────────────────────────────────────────── */
+.main{display:flex;flex-direction:column;min-width:0}
+.top{height:52px;border-bottom:1px solid var(--hair);display:flex;align-items:center;gap:14px;padding:0 16px;background:var(--lowest)}
+.tele{font-family:var(--mono);font-size:11px;color:var(--ts);display:flex;align-items:center;gap:6px}
+.tele b{color:var(--tp);font-weight:600}
+.sep{width:1px;height:16px;background:var(--sub)}
+.pill{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;padding:3px 7px;border-radius:4px;display:inline-flex;align-items:center;gap:5px}
+.p-deg{color:var(--degraded);background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.28)}
+.p-live{color:var(--live);background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.28)}
+.p-paper{color:var(--synthetic);background:rgba(129,140,248,.12);border:1px solid rgba(129,140,248,.28)}
+.spacer{margin-left:auto}
+.search{background:var(--lowest);border:1px solid var(--sub);border-radius:4px;height:28px;display:flex;align-items:center;padding:0 9px;gap:7px;color:var(--tm);font-size:12px;width:210px}
+
+/* ── canvas ────────────────────────────────────────────────── */
+.canvas{padding:12px 16px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.phead{display:flex;align-items:baseline;gap:12px}
+.phead h1{font-size:19px;font-weight:600;letter-spacing:-.01em}
+.phead span{color:var(--tm);font-size:12px}
+.tabs{margin-left:auto;display:flex;gap:2px}
+.tab{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;padding:5px 10px;border-radius:4px;color:var(--tm)}
+.tab.on{background:var(--raised);color:var(--tp);box-shadow:inset 0 -2px 0 var(--primary)}
+
+.panel{background:var(--surface);border:1px solid var(--hair);border-radius:6px;
+  box-shadow:inset 0 1px 0 0 rgba(255,255,255,.08),0 2px 8px rgba(0,0,0,.4);display:flex;flex-direction:column}
+.panel.warn{box-shadow:inset 0 1px 0 0 rgba(255,255,255,.08),0 2px 8px rgba(0,0,0,.4),inset 2px 0 0 var(--degraded)}
+.ph{height:30px;display:flex;align-items:center;gap:8px;padding:0 10px;border-bottom:1px solid var(--hair);flex:none}
+.pt{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--ts)}
+.prov{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--live);display:flex;align-items:center;gap:5px}
+.prov i{width:5px;height:5px;border-radius:50%;background:var(--live);display:block}
+.pb{padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.layer{background:var(--lowest);border:1px solid var(--hair);border-radius:4px;padding:7px 9px;display:flex;flex-direction:column;gap:3px}
+.layer .k{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--tm)}
+.layer .v{font-size:14px;font-weight:600}
+.layer .d{font-family:var(--mono);font-size:11px;color:var(--td);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ok{color:var(--live)} .wr{color:var(--degraded)} .bd{color:var(--offline)} .nu{color:var(--ts)}
+
+.cols{display:grid;grid-template-columns:1.55fr 1fr 1fr;gap:10px;min-height:0}
+.probe{display:grid;grid-template-columns:14px 104px 1fr auto;align-items:center;gap:8px;background:var(--lowest);
+  border:1px solid var(--hair);border-radius:4px;padding:6px 9px}
+.probe.bad{border-color:rgba(244,63,94,.32);background:rgba(244,63,94,.06)}
+.probe .n{font-family:var(--mono);font-size:12px;color:var(--tp)}
+.probe .m{font-size:12px;color:var(--ts);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.probe .l{font-family:var(--mono);font-size:12px;color:var(--stale)}
+.probe .l.na{color:var(--td)}
+.led{width:7px;height:7px;border-radius:50%}
+.led.g{background:var(--live);box-shadow:0 0 6px rgba(16,185,129,.55)}
+.led.r{background:var(--offline);box-shadow:0 0 6px rgba(244,63,94,.55)}
+
+.mrow{display:flex;flex-direction:column;gap:3px}
+.mtop{display:flex;align-items:baseline;justify-content:space-between}
+.mk{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--tm)}
+.mv{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--tp)}
+.mv small{font-size:11px;font-weight:400;color:var(--ts);margin-left:3px}
+.bar{height:3px;border-radius:2px;background:var(--overlay);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:2px}
+
+.kv{display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:baseline}
+.kv .k{font-size:12px;color:var(--tm)}
+.kv .v{font-family:var(--mono);font-size:12px;color:var(--tp)}
+.kv .v.w{color:var(--stale)}
+
+.topo{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+.cluster{background:var(--lowest);border:1px solid var(--hair);border-radius:4px;padding:6px 7px;display:flex;flex-direction:column;gap:4px}
+.cl-h{display:flex;align-items:center;justify-content:space-between}
+.cl-h span{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--tm)}
+.cl-h b{font-family:var(--mono);font-size:11px;color:var(--live)}
+.cl-h b.part{color:var(--stale)}
+.chip{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--ts);padding:2px 0}
+.chip.off{color:var(--td)}
+.sq{width:6px;height:6px;border-radius:1px;background:var(--live);flex:none}
+.chip.off .sq{background:var(--td)}
+
+.ep{display:grid;grid-template-columns:1fr 46px 60px 44px 54px;gap:8px;font-family:var(--mono);font-size:11px;padding:3px 0;align-items:center}
+.ep.h{color:var(--tm);border-bottom:1px solid var(--hair);padding-bottom:5px;margin-bottom:2px;letter-spacing:.06em}
+.ep .p{color:var(--ts);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ep .s{color:var(--live)} .ep .ms{color:var(--tp);text-align:right} .ep .c{color:var(--ts);text-align:right}
+.ep .cb{color:var(--live);text-align:right;font-size:11px}
+.foot{font-size:11px;color:var(--td);font-family:var(--mono)}
+</style></head><body>
+<div class="app">
+
+  <aside class="side">
+    <div class="brand"><div class="mark"></div><b>PROBEX</b></div>
+    <div class="grp">OBSERVE</div>
+    <div class="nav"><i class="dot"></i>Overview</div>
+    <div class="nav"><i class="dot"></i>Live Feed</div>
+    <div class="nav"><i class="dot"></i>Markets</div>
+    <div class="grp">CAPITAL</div>
+    <div class="nav"><i class="dot"></i>Positions</div>
+    <div class="nav"><i class="dot"></i>Portfolio</div>
+    <div class="nav"><i class="dot"></i>Execution</div>
+    <div class="grp">INTELLIGENCE</div>
+    <div class="nav"><i class="dot"></i>Strategy</div>
+    <div class="nav"><i class="dot"></i>Analytics</div>
+    <div class="grp">ENGINE</div>
+    <div class="nav on"><i class="dot"></i>System</div>
+    <div class="nav"><i class="dot"></i>Settings</div>
+    <div class="side-foot"><span>v2.0.0</span><span class="wr">DEGRADED</span></div>
+  </aside>
+
+  <div class="main">
+    <div class="top">
+      <div class="search">⌘K &nbsp;Jump to page…</div>
+      <div class="sep"></div>
+      <div class="tele">BTC <b>$78,714.10</b></div>
+      <div class="tele">FEED <b>673ms</b></div>
+      <div class="spacer"></div>
+      <span class="pill p-paper">PAPER</span>
+      <span class="pill p-deg">● DEGRADED</span>
+      <div class="tele">synced <b>just now</b></div>
+    </div>
+
+    <div class="canvas">
+      <div class="phead">
+        <h1>System</h1>
+        <span>Engine health, runtime topology, connectivity and configuration</span>
+        <div class="tabs"><div class="tab on">HEALTH &amp; CONFIG</div><div class="tab">EVENT LOG · 200</div></div>
+      </div>
+
+      <!-- LAYERED STATE -->
+      <div class="panel warn">
+        <div class="ph">
+          <span class="pt">SYSTEM STATE</span>
+          <span class="pill p-deg" style="font-size:10px;padding:2px 6px">2 LAYERS DEGRADED</span>
+          <span class="prov"><i></i>LIVE</span>
+        </div>
+        <div class="pb">
+          <div class="grid4">
+            <div class="layer"><span class="k">FRONTEND</span><span class="v ok">Running</span><span class="d">development build · dev policy</span></div>
+            <div class="layer"><span class="k">ENGINE REACHABLE</span><span class="v ok">Yes</span><span class="d">qubo-probex.duckdns.org/api</span></div>
+            <div class="layer"><span class="k">ENGINE OPERATING</span><span class="v wr">Degraded</span><span class="d">3/4 probes reporting healthy</span></div>
+            <div class="layer"><span class="k">EXECUTION MODE</span><span class="v nu">Paper</span><span class="d">orders simulated · market data real</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INSTRUMENT ROW -->
+      <div class="cols">
+
+        <div class="panel">
+          <div class="ph"><span class="pt">HEALTH PROBES</span><span class="prov"><i></i>LIVE · /api/health</span></div>
+          <div class="pb">
+            <div class="probe"><i class="led g"></i><span class="n">price_feed</span><span class="m">Connected and receiving data</span><span class="l">781.0ms</span></div>
+            <div class="probe"><i class="led g"></i><span class="n">main_loop</span><span class="m">Running (last heartbeat 0.0s ago)</span><span class="l na">—</span></div>
+            <div class="probe bad"><i class="led r"></i><span class="n">api_access</span><span class="m">Market data stale (40101.9s old, 7 cached)</span><span class="l na">—</span></div>
+            <div class="probe"><i class="led g"></i><span class="n">memory</span><span class="m">Memory usage: 411.7MB / 500MB</span><span class="l na">—</span></div>
+            <div class="foot" style="margin-top:2px">CHECK DURATION 0.15ms · LAST WARNING <span class="wr">stale_market_data</span> · LAST ERROR —</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="ph"><span class="pt">PROCESS</span><span class="prov"><i></i>LIVE · /api/system/metrics</span></div>
+          <div class="pb" style="gap:9px">
+            <div class="mrow"><div class="mtop"><span class="mk">UPTIME</span><span class="mv">11h 8m<small>14s</small></span></div></div>
+            <div class="mrow">
+              <div class="mtop"><span class="mk">MEMORY RSS</span><span class="mv">411.8<small>MB / 500</small></span></div>
+              <div class="bar"><i style="width:82.4%;background:var(--stale)"></i></div>
+            </div>
+            <div class="mrow">
+              <div class="mtop"><span class="mk">MEMORY VMS</span><span class="mv">790.2<small>MB</small></span></div>
+              <div class="foot">no configured ceiling</div>
+            </div>
+            <div class="mrow">
+              <div class="mtop"><span class="mk">CPU</span><span class="mv">0.0<small>%</small></span></div>
+              <div class="bar"><i style="width:1%;background:var(--live)"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="ph"><span class="pt">HEALTH COUNTERS</span><span class="prov"><i></i>LIVE · /api/health</span></div>
+          <div class="pb">
+            <div class="kv">
+              <span class="k">Health checks</span><span class="v">5,488</span>
+              <span class="k">Warnings</span><span class="v w">5,482</span>
+              <span class="k">Errors</span><span class="v">0</span>
+              <span class="k">Restarts</span><span class="v">0</span>
+              <span class="k">Memory cleanups</span><span class="v">133</span>
+              <span class="k">Event log</span><span class="v">200</span>
+            </div>
+            <div class="foot" style="margin-top:3px">99.9% of checks carried a warning</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RUNTIME TOPOLOGY -->
+      <div class="panel">
+        <div class="ph"><span class="pt">RUNTIME TOPOLOGY</span>
+          <span class="pt" style="color:var(--tm)">13 / 14 ACTIVE · MODE PAPER · UP SINCE 07:18:17</span>
+          <span class="prov"><i></i>LIVE · /api/runtime</span></div>
+        <div class="pb">
+          <div class="topo">
+            <div class="cluster"><div class="cl-h"><span>CORE</span><b>2/2</b></div>
+              <div class="chip"><i class="sq"></i>bot</div><div class="chip"><i class="sq"></i>health_monitor</div></div>
+            <div class="cluster"><div class="cl-h"><span>MARKET DATA</span><b>3/3</b></div>
+              <div class="chip"><i class="sq"></i>clob_client</div><div class="chip"><i class="sq"></i>market_fetcher</div><div class="chip"><i class="sq"></i>market_history</div></div>
+            <div class="cluster"><div class="cl-h"><span>EXECUTION</span><b>3/3</b></div>
+              <div class="chip"><i class="sq"></i>execution_engine</div><div class="chip"><i class="sq"></i>paper_trader</div><div class="chip"><i class="sq"></i>resolution_tracker</div></div>
+            <div class="cluster"><div class="cl-h"><span>INTELLIGENCE</span><b>3/3</b></div>
+              <div class="chip"><i class="sq"></i>consensus_engine</div><div class="chip"><i class="sq"></i>survival_brain</div><div class="chip"><i class="sq"></i>analytics_engine</div></div>
+            <div class="cluster"><div class="cl-h"><span>ACCOUNTING</span><b>2/2</b></div>
+              <div class="chip"><i class="sq"></i>pnl_calculator</div><div class="chip"><i class="sq"></i>portfolio_tracker</div></div>
+            <div class="cluster"><div class="cl-h"><span>ALERTING</span><b class="part">0/1</b></div>
+              <div class="chip off"><i class="sq"></i>telegram_alerter</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIAGNOSTICS + CONFIG -->
+      <div class="cols" style="grid-template-columns:1.35fr 1fr">
+        <div class="panel">
+          <div class="ph"><span class="pt">ENDPOINT DIAGNOSTICS</span><span class="pt" style="color:var(--tm)">SESSION · 0 CIRCUITS OPEN</span><span class="prov" style="color:var(--stale)"><i style="background:var(--stale)"></i>CLIENT · ILLUSTRATIVE</span></div>
+          <div class="pb" style="gap:0">
+            <div class="ep h"><span>ENDPOINT</span><span class="ms">STATUS</span><span class="ms">LAST</span><span class="c">CALLS</span><span class="cb">CIRCUIT</span></div>
+            <div class="ep"><span class="p">GET /api/stats</span><span class="s ms">200</span><span class="ms">673ms</span><span class="c">1,284</span><span class="cb">CLOSED</span></div>
+            <div class="ep"><span class="p">GET /api/price-history</span><span class="s ms">200</span><span class="ms">211ms</span><span class="c">1,284</span><span class="cb">CLOSED</span></div>
+            <div class="ep"><span class="p">GET /api/survival</span><span class="s ms">200</span><span class="ms">184ms</span><span class="c">514</span><span class="cb">CLOSED</span></div>
+            <div class="ep"><span class="p">GET /api/health</span><span class="s ms">200</span><span class="ms">1.2s</span><span class="c">86</span><span class="cb">CLOSED</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="ph"><span class="pt">CONFIGURATION</span><span class="pt" style="color:var(--td)">READ-ONLY</span><span class="prov"><i></i>LIVE · /api/config</span></div>
+          <div class="pb">
+            <div class="kv">
+              <span class="k">Environment</span><span class="v">PAPER</span>
+              <span class="k">Initial bankroll</span><span class="v">$100.00</span>
+              <span class="k">Max bet</span><span class="v">20% of bankroll</span>
+              <span class="k">Min edge · YES · NO</span><span class="v">2.0% · 4.0% · 3.0%</span>
+              <span class="k">Kelly fraction</span><span class="v">0.5×</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body></html>

@@ -9,6 +9,7 @@
 // separate sidebar entry it split one subject across two destinations.
 
 import { DomainPage } from '@/components/layout/DomainPage'
+import { ProvenanceScope } from '@/components/shared/ProvenanceScope'
 import { PortfolioPage } from './PortfolioPage'
 import { WalletPage } from '@/components/wallet/WalletPage'
 import type { TabDef } from '@/components/ui/Tabs'
@@ -20,6 +21,10 @@ const TABS: TabDef[] = [
 
 export function PortfolioDomain() {
   return (
+    // Portfolio is a capital console: it answers what the account is worth and
+    // how it got there, not which endpoint served each figure. Eight raw paths
+    // were rendering as body text before this.
+    <ProvenanceScope detail="tooltip">
     <DomainPage
       title="Portfolio"
       subtitle="Performance, exposure, and the capital the engine is managing"
@@ -28,5 +33,6 @@ export function PortfolioDomain() {
         active === 'capital' ? <WalletPage embedded /> : <PortfolioPage embedded />
       }
     />
+    </ProvenanceScope>
   )
 }

@@ -122,7 +122,7 @@ function TargetRow({
             <button
               type="button"
               onClick={() => { setDraft(override !== null ? String(override) : ''); setEditing(true) }}
-              className="text-2xs cursor-pointer focus-ring rounded px-1"
+              className="text-2xs cursor-pointer focus-ring rounded px-1 inline-flex items-center justify-center min-h-[24px] min-w-[24px]"
               style={{ color: 'var(--probex-text-muted)' }}
               aria-label={`Edit ${label.toLowerCase()} target`}
               title="Set a personal target"

@@ -229,6 +229,17 @@ export function consensusScoreColorVar(score: number): string {
 }
 
 /** Themed color var for a YES probability (0–1). Display bands, not trading logic. */
+/**
+ * @deprecated for MARKET-SIDE values. This maps a probability onto the
+ * FINANCIAL-DIRECTION band (positive / warning / negative), which is the wrong
+ * band for a YES or NO price: a cheap YES is not a loss. Its three former
+ * callers — MarketCard (grid and list) and EngineThesisPanel — now use
+ * --probex-yes / --probex-no.
+ *
+ * Kept, not deleted, because mapping a probability to a confidence tone is a
+ * legitimate operation for a surface that is genuinely about likelihood rather
+ * than about a side. It has no callers today.
+ */
 export function probabilityColorVar(prob: number): string {
   if (prob >= 0.65) return 'var(--probex-positive)'
   if (prob >= 0.45) return 'var(--probex-warning)'

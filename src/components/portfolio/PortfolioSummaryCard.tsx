@@ -24,6 +24,7 @@ export function PortfolioSummaryCard() {
       title="Snapshot History"
       provenance={s ? 'live' : 'idle'}
       source="/api/portfolio/summary"
+      slice={summarySlice}
       state={s ? 'live' : 'idle'}
       // Capital changing is the most consequential number on this surface.
       {...(s ? { updateKey: s.currentValue } : {})}

@@ -1,16 +1,42 @@
 'use client'
 
 import { APP_META } from '@/lib/settings/appMeta'
+import { useApplicationStore } from '@/store/applicationStore'
 import { SettingsSection, SettingRow, ReadOnlyValue } from './controls'
 
+// These four destinations do not exist yet. They previously rendered as four
+// enabled "Open" buttons that did nothing when clicked — a control that looks
+// operational and is not. Stated honestly instead, and the one that IS reachable
+// in-product points at the System page.
 const LINKS = [
-  { label: 'Documentation',  hint: 'Guides and API reference' },
+  { label: 'Documentation',    hint: 'Guides and API reference' },
   { label: 'Terms of Service', hint: 'Legal terms' },
-  { label: 'Privacy Policy', hint: 'How we handle your data' },
-  { label: 'System Status',  hint: 'Live platform status' },
+  { label: 'Privacy Policy',   hint: 'How we handle your data' },
 ]
 
 export function AboutSettings() {
+  // Real platform status, not an assertion.
+  //
+  // The canonical vocabulary is normalizeHealthStatus()'s 'online' | 'degraded'
+  // | 'offline' — the wire's own word ("healthy") is mapped onto it, and an
+  // unrecognised value normalises to null rather than being guessed at. null is
+  // rendered as "unavailable", never as "fine": this row previously asserted
+  // "All systems operational" unconditionally, with nothing behind it, while
+  // /api/health was reporting degraded.
+  const healthSlice = useApplicationStore((s) => s.engine.health)
+  const health = healthSlice.status === 'success' ? healthSlice.data : null
+  const statusWord = health?.status ?? null
+  const statusTone =
+    statusWord === null ? 'var(--probex-text-muted)'
+    : statusWord === 'online' ? 'var(--probex-positive)'
+    : statusWord === 'degraded' ? 'var(--probex-warning)'
+    : 'var(--probex-negative)'
+  const statusLabel =
+    statusWord === null ? 'Status unavailable'
+    : statusWord === 'online' ? 'All systems operational'
+    : statusWord === 'degraded' ? 'Degraded — some components unhealthy'
+    : 'Offline'
+
   return (
     <div className="flex flex-col gap-5">
       <SettingsSection title="About Probex" description="Platform version and build information.">
@@ -30,10 +56,16 @@ export function AboutSettings() {
         <SettingRow label="Environment">
           <span className="text-xs font-medium" style={{ color: 'var(--probex-warning)' }}>{APP_META.environment}</span>
         </SettingRow>
-        <SettingRow label="System status" last>
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--probex-positive)' }}>
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--probex-positive)' }} aria-hidden="true" />
-            All systems operational
+        <SettingRow label="System status" description="Reported by the engine's own health check." last>
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: statusTone }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusTone }} aria-hidden="true" />
+            {statusLabel}
+            {health !== null && health.components.some((c) => !c.healthy) && (
+              <span style={{ color: 'var(--probex-text-muted)', fontWeight: 400 }}>
+                {' · '}
+                {health.components.filter((c) => !c.healthy).map((c) => c.name).join(', ')}
+              </span>
+            )}
           </span>
         </SettingRow>
       </SettingsSection>
@@ -41,9 +73,7 @@ export function AboutSettings() {
       <SettingsSection title="Resources" description="Help, legal, and platform status.">
         {LINKS.map((l, i) => (
           <SettingRow key={l.label} label={l.label} description={l.hint} last={i === LINKS.length - 1}>
-            <button type="button" className="text-xs px-3 py-1.5 rounded-md cursor-pointer transition-colors duration-100" style={{ border: '1px solid var(--probex-border-default)', color: 'var(--probex-text-secondary)' }}>
-              Open
-            </button>
+            <ReadOnlyValue>Available in a future release</ReadOnlyValue>
           </SettingRow>
         ))}
       </SettingsSection>

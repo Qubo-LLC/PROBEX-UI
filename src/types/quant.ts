@@ -65,7 +65,19 @@ export interface KalmanAssetState {
   velocityEstimate:         number
   velocityUncertainty:      number
   regime:                   MarketRegime
+  /**
+   * The filter's YES probability, exactly as reported.
+   *
+   * ⚠️ `probabilityYes` and `probabilityNo` are NOT complementary and must
+   * never be rendered as two halves of one bar, nor one derived from the other.
+   * Live capture 2026-09-07: BTC and ETH both report `yes 0.88 / no 0.20`,
+   * summing to 1.08. These are two independently-estimated directional
+   * confidences from the filter bank, not a probability distribution over a
+   * partition, so `1 - probabilityYes` is not `probabilityNo` and the pair does
+   * not normalise. `probabilitiesArePartition` below is the sanctioned check.
+   */
   probabilityYes:           number
+  /** See `probabilityYes` — independently estimated, not `1 - yes`. */
   probabilityNo:            number
   uncertainty:              number
   meanReversionOpportunity: boolean
@@ -75,6 +87,26 @@ export interface KalmanAssetState {
   /** False while the filter is still holding its seed values — see file header.
    *  A UI must not present `priceEstimate` as an estimate when this is false. */
   initialised:              boolean
+  /**
+   * True only when the two probabilities actually sum to 1 within tolerance.
+   *
+   * Derived at adapter time so a consumer cannot forget to check. When false —
+   * which is the live case today — the pair may only be shown as two separate
+   * readings; any stacked bar, donut, or "% YES vs % NO" split would assert a
+   * partition the engine did not report.
+   */
+  probabilitiesArePartition: boolean
+}
+
+/**
+ * Do a Kalman asset's YES/NO probabilities form a partition?
+ *
+ * Tolerance is 0.01 — wide enough for float noise and the engine's own
+ * rounding, far too narrow to admit the observed 1.08.
+ */
+export function probabilitiesArePartition(yes: number, no: number): boolean {
+  if (!Number.isFinite(yes) || !Number.isFinite(no)) return false
+  return Math.abs(yes + no - 1) <= 0.01
 }
 
 /** GET /api/math-layers/kalman — { available, multi_asset, assets, timestamp }. */

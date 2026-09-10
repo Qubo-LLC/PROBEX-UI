@@ -46,6 +46,7 @@ import { EdgeTable } from '@/components/shared/EdgeTable'
 import { EventStream } from '@/components/shared/EventStream'
 import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
 import { MarketTable } from '@/components/markets/MarketTable'
+import { ProvenanceScope } from '@/components/shared/ProvenanceScope'
 import { LivePauseControl } from './LivePauseControl'
 
 /** How much of the stream the console shows. The full log, with type and
@@ -92,9 +93,12 @@ export function LiveFeedConsole() {
 
   const marketRows = useMemo(() => (markets.data ? parseMarketRows(markets.data) : null), [markets.data])
   const edgeRows = useMemo(() => (edges.data ? parseEdgeRows(edges.data) : null), [edges.data])
+  // Derived from the result above rather than parsing the same payload twice.
+  // parseEdgeRows ran on every edges poll — once for the table, once for the
+  // map — on a route that polls every 8 seconds.
   const edgeMap = useMemo(
-    () => (edges.data ? toEdgeRowMap(parseEdgeRows(edges.data)) : new Map<string, EdgeRow>()),
-    [edges.data],
+    () => (edgeRows ? toEdgeRowMap(edgeRows) : new Map<string, EdgeRow>()),
+    [edgeRows],
   )
 
   const streamRows = useMemo(() => {
@@ -122,6 +126,11 @@ export function LiveFeedConsole() {
   const feed = stats.data ? { connected: stats.data.feedConnected, latencyMs: stats.data.feedLatencyMs } : null
 
   return (
+    // Live Feed answers "what is the engine doing right now", not "which
+    // endpoint produced this" — the same register Overview declares. Every
+    // badge keeps its claim and moves the path to its tooltip and accessible
+    // name. System is unaffected: the scope defaults to inline.
+    <ProvenanceScope detail="tooltip">
     <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
       <PageHeader
         title="Live Feed"
@@ -162,14 +171,8 @@ export function LiveFeedConsole() {
           </span>
         )}
 
-        {isPaused && (
-          <span className="text-2xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-warning)' }}>
-            View frozen
-          </span>
-        )}
-
         <span className="ml-auto">
-          <ProvenanceBadge provenance="live" detail="/api/stats" />
+          <ProvenanceBadge provenance="live" detail="/api/stats" state={stats} />
         </span>
       </div>
 
@@ -179,7 +182,7 @@ export function LiveFeedConsole() {
           title="Engine Activity"
           subtitle="Newest first — repeated events are collapsed"
           {...(events.data ? { count: events.data.count } : {})}
-          actions={<ProvenanceBadge provenance="live" detail="/api/events" />}
+          actions={<ProvenanceBadge provenance="live" detail="/api/events" state={events} />}
         />
 
         {events.status === 'error' ? (
@@ -201,8 +204,13 @@ export function LiveFeedConsole() {
         ) : (
           <>
             <EventStream rows={streamRows} />
+            {/* This counted ROWS and called them events. Repeats are collapsed,
+                so one row can stand for two hundred occurrences — "showing the
+                1 most recent" described a 200-event stream as a single event.
+                State what is actually on screen. */}
             <p className="t-helper">
-              Showing the {streamRows.length} most recent · full history with filters in System › Event Log
+              {streamRows.length === 1 ? '1 activity group' : streamRows.length + ' activity groups'}
+              {' · repeats collapsed · full history with filters in System › Event Log'}
             </p>
           </>
         )}
@@ -212,7 +220,7 @@ export function LiveFeedConsole() {
       <section className="flex flex-col gap-2.5">
         <SectionHeading
           title="Price Stream"
-          actions={<ProvenanceBadge provenance="live" detail="/api/price-history" />}
+          actions={<ProvenanceBadge provenance="live" detail="/api/price-history" state={chart} />}
         />
         {chart.data ? (
           <PriceCard chart={chart.data} feed={feed} />
@@ -239,7 +247,11 @@ export function LiveFeedConsole() {
                 <button
                   key={field}
                   onClick={() => setSort(field, sortBy === field && sortDir === 'desc' ? 'asc' : 'desc')}
-                  className="px-1.5 py-0.5 rounded cursor-pointer focus-ring"
+                  // py-0.5 gave these a 20px hit box — under the 24px WCAG
+                  // 2.5.8 AA minimum, on the only interactive controls in this
+                  // section. py-1.5 takes them to 28px without changing the
+                  // type size or the row it sits in.
+                  className="px-2 py-1.5 rounded-sm cursor-pointer focus-ring"
                   style={{
                     color: sortBy === field ? 'var(--probex-primary)' : 'var(--probex-text-muted)',
                     fontWeight: sortBy === field ? 700 : 500,
@@ -295,7 +307,7 @@ export function LiveFeedConsole() {
         <SectionHeading
           title="Edge Alerts"
           {...(edges.data ? { count: edges.data.count } : {})}
-          actions={<ProvenanceBadge provenance="live" detail="/api/edges" />}
+          actions={<ProvenanceBadge provenance="live" detail="/api/edges" state={edges} />}
         />
         {edges.status === 'error' ? (
           <ErrorState
@@ -312,6 +324,7 @@ export function LiveFeedConsole() {
         ) : null}
       </section>
     </div>
+    </ProvenanceScope>
   )
 }
 

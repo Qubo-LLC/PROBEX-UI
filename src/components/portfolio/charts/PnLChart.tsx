@@ -15,13 +15,19 @@ export function PnLChart({ height = 200 }: { height?: number }) {
     ? slice.data.history.map((p) => ({ tick: new Date(p.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), value: p.realizedPnl }))
     : []
 
+  // The series is cumulative REALIZED P&L, and it is signed. A fixed
+  // --probex-positive line drew an 85-dollar loss in the profit colour; the
+  // financial-direction band has to follow the value, not the chart's identity.
+  const last = data.length > 0 ? data[data.length - 1]!.value : 0
+  const seriesColor = last < 0 ? 'var(--probex-negative)' : 'var(--probex-positive)'
+
   // Real state, not just "has rows": an errored slice is unavailable and an
   // available:false envelope is idle — both look like zero rows otherwise.
   const { state, message } = chartStateFromSlice(slice, data.length)
 
   return (
     <LiveChart
-      title="Daily & Cumulative P&L"
+      title="Realized P&L"
       state={state}
       message={message}
       lastConfirmedAt={slice.data?.timestamp}
@@ -30,7 +36,7 @@ export function PnLChart({ height = 200 }: { height?: number }) {
       variant="line"
       height={height}
       bare
-      color="var(--probex-positive)"
+      color={seriesColor}
       yTickFormatter={(v) => formatCurrency(v, true)}
       valueFormatter={(v) => formatSignedCurrency(v)}
     />

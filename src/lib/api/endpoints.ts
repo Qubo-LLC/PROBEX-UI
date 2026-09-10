@@ -72,8 +72,18 @@ export const ENDPOINTS = {
     // retryable TIMEOUT rather than a hang. Reported to backend as P1.
     list:     def('GET', '/markets',       'confirmed', 'Actively-scanned markets (intermittent stall — see docs/API_AUDIT.md)', 'Active Markets'),
     history:  def('GET', '/price-history', 'confirmed', 'BTC price feed (global)',       'Price History'),
-    // Still broken: hangs with no response.
-    detail:        def('GET', '/markets/:market_id',         'backend-error', 'Market detail page', 'Specific Market Details'),
+    // 2026-09-07 RE-PROBED AND PROMOTED. Was 'backend-error' ("hangs with no
+    // response") since 2026-07-25. Now returns 200 on 4/4 attempts, ~1.2s,
+    // 32.7KB, carrying the market AND 100 history points in one call — and a
+    // clean `{"detail":"Market X not found"}` 404 for an expired id.
+    //
+    // Registry drift caught the same way the portfolio entry below was: by
+    // re-probing rather than trusting the annotation. The cost of NOT
+    // re-probing was a whole page degraded for six weeks after the backend had
+    // fixed it — market detail was reconstructing this from /api/markets (which
+    // only holds what is being scanned right now) and could not show a closed
+    // market at all.
+    detail:        def('GET', '/markets/:market_id',         'confirmed', 'Market detail page', 'Specific Market Details'),
     // 2026-07-25: these two were fixed backend-side and now return rich data.
     volume:        def('GET', '/markets/:market_id/history', 'confirmed', 'Market detail price/volume chart', 'Market Price History'),
     // Historical archive (100+ markets with min/max/avg pricing) — a DIFFERENT
@@ -185,12 +195,31 @@ export const ENDPOINTS = {
   // learned nothing (zero Shapley values, priors reported as posteriors, Kalman
   // seed prices). The adapters in services/quantDto.ts derive explicit `has*`
   // flags; consuming the raw numbers without them fabricates measurement.
+  // ⚠️ 2026-09-07 REGRESSION: three of these six now return a deterministic 500.
+  //
+  //   /math-layers/status           500 on 3/3 attempts  ("Internal Server Error")
+  //   /math-layers/recommendations  500 on 3/3 attempts
+  //   /math-layers/brier            500 on 3/3 attempts
+  //   /math-layers/kalman           200 ✓
+  //   /math-layers/bayesian         200 ✓
+  //   /math-layers/shapley          200 ✓
+  //
+  // Brier is very likely the common cause: `status` composes all five layers
+  // and `recommendations` consumes the calibration, so one failing layer takes
+  // down all three routes. Raised with the backend — see docs/BACKEND_HANDOFF.md.
+  //
+  // Demoted to 'backend-error' rather than left 'confirmed' and allowed to fail:
+  // the registry exists precisely so a broken route cannot reach the client, and
+  // leaving them confirmed meant two polls a minute into a guaranteed 500 and a
+  // permanently-errored store slice. NO fallback and no placeholder values are
+  // substituted — a failed calibration read must not become a zero Brier score,
+  // which would read as PERFECT calibration rather than as no measurement.
   mathLayers: {
-    status:          def('GET', '/math-layers/status',          'confirmed', 'All five mathematical layers', 'Math Layers Status'),
-    recommendations: def('GET', '/math-layers/recommendations', 'confirmed', 'Five-layer trading recommendation', 'Math Layers Recommendations'),
+    status:          def('GET', '/math-layers/status',          'backend-error', 'All five mathematical layers', 'Math Layers Status'),
+    recommendations: def('GET', '/math-layers/recommendations', 'backend-error', 'Five-layer trading recommendation', 'Math Layers Recommendations'),
     kalman:          def('GET', '/math-layers/kalman',          'confirmed', 'Kalman filter bank (multi-asset)', 'Math Layers Kalman'),
     bayesian:        def('GET', '/math-layers/bayesian',        'confirmed', 'Bayesian regime inference', 'Math Layers Bayesian'),
-    brier:           def('GET', '/math-layers/brier',           'confirmed', 'Brier calibration scoring', 'Math Layers Brier'),
+    brier:           def('GET', '/math-layers/brier',           'backend-error', 'Brier calibration scoring', 'Math Layers Brier'),
     shapley:         def('GET', '/math-layers/shapley',         'confirmed', 'Shapley signal attribution', 'Math Layers Shapley'),
   },
 

@@ -15,7 +15,7 @@ import {
   MOCK_RESEARCH_REPORTS, MOCK_PORTFOLIO, MOCK_BALANCE, MOCK_PORTFOLIO_HISTORY, MOCK_PORTFOLIO_SUMMARY, MOCK_PORTFOLIO_PERFORMANCE,
   MOCK_ANALYTICS_SEGMENTS, MOCK_ANALYTICS_SIGNALS, MOCK_ANALYTICS_SUMMARY, MOCK_ANALYTICS_TOP_SEGMENTS, MOCK_ANALYTICS_HOURLY,
   MOCK_PAPER_STATUS, MOCK_SYSTEM_METRICS, MOCK_TRADES_LEDGER, MOCK_EXECUTION_ORDERS,
-  MOCK_MARKETS_SUMMARY, mockMarketPriceHistory,
+  MOCK_MARKETS_SUMMARY, mockMarketPriceHistory, mockMarketDetail,
   MOCK_MATH_LAYERS_STATUS, MOCK_MATH_RECOMMENDATIONS, MOCK_KALMAN_LAYER,
   MOCK_BAYESIAN_LAYER, MOCK_BRIER_LAYER, MOCK_SHAPLEY_LAYER,
   MOCK_PERFORMANCE_BY_CATEGORY, MOCK_PERFORMANCE_BY_ASSET,
@@ -34,7 +34,7 @@ import type {
   ResearchReports, Portfolio, Balance, PortfolioHistory, PortfolioSummary, PortfolioPerformance,
   AnalyticsSegments, AnalyticsSignals, AnalyticsSummary, AnalyticsTopSegments, AnalyticsHourly,
   PaperStatus, SystemMetrics, TradesLedger, ExecutionOrders,
-  MarketsSummary, MarketPriceHistory, MutationResult,
+  MarketsSummary, MarketPriceHistory, MarketDetail, MutationResult,
 } from '@/types/engine'
 
 class MockEngineService implements IEngineService {
@@ -121,6 +121,10 @@ class MockEngineService implements IEngineService {
 
   async getMarketPriceHistory(marketId: string, limit = 100): Promise<ApiResult<MarketPriceHistory>> {
     return ok(mockMarketPriceHistory(marketId, limit))
+  }
+
+  async getMarketDetail(marketId: string): Promise<ApiResult<MarketDetail>> {
+    return ok(mockMarketDetail(marketId))
   }
 
   // ── Phase 1 (2026-07-25) — mutation layer ──────────────────────────────────

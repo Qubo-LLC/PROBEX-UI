@@ -94,6 +94,7 @@ export function GlobalConsensusBar() {
           <ProvenanceBadge
             provenance={reading ? 'live' : envelope !== null ? 'idle' : 'live'}
             detail="/api/consensus"
+            state={slice}
           />
         </div>
         <p className="text-2xs truncate" style={{ color: 'var(--probex-text-muted)' }}>

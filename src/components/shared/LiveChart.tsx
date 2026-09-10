@@ -23,7 +23,7 @@
 // an event rather than a silent reshuffle, and ChartFrame carries the age of
 // that observation. `isAnimationActive` stays false.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts'
 import { ChartFrame, type ChartState, type ChartVariant } from './ChartFrame'
 import type { Provenance } from './ProvenanceBadge'
@@ -78,6 +78,63 @@ interface LiveChartProps {
   summary?: string
 }
 
+// ─── Y-axis gutter ───────────────────────────────────────────────────────────
+// Recharts gives YAxis a FIXED pixel gutter and silently clips anything wider.
+// The axis was width={40} sitting inside margin.left = -16, leaving ~24px of
+// visible gutter, so a longer label lost its LEADING characters rather than
+// overflowing visibly: Analytics › Drawdown rendered 34% / 35% / 36% as
+// 4% / 5% / 6%. A wrong number, not a cramped one.
+//
+// The gutter is therefore derived from the widest label THIS series' formatter
+// will actually produce, rather than guessed once for every consumer. Seven
+// charts share this component and their formatters range from 34% to -$1.2K
+// to $79178, so no single constant is right for all of them.
+// Axis ticks are numbers, so they are set in the mono face with the rest of
+// the product's numerics, at the 11px floor, in --probex-text-muted rather
+// than --probex-text-disabled: an axis label is the scale, not a disabled
+// control, and disabled is deliberately near-invisible.
+const AXIS_TICK = {
+  fill: 'var(--probex-text-muted)',
+  fontSize: 11,
+  fontFamily: 'var(--font-mono)',
+} as const
+
+const AXIS_CHAR_PX = 6.8   // 11px platform sans: digits ~6.1px, currency wider
+const AXIS_PAD_PX  = 14    // recharts tick margin + breathing room
+const AXIS_MIN_PX  = 40    // never narrower than the old fixed value
+const AXIS_MAX_PX  = 92    // beyond this the gutter is eating the plot
+
+function axisGutter(
+  points: LiveChartPoint[],
+  format: (v: number) => string,
+  domain?: [number | string, number | string],
+): number {
+  const samples: number[] = []
+  if (points.length > 0) {
+    let lo = Infinity, hi = -Infinity
+    for (const p of points) {
+      if (p.value < lo) lo = p.value
+      if (p.value > hi) hi = p.value
+    }
+    // Recharts places ticks across [lo, hi]; the ends and a few interior
+    // points cover where the longest rendering appears in practice.
+    samples.push(lo, hi, (lo + hi) / 2, lo + (hi - lo) / 4, lo + ((hi - lo) * 3) / 4)
+  }
+  // An explicit numeric domain overrides the data, so measure that too.
+  if (domain) for (const d of domain) if (typeof d === 'number') samples.push(d)
+  if (samples.length === 0) return AXIS_MIN_PX
+
+  let longest = 0
+  for (const v of samples) {
+    let text: string
+    // A caller's formatter must never be able to break the chart.
+    try { text = format(v) } catch { continue }
+    if (text.length > longest) longest = text.length
+  }
+  const px = Math.ceil(longest * AXIS_CHAR_PX) + AXIS_PAD_PX
+  return Math.min(AXIS_MAX_PX, Math.max(AXIS_MIN_PX, px))
+}
+
 export function LiveChart({
   title, subtitle, source, provenance = 'live', data, variant = 'area', height = 200, bare = false,
   color = 'var(--probex-primary)',
@@ -98,6 +155,10 @@ export function LiveChart({
   const windowed = windowSize ? data.slice(-windowSize) : data
   const isWindowed = windowSize > 0 && data.length > windowSize
   const latest = windowed.at(-1) ?? null
+  const axisWidth = useMemo(
+    () => axisGutter(windowed, yTickFormatter, yDomain),
+    [windowed, yTickFormatter, yDomain],
+  )
 
   // A confirmed observation arrived. One-shot marker on the newest point —
   // this is an EVENT, not a loop: an infinite pulse would claim the value is
@@ -132,7 +193,7 @@ export function LiveChart({
         </span>
       )}
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={windowed} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+        <ComposedChart data={windowed} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
           {variant === 'area' && (
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -141,14 +202,14 @@ export function LiveChart({
               </linearGradient>
             </defs>
           )}
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--probex-border)" vertical={false} />
-          <XAxis dataKey="tick" tick={{ fill: 'var(--probex-text-disabled)', fontSize: 10 }} tickLine={false} axisLine={false} minTickGap={24} />
-          <YAxis tick={{ fill: 'var(--probex-text-disabled)', fontSize: 10 }} tickLine={false} axisLine={false} width={40} tickFormatter={yTickFormatter} {...(yDomain !== undefined ? { domain: yDomain } : {})} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--probex-chart-grid)" vertical={false} />
+          <XAxis dataKey="tick" tick={AXIS_TICK} tickLine={false} axisLine={false} minTickGap={24} />
+          <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} width={axisWidth} tickFormatter={yTickFormatter} {...(yDomain !== undefined ? { domain: yDomain } : {})} />
           <Tooltip
             // A crosshair, so the reading is tied to a position rather than
             // floating near the pointer. Replaces the default Recharts cursor,
             // which was a translucent grey band that read as a selection.
-            cursor={{ stroke: 'var(--probex-border-strong)', strokeWidth: 1, strokeDasharray: '3 3' }}
+            cursor={{ stroke: 'var(--probex-border-strong)', strokeWidth: 1, strokeDasharray: '4 4' }}
             content={<ChartTooltip seriesLabel={title} format={valueFormatter} />}
             isAnimationActive={false}
           />
@@ -247,12 +308,17 @@ function ChartTooltip(props: {
     <div
       className="flex flex-col gap-0.5 px-2.5 py-2 rounded-md"
       style={{
-        background: 'var(--probex-surface-2)',
-        border: '1px solid var(--probex-border-default)',
-        boxShadow: 'var(--probex-elev-3)',
+        // The overlay plane, not the hover plane. A tooltip that sits on
+        // --probex-surface-2 is the same colour as a hovered table row.
+        background: 'var(--probex-surface-overlay)',
+        border: '1px solid var(--probex-border-strong)',
+        boxShadow: 'var(--probex-elev-4)',
       }}
     >
-      <span className="text-sm font-bold tabular-nums leading-none" style={{ color: 'var(--probex-text-primary)' }}>
+      <span
+        className="text-sm font-bold tabular-nums leading-none"
+        style={{ color: 'var(--probex-text-primary)', fontFamily: 'var(--font-mono)' }}
+      >
         {format(point.value)}
       </span>
       <span className="t-metadata">{String(point.tick)}</span>

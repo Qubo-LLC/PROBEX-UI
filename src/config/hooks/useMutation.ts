@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { services } from '@/lib/services'
+import { useWriteGate } from './useWriteGate'
 import { isExpiredResource } from '@/lib/api/resourceLifecycle'
 import { toServiceError, type ServiceError } from '@/lib/services/response'
 import type { CreateOrderInput } from '@/lib/services/interfaces'
@@ -44,6 +45,14 @@ export interface UseMutationReturn {
   reset: () => void
   /** Convenience for disabling buttons. */
   isPending: boolean
+  /**
+   * Why this mutation may not be fired right now, or null when it may.
+   *
+   * Only ORDER-FLOW mutations are ever gated (see MUTATIONS below). The UI is
+   * expected to disable the control and show this string; fire() also refuses
+   * independently, so a control that forgets to check still cannot send.
+   */
+  blockedReason: string | null
 }
 
 /**
@@ -56,6 +65,8 @@ export interface UseMutationReturn {
 function useMutation(
   run:        () => Promise<{ data: MutationResult }>,
   onSettled?: () => void,
+  /** Non-null blocks the mutation entirely and explains why. */
+  blockedReason: string | null = null,
 ): UseMutationReturn {
   const [state, setState] = useState<MutationState>(IDLE)
   const inFlight = useRef(false)
@@ -67,6 +78,10 @@ function useMutation(
   }, [])
 
   const fire = useCallback(async (): Promise<MutationResult | null> => {
+    // Defence in depth. The button is already disabled when a reason exists;
+    // this makes the guarantee independent of any one call site remembering to
+    // wire it, which is the whole point of centralising the gate.
+    if (blockedReason !== null) return null
     if (inFlight.current) return null
     inFlight.current = true
     setState({ status: 'pending', result: null, error: null })
@@ -114,26 +129,37 @@ function useMutation(
     } finally {
       inFlight.current = false
     }
-  }, [run, onSettled])
+  }, [run, onSettled, blockedReason])
 
   const reset = useCallback(() => setState(IDLE), [])
 
-  return { state, fire, reset, isPending: state.status === 'pending' }
+  return { state, fire, reset, isPending: state.status === 'pending', blockedReason }
 }
 
 // ─── Mutation catalogue ───────────────────────────────────────────────────────
 // One entry per write endpoint, so the full set of state-changing operations is
-// visible in a single place. `destructive: true` means the UI must confirm.
+// visible in a single place.
+//
+//   destructive — the UI must confirm before firing.
+//   orderFlow   — this write can move real capital when the engine is live, so
+//                 it is gated by useWriteGate and unavailable outside paper
+//                 mode (QUB-49: "without manual live-trading controls").
+//
+// Emergency Stop is deliberately NOT order flow. It only ever REDUCES exposure,
+// and it is the one control an operator needs most precisely when the engine is
+// live — gating it would disable the safety brake exactly when it matters most.
+// Paper-session controls are not order flow either: they operate the simulator,
+// which is the in-scope subject of this cockpit.
 
 export const MUTATIONS = {
-  emergencyStop:    { label: 'Emergency Stop',        destructive: true,  endpoint: 'POST /api/execution/emergency-stop' },
-  createOrder:      { label: 'Create Order',          destructive: true,  endpoint: 'POST /api/execution/create' },
-  closePosition:    { label: 'Close Position',        destructive: true,  endpoint: 'POST /api/execution/close/:market_id' },
-  cancelOrder:      { label: 'Cancel Order',          destructive: true,  endpoint: 'POST /api/execution/cancel/:order_id' },
-  paperStart:       { label: 'Start Paper Trading',   destructive: false, endpoint: 'POST /api/paper/start' },
-  paperStop:        { label: 'Stop Paper Trading',    destructive: false, endpoint: 'POST /api/paper/stop' },
-  paperReset:       { label: 'Reset Paper Trading',   destructive: true,  endpoint: 'POST /api/paper/reset' },
-  paperResolve:     { label: 'Resolve Paper Trades',  destructive: false, endpoint: 'POST /api/paper/resolve' },
+  emergencyStop:    { label: 'Emergency Stop',        destructive: true,  orderFlow: false, endpoint: 'POST /api/execution/emergency-stop' },
+  createOrder:      { label: 'Create Order',          destructive: true,  orderFlow: true,  endpoint: 'POST /api/execution/create' },
+  closePosition:    { label: 'Close Position',        destructive: true,  orderFlow: true,  endpoint: 'POST /api/execution/close/:market_id' },
+  cancelOrder:      { label: 'Cancel Order',          destructive: true,  orderFlow: true,  endpoint: 'POST /api/execution/cancel/:order_id' },
+  paperStart:       { label: 'Start Paper Trading',   destructive: false, orderFlow: false, endpoint: 'POST /api/paper/start' },
+  paperStop:        { label: 'Stop Paper Trading',    destructive: false, orderFlow: false, endpoint: 'POST /api/paper/stop' },
+  paperReset:       { label: 'Reset Paper Trading',   destructive: true,  orderFlow: false, endpoint: 'POST /api/paper/reset' },
+  paperResolve:     { label: 'Resolve Paper Trades',  destructive: false, orderFlow: false, endpoint: 'POST /api/paper/resolve' },
 } as const
 
 // ─── Execution mutations ──────────────────────────────────────────────────────
@@ -152,32 +178,38 @@ export function useEmergencyStop(onSettled?: () => void): UseMutationReturn {
  * UI uses it to show the operator what would happen before committing.
  */
 export function useCreateOrder(input: CreateOrderInput | null, onSettled?: () => void): UseMutationReturn {
+  const gate = useWriteGate()
   return useMutation(
     useCallback(() => {
       if (input === null) throw new Error('No order specified')
       return services.engine.createOrder(input)
     }, [input]),
     onSettled,
+    gate.detail,
   )
 }
 
 export function useClosePosition(marketId: string | null, onSettled?: () => void): UseMutationReturn {
+  const gate = useWriteGate()
   return useMutation(
     useCallback(() => {
       if (marketId === null) throw new Error('No market specified')
       return services.engine.closePosition(marketId)
     }, [marketId]),
     onSettled,
+    gate.detail,
   )
 }
 
 export function useCancelOrder(orderId: string | null, onSettled?: () => void): UseMutationReturn {
+  const gate = useWriteGate()
   return useMutation(
     useCallback(() => {
       if (orderId === null) throw new Error('No order specified')
       return services.engine.cancelOrder(orderId)
     }, [orderId]),
     onSettled,
+    gate.detail,
   )
 }
 

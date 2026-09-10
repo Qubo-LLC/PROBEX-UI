@@ -61,6 +61,14 @@ export interface EnginePositionItemDTO {
 
   /** ISO 8601 — when the position was opened. */
   opened_at:         string
+
+  // ── Confirmed live 2026-09-09; absent from the original capture ───────────
+  /** Market family, e.g. 'crypto'. The only segment signal on this wire. */
+  asset_category:    string
+  /** Underlying symbol, e.g. 'BTC' | 'ETH'. */
+  asset_symbol:      string
+  /** Market window length in minutes, e.g. 15. NOT a time remaining. */
+  duration_minutes:  number
 }
 
 /** Full envelope returned by GET /api/positions. */
@@ -115,6 +123,11 @@ export interface PositionRow {
   entryBtcPrice:    number | null
   /** BTC spot now — lets the UI show which way the underlying has moved. */
   currentBtcPrice:  number | null
+
+  /** Underlying symbol, e.g. 'BTC'. Gives a settled row a readable identity. */
+  assetSymbol:      string | null
+  /** Market window length in minutes. Length, not time remaining. */
+  durationMinutes:  number | null
 }
 
 /** Matches the confirmed wire contract: market_id + direction, no `id`/`side`. */
@@ -136,7 +149,10 @@ export function parsePositionRows(p: EnginePositions): ParseResult<PositionRow> 
       // position per market, so market_id is a stable row identity.
       id:               dto.market_id as string,
       marketId:         dto.market_id as string,
-      segment:          null,                                  // not on the wire
+      // The wire's segment signal is `asset_category` ('crypto'). Before this
+      // the field was hardcoded null, which silently disabled every consumer
+      // that grouped or filtered by it.
+      segment:          str(dto.asset_category) ? dto.asset_category : null,
       marketTitle:      str(dto.question) ? dto.question : null,
       side:             (dto.direction as string).toLowerCase(),
       // `size` is USD stake, so contract count is stake ÷ entry probability.
@@ -152,6 +168,8 @@ export function parsePositionRows(p: EnginePositions): ParseResult<PositionRow> 
       timeHeldSeconds:  num(dto.time_held_seconds) ? dto.time_held_seconds : null,
       entryBtcPrice:    num(dto.entry_btc_price) ? dto.entry_btc_price : null,
       currentBtcPrice:  num(dto.current_btc_price) ? dto.current_btc_price : null,
+      assetSymbol:      str(dto.asset_symbol) ? dto.asset_symbol : null,
+      durationMinutes:  num(dto.duration_minutes) ? dto.duration_minutes : null,
     }
   })
 }

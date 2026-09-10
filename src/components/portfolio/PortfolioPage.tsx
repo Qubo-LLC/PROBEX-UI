@@ -74,7 +74,7 @@ export function PortfolioPage({ embedded = false }: EmbeddableProps = {}) {
           <Panel title="Portfolio Value" provenance={historyProvenance} state={historyPanelState} source="/api/portfolio/history">
             <PortfolioValueChart height={200} />
           </Panel>
-          <Panel title="Daily & Cumulative P&L" provenance={historyProvenance} state={historyPanelState} source="/api/portfolio/history">
+          <Panel title="Realized P&L" provenance={historyProvenance} state={historyPanelState} source="/api/portfolio/history">
             <PnLChart height={200} />
           </Panel>
           <Panel title="Rolling Win Rate" provenance={historyProvenance} state={historyPanelState} source="/api/portfolio/history" className="lg:col-span-2">

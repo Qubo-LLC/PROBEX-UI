@@ -21,7 +21,7 @@ export function SegmentPerformance() {
           <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Pattern Performance</h2>
           <p className="text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>Win rate and P&L by edge-size bucket and hour of day</p>
         </div>
-        <ProvenanceBadge provenance="live" detail="/api/survival/patterns" />
+        <ProvenanceBadge provenance="live" detail="/api/survival/patterns" state={slice} />
       </div>
 
       {patterns.length === 0 ? (

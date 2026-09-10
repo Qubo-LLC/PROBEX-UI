@@ -53,7 +53,7 @@ export function MutationButton({
   tone = 'neutral', disabled = false, disabledReason, endpoint, icon, size = 'md',
 }: MutationButtonProps) {
   const [confirming, setConfirming] = useState(false)
-  const { state, fire, reset, isPending } = mutation
+  const { state, fire, reset, isPending, blockedReason } = mutation
 
   const onClick = () => {
     // Clear any previous outcome so the operator never sees a stale success
@@ -68,7 +68,13 @@ export function MutationButton({
     setConfirming(false)
   }
 
-  const isDisabled = disabled || isPending
+  // A write gate outranks the caller's own `disabled`: a control the engine's
+  // mode forbids must be unavailable even when the form beside it is perfectly
+  // valid. The gate's own sentence also wins the explanation slot — "the engine
+  // is in LIVE mode" is the thing the operator needs to read, not "select a
+  // market". See lib/display/writeGate.ts.
+  const isDisabled = disabled || isPending || blockedReason !== null
+  const unavailableReason = blockedReason ?? disabledReason
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -97,8 +103,19 @@ export function MutationButton({
       {/* Outcome line. aria-live so a screen reader announces the result of an
           action that otherwise only changes remote state. */}
       <div aria-live="polite" className="min-h-[14px]">
-        {disabled && disabledReason && state.status === 'idle' && (
-          <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>{disabledReason}</span>
+        {isDisabled && unavailableReason && !isPending && state.status === 'idle' && (
+          <span
+            className="text-2xs"
+            style={{
+              // A gate block is a safety statement, not a form hint, so it is
+              // legible rather than recessive.
+              color: blockedReason !== null
+                ? 'var(--probex-warning)'
+                : 'var(--probex-text-disabled)',
+            }}
+          >
+            {unavailableReason}
+          </span>
         )}
         {state.status === 'success' && (
           <span className="text-2xs" style={{ color: 'var(--probex-positive)' }}>

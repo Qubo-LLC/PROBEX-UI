@@ -13,10 +13,14 @@ import type { PositionRow } from '@/lib/mappers/positions'
 import type { EdgeRow } from '@/lib/mappers/edges'
 import { MARKET_DETAIL_PATH } from '@/config/constants'
 import { segmentLabel } from '@/lib/display/market'
+import { formatRuntime, positionCloseState, underlyingMove } from '@/lib/display/positionDisplay'
+import { lifecycleLabel, formatCloseTime } from '@/lib/display/marketLifecycle'
 import { useClosePosition, MUTATIONS } from '@/config/hooks/useMutation'
 import { MutationButton } from '@/components/execution/MutationButton'
 
-export function PositionDetail({ position, edge, onClose }: { position: PositionRow; edge: EdgeRow | undefined; onClose: () => void }) {
+export function PositionDetail({ position, edge, closesAtByMarketId, onClose }: { position: PositionRow; edge: EdgeRow | undefined; closesAtByMarketId?: Map<string, number | null>; onClose: () => void }) {
+  const closeState = positionCloseState(position.marketId, closesAtByMarketId ?? new Map<string, number | null>())
+  const btcMove = underlyingMove(position.entryBtcPrice, position.currentBtcPrice)
   const router = useRouter()
   const closeMutation = useClosePosition(position.marketId)
   const isYes = position.side === 'yes'
@@ -35,7 +39,7 @@ export function PositionDetail({ position, edge, onClose }: { position: Position
     <div className="rounded-lg overflow-hidden animate-fade-in-up" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border-default)' }}>
       <div className="flex items-start justify-between gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-2xs font-black uppercase tracking-widest px-2 py-0.5 rounded flex-shrink-0" style={{ background: sideColor, color: isYes ? '#050816' : '#fff' }}>{position.side.toUpperCase()}</span>
+          <span className="text-2xs font-black uppercase tracking-widest px-2 py-0.5 rounded flex-shrink-0" style={{ background: sideColor, color: isYes ? 'var(--probex-on-yes)' : 'var(--probex-on-no)' }}>{position.side.toUpperCase()}</span>
           <h2 className="text-sm font-semibold truncate" style={{ color: 'var(--probex-text-primary)' }}>{position.marketTitle ?? position.id}</h2>
         </div>
         <button onClick={onClose} className="flex-shrink-0 w-6 h-6 rounded flex items-center justify-center cursor-pointer" style={{ color: 'var(--probex-text-muted)' }} aria-label="Close position details">
@@ -54,7 +58,16 @@ export function PositionDetail({ position, edge, onClose }: { position: Position
             <MetricCell label="Current Value" value={position.currentValue !== null ? formatCurrency(position.currentValue) : '—'} />
             <MetricCell label="Unrealized P&L" value={position.unrealizedPnl !== null ? `${isProfit ? '+' : ''}${formatCurrency(position.unrealizedPnl)}` : '—'} valueColor={pnlColor} />
             <MetricCell label="Return" value={position.unrealizedPnlPct !== null ? `${isProfit ? '+' : ''}${(position.unrealizedPnlPct * 100).toFixed(1)}%` : '—'} valueColor={pnlColor} />
+            <MetricCell label="Runtime" value={formatRuntime(position.timeHeldSeconds)} />
             <MetricCell label="Opened" value={position.openedAt !== null ? new Date(position.openedAt).toLocaleString() : '—'} />
+            {/* Edge AT ENTRY — distinct from the live edge in the Edge
+                Alignment section below, which is the engine's view right now. */}
+            <MetricCell label="Edge at Entry" value={position.edgePct !== null ? `${position.edgePct.toFixed(1)}%` : '—'} />
+            <MetricCell
+              label="Underlying"
+              value={btcMove !== null ? `${btcMove >= 0 ? '+' : ''}${(btcMove * 100).toFixed(2)}%` : '—'}
+              {...(btcMove !== null ? { valueColor: btcMove >= 0 ? 'var(--probex-positive)' : 'var(--probex-negative)' } : {})}
+            />
           </div>
         </section>
 
@@ -75,6 +88,31 @@ export function PositionDetail({ position, edge, onClose }: { position: Position
             )}
           </button>
         </section>
+
+        {closeState.lifecycle !== 'unknown' && (
+          <section>
+            <SectionLabel>Market State</SectionLabel>
+            <div
+              className="rounded-lg p-3 flex items-center justify-between gap-3"
+              style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}
+            >
+              <span
+                className="text-xs font-semibold"
+                style={{ color: closeState.lifecycle === 'open' ? 'var(--probex-text-secondary)' : 'var(--probex-warning)' }}
+              >
+                {lifecycleLabel(closeState.lifecycle)}
+              </span>
+              <span className="text-xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+                {formatCloseTime(closeState.closesAt)}
+              </span>
+            </div>
+            {closeState.lifecycle === 'closed' && (
+              <p className="t-helper mt-1.5">
+                This position is still open against a market whose close time has passed.
+              </p>
+            )}
+          </section>
+        )}
 
         <section>
           <SectionLabel>Edge Alignment</SectionLabel>

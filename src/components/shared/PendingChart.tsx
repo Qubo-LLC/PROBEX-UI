@@ -39,9 +39,9 @@ export function PendingChart({ title, subtitle, endpoint, variant = 'area', heig
               </linearGradient>
             </defs>
           )}
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--probex-border)" vertical={false} />
-          <XAxis dataKey="tick" tick={{ fill: 'var(--probex-text-disabled)', fontSize: 10 }} tickLine={false} axisLine={false} />
-          <YAxis domain={[0, 100]} tick={{ fill: 'var(--probex-text-disabled)', fontSize: 10 }} tickLine={false} axisLine={false} width={34} tickFormatter={(v: number) => `${v}%`} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--probex-chart-grid)" vertical={false} />
+          <XAxis dataKey="tick" tick={{ fill: 'var(--probex-text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }} tickLine={false} axisLine={false} />
+          <YAxis domain={[0, 100]} tick={{ fill: 'var(--probex-text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }} tickLine={false} axisLine={false} width={44} tickFormatter={(v: number) => `${v}%`} />
           {variant === 'area' ? (
             <Area type="monotone" dataKey="value" stroke="var(--probex-text-disabled)" strokeWidth={1.5} strokeDasharray="4 4" fill={`url(#pending-${endpoint})`} isAnimationActive={false} />
           ) : (

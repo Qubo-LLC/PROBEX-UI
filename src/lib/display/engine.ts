@@ -14,11 +14,17 @@ import type { SurvivalState } from '@/types/engine'
  */
 export type SurvivalSeverity = 'ok' | 'caution' | 'danger'
 
-/** Known states in severity order — also drives the state-machine strip. */
-export const SURVIVAL_STATES = ['HEALTHY', 'CAUTION', 'WOUNDED', 'DANGER', 'CRITICAL', 'DEAD'] as const
+/** Known states in severity order — also drives the state-machine strip.
+ *
+ *  THRIVING sits above HEALTHY: observed live with capital at 149.9% of the
+ *  starting bankroll and the Kelly modifier at 1.5×, i.e. the brain betting
+ *  MORE, not less. Before it was listed here it was absent from this strip and
+ *  scored as 'caution' by the unknown-state fallback. */
+export const SURVIVAL_STATES = ['THRIVING', 'HEALTHY', 'CAUTION', 'WOUNDED', 'DANGER', 'CRITICAL', 'DEAD'] as const
 
 export function survivalStateSeverity(state: SurvivalState): SurvivalSeverity {
   switch (String(state).toUpperCase()) {
+    case 'THRIVING':
     case 'HEALTHY':  return 'ok'
     case 'CAUTION':
     case 'WOUNDED':  return 'caution'
@@ -50,6 +56,7 @@ export function survivalStateIsAlarm(state: SurvivalState): boolean {
 export function survivalStateLabel(state: SurvivalState): string {
   const s = String(state).toUpperCase()
   switch (s) {
+    case 'THRIVING': return 'Thriving'
     case 'HEALTHY':  return 'Healthy'
     case 'CAUTION':  return 'Caution'
     case 'WOUNDED':  return 'Wounded'
