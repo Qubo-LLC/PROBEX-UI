@@ -46,6 +46,13 @@ export function ManualOrderPanel() {
   // Sizing guardrail comes from the engine's own config, not a magic number.
   // NOTE: config.maxBetPercent is on a 0–100 scale (the wire sends 20 for 20%),
   // unlike kellyFraction which is a 0–1 fraction. Divide before applying.
+  //
+  // This is a GUARDRAIL computed from the CONFIGURED initial bankroll
+  // (initial_bankroll × max_bet_percent). The executor's own cap is applied
+  // to the balance it fetches at submit (order_flow: balance_fetch_or_cache →
+  // … → max_bet_percent_cap), and which balance that is in live mode is not
+  // documented — so the label says exactly what this number is and does not
+  // call it the engine's max bet. See the audit of 2026-09-17.
   const config     = configSlice.status === 'success' ? configSlice.data : null
   const bankroll   = config?.initialBankroll ?? null
   const maxBetPct  = config?.maxBetPercent ?? null
@@ -129,7 +136,7 @@ export function ManualOrderPanel() {
           />
           {maxSize !== null && (
             <span className="text-2xs" style={{ color: overLimit ? 'var(--probex-negative)' : 'var(--probex-text-disabled)' }}>
-              Engine max bet: ${maxSize.toFixed(2)} ({maxBetPct}% of ${bankroll?.toFixed(2)} bankroll)
+              Guardrail: ${maxSize.toFixed(2)} — {maxBetPct}% of the configured initial bankroll (${bankroll?.toFixed(2)}). The engine applies its own {maxBetPct}% cap to the balance it fetches at submit.
             </span>
           )}
         </label>

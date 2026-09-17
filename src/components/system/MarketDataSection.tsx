@@ -34,6 +34,7 @@ import { useApplicationStore } from '@/store/applicationStore'
 import { parseMarketRows } from '@/lib/mappers/markets'
 import { formatBtcPrice } from '@/lib/mappers/priceHistory'
 import { Figure, certaintyFromSlice } from '@/components/shared/Figure'
+import { Popover, InfoButton, PopoverText, PopoverTitle } from '@/components/ui/Popover'
 
 export function MarketDataSection() {
   const stats        = useApplicationStore((s) => s.engine.stats)
@@ -67,9 +68,45 @@ export function MarketDataSection() {
   const feedDown = s !== null && !s.feedConnected
 
   return (
-    <section aria-label="Market data" className="flex flex-col gap-4">
+    // ─── Lightly contained, and only this section ─────────────────────────
+    // "Is data actually arriving" is the question an operator opens this page
+    // to answer, and it was rendering at exactly the same weight as the
+    // process-memory readout above it. Every section looking identical is its
+    // own kind of flatness — the borderless treatment stops meaning anything
+    // if it is applied uniformly.
+    //
+    // The containment here is deliberately weaker than the posture group's:
+    // a tinted ground and a hairline, no elevation. Enough to read as an
+    // anchor, not enough to compete with the verdict at the top of the page.
+    <section
+      aria-label="Market data"
+      className="flex flex-col gap-4 rounded-lg px-4 py-4"
+      style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}
+    >
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
-        <h2 className="t-section-title">Market data</h2>
+        <span className="flex items-center gap-1.5">
+          <h2 className="t-section-title">Market data</h2>
+          {/* What each reading IS — explanatory, so it lives here rather than
+              as a footnote under every figure. The footnotes that remain are
+              contextual (a latency, a mismatch, a failure) and belong beside
+              the number they qualify. */}
+          <Popover
+            label="About the market data readings"
+            trigger={(p) => <InfoButton what="the market data readings" {...p} />}
+          >
+            <PopoverTitle>What these readings are</PopoverTitle>
+            <PopoverText>
+              <strong>Price feed</strong> and <strong>last price</strong> are the engine&rsquo;s own
+              report of its BTC feed from /api/stats — its reading, not an exchange quote.
+            </PopoverText>
+            <PopoverText>
+              <strong>Markets readable</strong> is counted here from the /api/markets payload:
+              items that parsed into the agreed schema. It is the engine&rsquo;s current cache
+              count, not a claim that those markets are open right now — Service health
+              reports how old the cache is.
+            </PopoverText>
+          </Popover>
+        </span>
         {/* System is the INSTRUMENT surface: it prints endpoint paths in the
             open rather than hiding them in tooltips the way the intelligence
             surfaces do. That asymmetry is deliberate and stays. */}
@@ -110,7 +147,7 @@ export function MarketDataSection() {
         )}
 
         {s !== null ? (
-          <Figure label="Last price" size="md" {...certaintyFromSlice(stats, 2_000)} footnote="the engine's own reading">
+          <Figure label="Last price" size="md" {...certaintyFromSlice(stats, 2_000)}>
             {formatBtcPrice(s.currentPrice)}
           </Figure>
         ) : (
@@ -133,13 +170,11 @@ export function MarketDataSection() {
             // asserts a freshness this endpoint does not establish. The figure
             // states what it is: the engine's current count. The service-health
             // section below states how old it is.
-            footnote={
-              countMismatch
-                ? `the engine reports ${engineCount} — ${engineCount! - readable} did not match the agreed schema`
-                : marketsSlice.status === 'error'
-                  ? 'last known — the endpoint is failing'
-                  : 'parsed from the engine’s market cache'
-            }
+            {...(countMismatch
+              ? { footnote: `the engine reports ${engineCount} — ${engineCount! - readable} did not match the agreed schema` }
+              : marketsSlice.status === 'error'
+                ? { footnote: 'last known — the endpoint is failing' }
+                : {})}
           >
             {String(readable)}
           </Figure>

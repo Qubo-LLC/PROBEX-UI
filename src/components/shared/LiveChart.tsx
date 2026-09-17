@@ -193,7 +193,11 @@ export function LiveChart({
         </span>
       )}
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={windowed} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+        {/* right: the last x tick is centred on the last point, so half of an
+            "02:15 AM" label (~28px at 11px mono) hangs past the plot. At 8px it
+            clipped to "02:15 A" on every chart narrower than a full row —
+            measured on Market Detail's two-column history. */}
+        <ComposedChart data={windowed} margin={{ top: 4, right: 28, bottom: 0, left: 0 }}>
           {variant === 'area' && (
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">

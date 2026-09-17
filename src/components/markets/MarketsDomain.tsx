@@ -2,9 +2,9 @@
 
 // Markets domain — API group "Statistics & Data" (market-facing half).
 //
-//   Live      → /api/markets           what the engine is scanning right now
-//   Watchlist → client-side selection over the same live set
-//   Archive   → /api/markets/history/summary, the 100+ market history
+//   Live      → /api/markets           the engine's current scan
+//   Watchlist → the browser-local starred ids, held against every record
+//   Archive   → /api/markets/history/summary, the recorded markets
 //
 // Live and Archive are deliberately separate tabs rather than one merged list:
 // they are different datasets with different meanings, and presenting archived
@@ -17,7 +17,6 @@ import { MarketsPage } from './MarketsPage'
 import { MarketsArchive } from './MarketsArchive'
 import { WatchlistPage } from '@/components/watchlist/WatchlistPage'
 import { ProvenanceScope } from '@/components/shared/ProvenanceScope'
-import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
 import type { TabDef } from '@/components/ui/Tabs'
 
 export function MarketsDomain() {
@@ -27,6 +26,11 @@ export function MarketsDomain() {
 
   const liveCount    = marketsSlice.status === 'success' ? marketsSlice.data?.count ?? 0 : 0
   const watchedCount = Object.keys(watchlist).length
+  const readAt       = marketsSlice.lastUpdatedAt
+  const scanWord     = marketsSlice.status === 'error' && !marketsSlice.data ? 'scan unavailable'
+                     : marketsSlice.isStale ? 'scan stale'
+                     : readAt !== null ? `scan read ${new Date(readAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                     : 'waiting for the scan'
 
   const tabs: TabDef[] = [
     { id: 'live',      label: 'Live',      count: liveCount },
@@ -42,18 +46,14 @@ export function MarketsDomain() {
     <ProvenanceScope detail="tooltip">
     <DomainPage
       title="Markets"
-      subtitle="Bitcoin 5-minute markets — live scanning, your watchlist, and the historical archive"
+      subtitle="The engine’s current scan, the markets starred in this browser, and the recorded archive"
       tabs={tabs}
+      // Two "LIVE" badges used to sit here — one of them over an empty scan.
+      // What is true is when the scan was last read, and whether it answered;
+      // that is what the header says, in words.
       actions={
-        <span className="flex items-center gap-3">
-          {/* Lineage tracks THIS endpoint, not the app as a whole: a
-              markets-only outage must not sit under a green LIVE badge. */}
-          <ProvenanceBadge
-            provenance={marketsSlice.status === 'error' ? 'unreachable' : 'live'}
-            detail="/api/markets"
-            state={marketsSlice}
-          />
-          <ProvenanceBadge provenance="live" detail="/api/edges" state={edgesSlice} />
+        <span className="t-metadata" title={`/api/markets · /api/edges${edgesSlice.status === 'error' ? ' (edges did not answer)' : ''}`}>
+          {scanWord}
         </span>
       }
       render={(active) => {

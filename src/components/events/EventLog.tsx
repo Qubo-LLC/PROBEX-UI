@@ -9,11 +9,18 @@
 // Type filtering is SERVER-side (the endpoint takes `type`), so selecting a
 // type narrows the request rather than fetching the whole log and throwing most
 // of it away. Severity has no server parameter and stays client-side.
+//
+// The type filter lives in the URL (`?type=trade`), so Live Feed's per-type
+// counts, Portfolio's and System's "full log" links and a shared bookmark all
+// land on the same narrowed view — the log is the investigation surface, and
+// an investigation needs an address.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useApplicationStore } from '@/store/applicationStore'
+import { useMarketLookup } from '@/config/hooks/useMarketLookup'
 import { services } from '@/lib/services'
-import { parseEventRows, dedupeEventRows } from '@/lib/mappers/events'
+import { parseEventRows, collapseConsecutiveRepeats } from '@/lib/mappers/events'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card }       from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -24,10 +31,29 @@ import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
 import type { EngineEvents } from '@/types/engine'
 
 const EVENT_LIMIT = 200
+const TYPE_PARAM = 'type'
 
 export function EventLog({ embedded = false }: EmbeddableProps = {}) {
   const slice = useApplicationStore((s) => s.engine.events)
-  const [typeFilter, setTypeFilter] = useState<string | null>(null)
+  const lookup = useMarketLookup()
+
+  // ── Type filter: URL-backed ──────────────────────────────────────────────
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const requestedType = searchParams.get(TYPE_PARAM)
+  // Only a type the vocabulary knows is honoured; anything else (a typo, a
+  // stale link) reads as "All" rather than issuing a request for nothing.
+  const typeFilter = requestedType !== null && EVENT_TYPES.includes(requestedType) ? requestedType : null
+
+  const setTypeFilter = useCallback((type: string | null) => {
+    const next = new URLSearchParams(searchParams.toString())
+    if (type === null) next.delete(TYPE_PARAM)
+    else next.set(TYPE_PARAM, type)
+    const qs = next.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  }, [router, pathname, searchParams])
+
   const [severityFilter, setSeverityFilter] = useState<string | null>(null)
 
   // Type filtering happens SERVER-side (the endpoint supports `type`), so a
@@ -54,6 +80,8 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
 
   const source = typeFilter === null ? slice.data : filtered
 
+  // parseEventRows delivers rows newest-first with the engine's UTC clock
+  // parsed correctly; nothing here re-sorts.
   const parsed = useMemo(
     () => (source ? parseEventRows(source) : null),
     [source],
@@ -68,11 +96,14 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
 
   const visibleRows = useMemo(() => {
     if (parsed?.kind !== 'rows') return []
-    let rows = parsed.rows
-    if (severityFilter) rows = rows.filter((r) => r.severity === severityFilter)
-    const sorted = [...rows].sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
-    return dedupeEventRows(sorted)
+    const rows = severityFilter ? parsed.rows.filter((r) => r.severity === severityFilter) : parsed.rows
+    return collapseConsecutiveRepeats(rows)
   }, [parsed, severityFilter])
+
+  const visibleEvents = useMemo(
+    () => visibleRows.reduce((n, r) => n + r.repeatCount, 0),
+    [visibleRows],
+  )
 
   /** True when a server-side type filter came back genuinely empty. */
   const emptyForType = typeFilter !== null && !filterLoading && filterError === null && visibleRows.length === 0
@@ -133,7 +164,7 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
           </div>
         )}
         {typeFilter !== null && (
-          <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
+          <p className="t-metadata">
             Filtered server-side via <span className="mono">/api/events?type={typeFilter}</span>
           </p>
         )}
@@ -149,8 +180,8 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
 
       {typeFilter === null && slice.status === 'error' && (
         <ErrorState
-          title="Event log unavailable"
-          description={slice.error?.message ?? 'The /api/events endpoint did not respond.'}
+          title="The event log did not answer"
+          description={`${slice.error?.message ?? 'No response from /api/events.'} What the engine has recorded is unknown until it does.`}
           fullPage={false}
         />
       )}
@@ -170,8 +201,8 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
 
       {typeFilter === null && parsed?.kind === 'empty' && (
         <EmptyState
-          title="No events recorded this session"
-          description="The engine logs edge detections, trades, and resolutions here as they happen. The log resets when the engine restarts."
+          title="The event log is empty"
+          description={`The engine has no events in its retained window (up to ${slice.data?.limit ?? EVENT_LIMIT}). Edge detections, trades, resolutions and errors are recorded here as they happen.`}
         />
       )}
 
@@ -185,7 +216,16 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
         </Card>
       )}
 
-      {visibleRows.length > 0 && <EventStream rows={visibleRows} />}
+      {visibleRows.length > 0 && (
+        <>
+          <EventStream rows={visibleRows} lookup={lookup} />
+          {visibleEvents !== visibleRows.length && (
+            <p className="t-helper">
+              {visibleRows.length} rows · {visibleEvents} events — consecutive identical events share a row (×n)
+            </p>
+          )}
+        </>
+      )}
     </div>
   )
 }

@@ -29,11 +29,11 @@ export function LivePauseControl({ isPaused, onToggle }: LivePauseControlProps) 
           className="text-2xs font-bold uppercase tracking-wider"
           style={{ color: isPaused ? 'var(--probex-warning)' : 'var(--probex-status-live)' }}
         >
-          {isPaused ? 'View frozen' : 'Live'}
+          {isPaused ? 'View frozen' : 'Following'}
         </span>
       </span>
       <span className="t-helper hidden sm:inline">
-        {isPaused ? 'Engine still polling — new activity is arriving' : 'Updating as the engine reports'}
+        {isPaused ? 'Engine still polled — new rows wait behind the freeze' : 'New rows appear as the engine reports them'}
       </span>
     <button
       type="button"

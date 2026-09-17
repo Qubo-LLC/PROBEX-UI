@@ -12,14 +12,22 @@
 //
 // Fetched directly rather than through the store: it is a large payload that
 // only matters when this tab is open, so polling it globally would be waste.
+//
+// 2026-09-17: these are RECORDS. The table used to carry a "Live" provenance
+// badge (no state behind it) and a clock-only "Last seen" that made Sunday's
+// last snapshot read as this morning's; the badge is gone, the caption names
+// the newest record with its date, and the columns fold on the shared ledger
+// grammar instead of scrolling sideways at phone width.
 
 import { useEffect, useMemo, useState } from 'react'
 import { services } from '@/lib/services'
-import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
 import { TableShell, Thead, Th, Tr, Td } from '@/components/shared/DataTable'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { formatCurrency } from '@/lib/utils'
+import { stamp } from '@/lib/display/time'
+import { MARKET_DETAIL_PATH } from '@/config/constants'
+import Link from 'next/link'
 import type { MarketsSummary } from '@/types/engine'
 
 type SortKey = 'recent' | 'volume' | 'range'
@@ -43,6 +51,8 @@ export function MarketsArchive() {
     return () => { active = false }
   }, [])
 
+  const newest = useMemo(() => (data?.markets ?? []).reduce<number | null>((n, m) => (n === null || m.lastSnapshot > n ? m.lastSnapshot : n), null), [data])
+
   const rows = useMemo(() => {
     const list = [...(data?.markets ?? [])]
     switch (sortBy) {
@@ -61,8 +71,8 @@ export function MarketsArchive() {
   if (rows.length === 0) {
     return (
       <EmptyState
-        title="No archived markets"
-        description="The engine hasn't recorded any completed market histories yet."
+        title="No recorded markets"
+        description="The engine holds no market snapshots yet."
       />
     )
   }
@@ -71,7 +81,8 @@ export function MarketsArchive() {
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-xs" style={{ color: 'var(--probex-text-muted)' }}>
-          {rows.length} archived market{rows.length === 1 ? '' : 's'} — price ranges across each market&apos;s observed lifetime
+          {rows.length} recorded market{rows.length === 1 ? '' : 's'} — price ranges across each market&apos;s observed lifetime
+          {newest !== null && <span className="t-metadata"> · newest record {stamp(newest)} · records, not current markets</span>}
         </p>
         <div className="flex items-center gap-3">
           <div className="inline-flex rounded-md overflow-hidden" style={{ border: '1px solid var(--probex-border-default)' }} role="group" aria-label="Sort archive">
@@ -89,48 +100,58 @@ export function MarketsArchive() {
               </button>
             ))}
           </div>
-          <ProvenanceBadge provenance="live" detail="/api/markets/history/summary" />
+          <span className="t-metadata">/api/markets/history/summary</span>
         </div>
       </div>
 
-      <TableShell label="Archived markets">
+      {/* The ledger grammar: one elastic identity column, numeric gutters,
+          supplementary columns hiding below a breakpoint and restated under
+          the question, never a sideways scroll. */}
+      <TableShell label="Recorded markets">
         <Thead>
-          <Th align="left">Market</Th>
-          <Th align="right">YES close</Th>
-          <Th align="right">YES range</Th>
-          <Th align="right">BTC range</Th>
-          <Th align="right">Volume</Th>
-          <Th align="right">Snapshots</Th>
-          <Th align="right">Last seen</Th>
+          <Th align="left" dense grow>Market</Th>
+          <Th align="right" dense>Last YES</Th>
+          <Th align="right" dense hideBelow="md">YES range</Th>
+          <Th align="right" dense hideBelow="lg">BTC range</Th>
+          <Th align="right" dense hideBelow="sm">Volume</Th>
+          <Th align="right" dense hideBelow="lg">Snapshots</Th>
+          <Th align="right" dense hideBelow="sm">Last record</Th>
         </Thead>
         <tbody>
           {rows.slice(0, 100).map((m) => (
             <Tr key={m.marketId}>
-              <Td align="left">
-                <span className="truncate block max-w-[300px]" style={{ color: 'var(--probex-text-secondary)' }} title={m.question}>
+              <Td align="left" dense grow>
+                <Link href={MARKET_DETAIL_PATH(m.marketId)} className="focus-ring rounded-sm font-semibold block truncate" style={{ color: 'var(--probex-text-primary)' }} title={m.question}>
                   {m.question}
+                </Link>
+                <span className="lg:hidden flex items-center gap-x-2 gap-y-0.5 flex-wrap mt-0.5 font-mono text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+                  <span className="sm:hidden">last record {stamp(m.lastSnapshot)}</span>
+                  <span className="md:hidden">YES {m.yesPrice.min.toFixed(1)}–{m.yesPrice.max.toFixed(1)}¢</span>
+                  <span>BTC ${m.btcPrice.min.toFixed(0)}–${m.btcPrice.max.toFixed(0)}</span>
+                  <span>{m.snapshotCount} snapshot{m.snapshotCount === 1 ? '' : 's'}</span>
+                  <span className="sm:hidden">vol {formatCurrency(m.volume.total)}</span>
                 </span>
               </Td>
-              <Td align="right">
-                <span className="tabular-nums font-semibold" style={{ color: 'var(--probex-text-primary)' }}>
+              <Td align="right" dense>
+                <span className="tabular-nums font-semibold" style={{ color: 'var(--probex-text-primary)' }} title="The archive’s last snapshot of yes_price">
                   {m.yesPrice.current.toFixed(1)}¢
                 </span>
               </Td>
-              <Td align="right">
+              <Td align="right" dense hideBelow="md">
                 <span className="tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
                   {m.yesPrice.min.toFixed(1)}–{m.yesPrice.max.toFixed(1)}¢
                 </span>
               </Td>
-              <Td align="right">
+              <Td align="right" dense hideBelow="lg">
                 <span className="tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
                   ${m.btcPrice.min.toFixed(0)}–${m.btcPrice.max.toFixed(0)}
                 </span>
               </Td>
-              <Td align="right"><span className="tabular-nums">{formatCurrency(m.volume.total)}</span></Td>
-              <Td align="right"><span className="tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{m.snapshotCount}</span></Td>
-              <Td align="right">
-                <span className="tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
-                  {new Date(m.lastSnapshot).toLocaleTimeString()}
+              <Td align="right" dense hideBelow="sm"><span className="tabular-nums">{formatCurrency(m.volume.total)}</span></Td>
+              <Td align="right" dense hideBelow="lg"><span className="tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{m.snapshotCount}</span></Td>
+              <Td align="right" dense hideBelow="sm">
+                <span className="tabular-nums text-2xs" style={{ color: 'var(--probex-text-muted)' }} title={new Date(m.lastSnapshot).toLocaleString()}>
+                  {stamp(m.lastSnapshot)}
                 </span>
               </Td>
             </Tr>

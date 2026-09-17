@@ -1,83 +1,77 @@
 'use client'
 
-// AnalyticsPage — V3 Phase 5 assembly root. V1's Analytics was the most
-// fabricated area of the original product (ETF flows, institutional flow,
-// on-chain intelligence, consensus accuracy — all decorative, none backed by
-// a plan PROBEX's own backend will ever implement for a Bitcoin 5-minute
-// binary-market bot).
+// AnalyticsPage — the Investigation lens: is the engine's edge real, where
+// does it come from, and what is the engine doing with it?
 //
-// 2026-07-22 redeploy status:
-//   Fully Live    → EdgeQualityAnalytics, KellyUtilization (unchanged),
-//                   PerformanceAnalytics (/api/portfolio/history),
-//                   SegmentPerformance (repointed to /api/survival/patterns —
-//                   the fictional Bitcoin-category taxonomy it originally
-//                   assumed never existed on the backend)
-//   Still Awaiting → ConsensusAccuracyAnalytics: no endpoint anywhere joins
-//                   edge direction to eventual market resolution outcomes —
-//                   genuinely no backend concept for this yet.
-//   No Longer Appropriate → ETF flows / institutional flow / on-chain
-//                   intelligence / macro indicators — not rebuilt.
+// ─── The composition ─────────────────────────────────────────────────────────
+// Four movements, ruled rather than boxed, in the order an investigator asks:
+//
+//   A  OUTCOME     did the edge pay — return, win rate, expectancy, drawdown
+//   B  EVIDENCE    the equity curve and its drawdown over the retained window
+//   B  ORIGINS     where the results come from: by asset, window length, edge
+//                  size (derived from the ledger) and the survival brain's own
+//                  hour × window × bucket record, with what it has filtered
+//   D  CONTEXT     how capital is being sized right now, and what the detector
+//                  currently sees
+//   D  SELF-REPORT what the analytics engine says about its signals, to the
+//                  extent it can be believed
+//
+// ─── What this replaced, and why ─────────────────────────────────────────────
+// The previous page opened on two charts and then stacked five bordered cards:
+// an "Edge Quality" card that was an empty state most of the day, a Kelly
+// gauge reading "150% OVER LIMIT" for the survival brain's normal scale-up, an
+// "Analytics Engine" card with six equally-weighted metrics and three tables
+// that printed wire keys verbatim ("correct predictions 0 · accuracy 0"), a
+// pattern table, and a "Signal Accuracy — awaiting" module that was an empty
+// chart. Nothing on it ranked anything. The reader met a sizing parameter
+// before a result and a fabricated-looking 0% accuracy before the fact that
+// outcomes had not been joined.
+//
+// Nothing here is new data. Every figure was already in the store; what
+// changed is which ones lead, which are marked derived, which are withheld
+// with a reason, and that explanations moved behind the ⓘ.
+//
+// ─── Truthfulness rules kept ─────────────────────────────────────────────────
+// Client-side groupings are marked derived. The analytics engine's outcome
+// columns are withheld while they contradict the ledger (see SignalReport).
+// No consensus-accuracy figure is shown because no endpoint produces one —
+// the old placeholder chart said so at chart size; the signal report says so
+// in a sentence.
 
-import { EdgeQualityAnalytics } from './EdgeQualityAnalytics'
-import { KellyUtilization } from './KellyUtilization'
+import { OutcomeSummary } from './OutcomeSummary'
 import { PerformanceAnalytics } from './PerformanceAnalytics'
-import { SegmentPerformance } from './SegmentPerformance'
-import { AnalyticsEngineStatus } from './AnalyticsEngineStatus'
-import { ConsensusAccuracyAnalytics } from './ConsensusAccuracyAnalytics'
-import { IntelligenceModule } from '@/components/shared/IntelligenceModule'
+import { EdgeOrigins } from './EdgeOrigins'
+import { SizingReading } from './SizingReading'
+import { SignalReport } from './SignalReport'
 import { ProvenanceScope } from '@/components/shared/ProvenanceScope'
 import { PageHeader } from '@/components/ui/PageHeader'
 
 export function AnalyticsPage() {
   return (
     // Analytics is an evidence surface: the reader is asking what the history
-    // shows, not which endpoint served it. Four raw paths rendered as body text
-    // before this. System is the surface that may expose lineage prominently —
-    // this one should not.
+    // shows, not which endpoint served it. Endpoint paths live in tooltips and
+    // popovers here; System is the surface that prints them in the open.
     <ProvenanceScope detail="tooltip">
-    <div className="page-container flex flex-col gap-5 pb-8 animate-fade-in-up">
+    <div className="page-container flex flex-col pb-8 animate-fade-in-up">
       <PageHeader
         title="Analytics"
-        subtitle="How the system has performed over time — edge quality, capital efficiency, and trading results"
+        subtitle="Whether the engine’s edge is real, where it comes from, and how capital is being sized against it"
       />
 
-      {/* Narrative order: what happened → why → where it came from.
-          The page previously opened on Edge & Sizing — a sizing input — so the
-          first thing a reader met was a parameter of the strategy rather than its
-          result. Performance History is the primary analytical view and now
-          leads; edge quality and Kelly sizing become the comparative detail that
-          explains it; attribution is the supporting breakdown. */}
-      <section className="flex flex-col gap-3">
-        <h2 className="t-section-title">Performance History</h2>
+      <div className="mt-5">
+        <OutcomeSummary />
+      </div>
+
+      {/* B · Evidence — the two charts, unchanged components. They sit under
+          the conclusion they support rather than opening the page. */}
+      <section aria-labelledby="an-evidence" className="flex flex-col gap-3 py-6" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+        <h2 id="an-evidence" className="t-section-title">Equity over the retained window</h2>
         <PerformanceAnalytics />
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="t-section-title">Edge Quality &amp; Sizing</h2>
-        <p className="text-xs" style={{ color: 'var(--probex-text-muted)' }}>
-          The inputs behind the curve above — how large the detected edges were, and how much of the
-          Kelly allowance the engine actually deployed.
-        </p>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-          <EdgeQualityAnalytics />
-          <KellyUtilization />
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="t-section-title">Attribution</h2>
-        <AnalyticsEngineStatus />
-        <SegmentPerformance />
-      </section>
-
-      <IntelligenceModule
-        title="Signal Accuracy"
-        description="How often the engine's edge direction has matched the eventual market resolution — activates once resolution outcomes are joined to signal history"
-        // Human-readable, not the registry key — see ConsensusAccuracyAnalytics.
-        endpoint="Consensus accuracy"
-      >
-        <ConsensusAccuracyAnalytics />
-      </IntelligenceModule>
+      <EdgeOrigins />
+      <SizingReading />
+      <SignalReport />
     </div>
     </ProvenanceScope>
   )

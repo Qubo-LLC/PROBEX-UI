@@ -11,8 +11,8 @@
 // new requests.
 //
 // ─── Why it reuses EventRowItem rather than inventing a row ──────────────────
-// The severity accent rail, the type badge, the headline/detail split and the
-// metadata chips were built for Live Feed and adopted by Event Log. A third
+// The severity rail, the category glyph, the title/context split and the
+// record disclosure were built for Live Feed and adopted by Event Log. A third
 // bespoke incident row would mean the same engine event rendered three ways
 // depending on which page you were on — which is the exact conflation the
 // provenance work removed from the rest of the product. One grammar.
@@ -25,15 +25,18 @@
 
 import { useMemo } from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
-import { parseEventRows, dedupeEventRows } from '@/lib/mappers/events'
+import { parseEventRows, collapseConsecutiveRepeats } from '@/lib/mappers/events'
+import { isAlerting } from '@/lib/display/eventDisplay'
+import { useMarketLookup } from '@/config/hooks/useMarketLookup'
 import { EventRowItem } from '@/components/shared/EventStream'
+import { Popover, InfoButton, PopoverText, PopoverTitle } from '@/components/ui/Popover'
 import { ROUTES } from '@/config/constants'
 import Link from 'next/link'
 
-/** Severities the engine uses for "something is wrong". Anything else — info,
- *  debug, an unrecognised value — is activity, not an incident, and belongs in
- *  the full log rather than here. */
-const ALERTING = new Set(['warning', 'warn', 'error', 'critical', 'fatal'])
+// "Something is wrong" = a severity the engine itself marked warning or worse
+// (isAlerting, shared with the row so the rail and this filter agree).
+// Anything else — info, debug, an unrecognised value — is activity, not an
+// incident, and belongs in the full log rather than here.
 
 /** Enough to see a pattern, few enough that the section stays subordinate to
  *  the health evidence above it. */
@@ -41,6 +44,7 @@ const SHOWN = 6
 
 export function IncidentsSection() {
   const slice = useApplicationStore((s) => s.engine.events)
+  const lookup = useMarketLookup()
 
   const { rows, unrecognized } = useMemo(() => {
     if (!slice.data) return { rows: null, unrecognized: 0 }
@@ -48,22 +52,13 @@ export function IncidentsSection() {
     if (parsed.kind !== 'rows') {
       return { rows: null, unrecognized: parsed.kind === 'unrecognized' ? parsed.count : 0 }
     }
-    const alerting = parsed.rows.filter((r) => r.severity !== null && ALERTING.has(r.severity.toLowerCase()))
-    return { rows: dedupeEventRows(alerting).slice(0, SHOWN), unrecognized: 0 }
+    // Rows arrive newest-first from the mapper; only consecutive repeats fold.
+    const alerting = parsed.rows.filter((r) => isAlerting(r.severity))
+    return { rows: collapseConsecutiveRepeats(alerting).slice(0, SHOWN), unrecognized: 0 }
   }, [slice.data])
 
   return (
     <section aria-label="Recent incidents" className="flex flex-col gap-4">
-      <div className="flex items-baseline justify-between gap-3 flex-wrap">
-        <h2 className="t-section-title">Recent incidents</h2>
-        <span className="flex items-baseline gap-3">
-          <span className="t-metadata">/api/events · severity ≥ warning</span>
-          <Link href={ROUTES.EVENTS} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>
-            Full log →
-          </Link>
-        </span>
-      </div>
-
       {/* ─── Why this cannot be read against the health counters above ───────
           Measured on the live engine: Service health reported "3,263 of 3,270
           checks raised a warning — 100% of them", and this section, 100px
@@ -72,14 +67,41 @@ export function IncidentsSection() {
           they read as the product contradicting itself.
 
           They come from two independent subsystems that the engine does not
-          reconcile, so the UI must not imply that it does. The scopes are named
-          here rather than left for the reader to infer. */}
-      <p className="t-helper">
-        The engine&rsquo;s event log — a different subsystem from the health monitor above.
-        The monitor&rsquo;s warning counters tally every failed probe cycle; this lists
-        events the engine chose to record. A busy monitor with an empty event log is a
-        normal combination, not a contradiction.
-      </p>
+          reconcile, so the UI must not imply that it does. The DISTINCTION is
+          stated inline, in the heading's qualifier: this is the engine's event
+          log. The EXPLANATION of how that differs from the monitor ran to three
+          lines at the technical register beneath the heading — longer than the
+          section's usual content, too faint to read comfortably, and in the
+          way on every visit. It is now a Level-2 disclosure: one click, in
+          the explanatory register, exactly where the question arises. */}
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <h2 className="t-section-title">Recent incidents</h2>
+          <span className="t-description">the engine&rsquo;s event log</span>
+          <Popover
+            label="About recent incidents"
+            trigger={(p) => <InfoButton what="recent incidents" {...p} />}
+          >
+            <PopoverTitle>Event log, not the health monitor</PopoverTitle>
+            <PopoverText>
+              These are events the engine chose to record with severity warning or
+              worse. The health monitor&rsquo;s counters above tally every failed probe
+              cycle — a different subsystem the engine does not reconcile with this one.
+            </PopoverText>
+            <PopoverText>
+              A busy monitor with an empty incident list is a normal combination, not a
+              contradiction. The engine publishes no incident lifecycle, so nothing here
+              is marked resolved or current.
+            </PopoverText>
+          </Popover>
+        </div>
+        <span className="flex items-baseline gap-3">
+          <span className="t-metadata">/api/events · severity ≥ warning</span>
+          <Link href={ROUTES.EVENTS} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>
+            Full log →
+          </Link>
+        </span>
+      </div>
 
       {slice.status === 'error' ? (
         <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
@@ -105,9 +127,9 @@ export function IncidentsSection() {
           No warnings or errors in the engine’s recent event history.
         </p>
       ) : (
-        <div className="flex flex-col">
+        <div className="flex flex-col" style={{ borderBottom: '1px solid var(--probex-border)' }}>
           {rows.map((row) => (
-            <EventRowItem key={row.id} row={row} compact />
+            <EventRowItem key={row.id} row={row} compact lookup={lookup} />
           ))}
         </div>
       )}

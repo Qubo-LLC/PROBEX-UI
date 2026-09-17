@@ -27,6 +27,7 @@ import type { ReactNode } from 'react'
 import { ProvenanceBadge, type Provenance } from './ProvenanceBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
+import { formatAge as formatAgeMs } from '@/lib/display/freshness'
 import type { ServiceState } from '@/lib/services/response'
 
 /**
@@ -127,15 +128,28 @@ export function chartStateFromSlice<T extends { available?: boolean; message?: s
   return { state: 'live', message: null }
 }
 
-/** Compact relative age. Returns null rather than guessing at a bad input. */
-function formatAge(ms: number): string | null {
-  if (!Number.isFinite(ms)) return null
-  const sec = Math.round((Date.now() - ms) / 1000)
-  if (sec < 0) return null
-  if (sec < 60) return `${sec}s ago`
-  const min = Math.round(sec / 60)
-  if (min < 60) return `${min}m ago`
-  return `${Math.round(min / 60)}h ago`
+/**
+ * A series is as fresh as its NEWEST POINT, not as its last successful poll.
+ * A poll that succeeds every 30 s over a series whose last snapshot is three
+ * days old is not a live chart. Callers derive their state from the slice
+ * (`chartStateFromSlice`) and then pass it through here with the newest
+ * point's timestamp; a 'live' state older than the threshold becomes 'stale',
+ * and the frame's own stale strip carries the age. Same threshold as the
+ * consensus reading (lib/display/consensus).
+ */
+export const SERIES_STALE_AFTER_MS = 15 * 60_000
+
+export function staleBySeriesAge(state: ChartState, newestTs: number | undefined, now: number = Date.now()): ChartState {
+  if (state !== 'live' || newestTs === undefined) return state
+  return now - newestTs > SERIES_STALE_AFTER_MS ? 'stale' : state
+}
+
+/** Compact relative age of a timestamp. Null rather than guessing at a bad input. */
+function formatAge(ts: number): string | null {
+  if (!Number.isFinite(ts)) return null
+  const ageMs = Date.now() - ts
+  if (ageMs < 0) return null
+  return formatAgeMs(ageMs)
 }
 
 export function ChartFrame({

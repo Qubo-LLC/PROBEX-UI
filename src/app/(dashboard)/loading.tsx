@@ -1,4 +1,4 @@
-import { Skeleton, StatCardSkeleton, CardSkeleton } from '@/components/ui/LoadingState'
+import { Skeleton, CardSkeleton } from '@/components/ui/LoadingState'
 
 /** Route-level loading skeleton for the dashboard overview/home. */
 export default function Loading() {
@@ -7,7 +7,7 @@ export default function Loading() {
       {/* Hero / consensus bar */}
       <Skeleton height={56} width="100%" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+        {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} lines={2} />)}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-3">
         <CardSkeleton lines={6} />

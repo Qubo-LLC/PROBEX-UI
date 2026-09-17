@@ -1,213 +1,161 @@
 'use client'
 
-// MarketCharts — per-market price and volume history from
-// /api/markets/:market_id/history.
+// MarketCharts — the market's recorded snapshots, drawn.
 //
-// This was an AwaitingBackend placeholder ("MD-1") because the endpoint used to
-// 5xx. It was fixed backend-side and promoted to 'confirmed' in Phase 1, which
-// silently turned the placeholder into `return null` — the section rendered
-// nothing at all. This replaces it with the real charts.
+// Presentational: the page owns the fetch (useMarketHistory) because the same
+// snapshots also name an expired market and describe its path. This draws
+// what it is given and states how much that is — the engine records one
+// snapshot per scan cycle, so a market that lived fifteen minutes typically
+// has two or three points, and a chart of two points is a line between two
+// facts, not a curve. Below two points there is nothing to draw and the
+// single snapshot is shown as the facts it carries.
 //
-// Fetched per-market on mount rather than through the polled store: the payload
-// is market-scoped and only relevant while this page is open, so a global poll
-// would fetch data no one is looking at. Refetches when marketId changes.
-//
-// Three series come out of one response: YES probability (cents), BTC spot
-// against the market's resolution baseline, and traded volume.
+// ─── What is NOT said here any more ──────────────────────────────────────────
+// The previous version read `baseline_price` off the first snapshot as "the
+// resolution baseline" and compared the last BTC price to it. On the live
+// history baseline_price equals btc_price on every snapshot (it follows the
+// feed), so that comparison was the price against itself a few minutes earlier.
+// The BTC path is now reported as a path. See lib/display/marketDetail.ts.
 
-import { useEffect, useState } from 'react'
-import { services } from '@/lib/services'
-import { readEphemeral } from '@/lib/api/resourceLifecycle'
-import { isCanceledError } from '@/lib/services/response'
 import { LiveChart, type LiveChartPoint } from '@/components/shared/LiveChart'
 import { ErrorState } from '@/components/ui/ErrorState'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { formatCurrency } from '@/lib/utils'
-import type { MarketPriceHistory } from '@/types/engine'
-
-/** Backend caps at 1000; 200 snapshots is well beyond one 5-minute market. */
-const SNAPSHOT_LIMIT = 200
+import { formatBtcPrice } from '@/lib/mappers/priceHistory'
+import { historyTrajectory } from '@/lib/display/marketDetail'
+import type { MarketHistoryState } from '@/config/hooks/useMarketHistory'
+import type { MarketHistoryPoint } from '@/types/engine'
 
 const hhmm = (ts: number) =>
   new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-export function MarketCharts({ marketId }: { marketId: string }) {
-  const [data, setData]       = useState<MarketPriceHistory | null>(null)
-  const [error, setError]     = useState<string | null>(null)
-  // Distinct from `error`: an id that has aged out is the normal end of a
-  // 5-minute market's life, not a fault, and must not be reported as one.
-  const [expired, setExpired] = useState(false)
-  const [loading, setLoading] = useState(true)
+const stamp = (ts: number) =>
+  new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
-  useEffect(() => {
-    let active = true
-    // Market detail is the read most likely to be abandoned mid-flight — the
-    // operator clicks through a market list. Aborting on navigation stops the
-    // previous market's history from occupying an engine worker that the market
-    // now on screen needs.
-    const controller = new AbortController()
-    setLoading(true)
-    setError(null)
-    setExpired(false)
-
-    // No `refreshId` is supplied on purpose. Substituting a DIFFERENT market's
-    // history under a heading that names this one would be a silent lie — the
-    // very failure mode this page exists to avoid. Refreshing the id is correct
-    // for "give me the current market" reads; this is "give me THIS market".
-    readEphemeral(marketId, (id) =>
-      services.engine
-        .getMarketPriceHistory(id, SNAPSHOT_LIMIT, controller.signal)
-        .then((r) => r.data),
-    )
-      .then((outcome) => {
-        if (!active) return
-        if (outcome.kind === 'ok')            setData(outcome.value)
-        else if (outcome.kind === 'expired')  setExpired(true)
-        // readEphemeral folds an abort into `unavailable` like any other
-        // failure, so it is filtered here rather than there: cancelling is the
-        // caller's own act and must not surface as "market history unavailable".
-        else if (!isCanceledError(outcome.error)) setError(outcome.error.message)
-      })
-      .finally(() => { if (active) setLoading(false) })
-
-    return () => { active = false; controller.abort() }
-  }, [marketId])
-
-  const history = data?.history ?? []
-
-  if (loading) {
-    return (
-      <Section>
-        <p className="text-xs py-6" style={{ color: 'var(--probex-text-disabled)' }}>
-          Loading market history…
-        </p>
-      </Section>
-    )
-  }
-
-  if (expired) {
-    return (
-      <Section>
-        <EmptyState
-          size="sm"
-          title="This market has closed"
-          description="Polymarket's 5-minute markets rotate continuously, and the engine no longer holds a record for this one. Its id has expired — nothing is wrong."
-        />
-      </Section>
-    )
-  }
-
-  if (error) {
-    return (
-      <Section>
-        <ErrorState title="Market history unavailable" description={error} fullPage={false} />
-      </Section>
-    )
-  }
-
-  if (history.length === 0) {
-    return (
-      <Section>
-        <EmptyState
-          size="sm"
-          title="No snapshots recorded"
-          description="The engine hasn't captured price snapshots for this market yet. Charts appear as soon as it does."
-        />
-      </Section>
-    )
-  }
-
-  const yesSeries: LiveChartPoint[]    = history.map((p) => ({ tick: hhmm(p.ts), value: p.yesPrice }))
-  const btcSeries: LiveChartPoint[]    = history.map((p) => ({ tick: hhmm(p.ts), value: p.btcPrice }))
-  const volumeSeries: LiveChartPoint[] = history.map((p) => ({ tick: hhmm(p.ts), value: p.volume }))
-
-  // Every snapshot carries the same baseline (the market's resolution
-  // reference), so reading it off the first point is safe.
-  const baseline = history[0]?.baselinePrice ?? null
-  const lastBtc  = history[history.length - 1]?.btcPrice ?? null
-  const above    = baseline !== null && lastBtc !== null ? lastBtc >= baseline : null
-
+export function MarketCharts({ history }: { history: MarketHistoryState }) {
   return (
-    <Section>
-      <div className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between flex-wrap gap-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>
-            Price &amp; Volume History
-          </h3>
-          <span
-            className="text-2xs"
-            style={{ color: 'var(--probex-text-disabled)' }}
-            title="Source: /api/markets/:id/history"
-            aria-label={`${history.length} snapshot${history.length === 1 ? '' : 's'} from /api/markets/:id/history`}
-          >
-            {history.length} snapshot{history.length === 1 ? '' : 's'}
-          </span>
-        </div>
-
-        {baseline !== null && (
-          <p className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
-            Resolution baseline{' '}
-            <span className="tabular-nums font-semibold" style={{ color: 'var(--probex-text-secondary)' }}>
-              ${baseline.toLocaleString()}
-            </span>
-            {above !== null && (
-              <>
-                {' · BTC currently '}
-                <span className="font-semibold" style={{ color: above ? 'var(--probex-yes)' : 'var(--probex-no)' }}>
-                  {above ? 'above' : 'below'}
-                </span>
-              </>
-            )}
-          </p>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <LiveChart
-            title="YES Probability"
-            source="/api/markets/:id/history"
-            data={yesSeries}
-            variant="area"
-            height={180}
-            bare
-            color="var(--probex-yes)"
-            yTickFormatter={(v) => `${v.toFixed(0)}¢`}
-            valueFormatter={(v) => `${v.toFixed(1)}¢`}
-          />
-          <LiveChart
-            title="BTC Price"
-            source="/api/markets/:id/history"
-            data={btcSeries}
-            variant="line"
-            height={180}
-            bare
-            color="var(--probex-primary)"
-            // BTC moves only tens of dollars inside a 5-minute market; a
-            // zero-based axis would render that as a flat line.
-            yDomain={['dataMin', 'dataMax']}
-            yTickFormatter={(v) => `$${v.toFixed(0)}`}
-            valueFormatter={(v) => `$${v.toLocaleString()}`}
-          />
-          <LiveChart
-            title="Volume"
-            source="/api/markets/:id/history"
-            data={volumeSeries}
-            variant="area"
-            height={160}
-            bare
-            color="var(--probex-text-muted)"
-            yTickFormatter={(v) => formatCurrency(v, true)}
-            valueFormatter={(v) => formatCurrency(v)}
-          />
-        </div>
+    <section aria-labelledby="md-history" className="flex flex-col gap-3 pt-6" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <span className="flex items-baseline gap-2 flex-wrap">
+          <h2 id="md-history" className="t-section-title">Recorded history</h2>
+          <span className="t-description">one snapshot per engine scan, oldest first</span>
+        </span>
+        <span className="t-metadata">
+          /api/markets/:id/history
+          {history.status === 'ready' && ` · ${history.data.history.length} snapshot${history.data.history.length === 1 ? '' : 's'}`}
+        </span>
       </div>
-    </Section>
+
+      {history.status === 'loading' ? (
+        <p className="t-description">Loading the recorded snapshots.</p>
+      ) : history.status === 'expired' ? (
+        <p className="t-description">The engine holds no snapshots for this id — it has aged out of the history store.</p>
+      ) : history.status === 'error' ? (
+        <ErrorState title="Recorded history did not answer" description={history.message} fullPage={false} />
+      ) : history.data.history.length === 0 ? (
+        <p className="t-description">The engine recorded no snapshots for this market.</p>
+      ) : history.data.history.length === 1 ? (
+        <SingleSnapshot point={history.data.history[0]!} />
+      ) : (
+        <Charts points={history.data.history} />
+      )}
+    </section>
   )
 }
 
-function Section({ children }: { children: React.ReactNode }) {
+/** One point cannot be a chart. The facts it carries, as facts. */
+function SingleSnapshot({ point }: { point: MarketHistoryPoint }) {
   return (
-    <div className="px-6 py-5" style={{ borderBottom: '1px solid var(--probex-border)' }}>
-      {children}
+    <div className="flex flex-col gap-2">
+      <p className="t-helper">Only one snapshot was recorded, at {stamp(point.ts)} — nothing to draw a path from.</p>
+      <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2 m-0">
+        <Fact label="YES price" value={`${point.yesPrice.toFixed(1)}¢`} />
+        <Fact label="NO price" value={`${point.noPrice.toFixed(1)}¢`} />
+        <Fact label="BTC at snapshot" value={formatBtcPrice(point.btcPrice)} />
+        <Fact label="Volume" value={formatCurrency(point.volume)} />
+      </dl>
+    </div>
+  )
+}
+
+function Charts({ points }: { points: readonly MarketHistoryPoint[] }) {
+  const path = historyTrajectory(points)
+  const yesSeries: LiveChartPoint[]    = points.map((p) => ({ tick: hhmm(p.ts), value: p.yesPrice }))
+  const btcSeries: LiveChartPoint[]    = points.map((p) => ({ tick: hhmm(p.ts), value: p.btcPrice }))
+  const volumeSeries: LiveChartPoint[] = points.map((p) => ({ tick: hhmm(p.ts), value: p.volume }))
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* The path, in words, before the pictures: two or three points read
+          better as "6.5¢ → 0.1¢" than as a slope. Every number is a wire
+          value from the first and last snapshot. */}
+      {path !== null && (
+        <p className="t-helper flex items-baseline gap-x-4 gap-y-1 flex-wrap">
+          <span>
+            YES <Mono>{path.from.yesPrice.toFixed(1)}¢</Mono> → <Mono>{path.to.yesPrice.toFixed(1)}¢</Mono>
+          </span>
+          <span>
+            BTC <Mono>{formatBtcPrice(path.from.btcPrice)}</Mono> → <Mono>{formatBtcPrice(path.to.btcPrice)}</Mono>
+            {path.btcMove !== null && (
+              <span className="ml-1 font-mono tabular-nums" style={{ color: path.btcMove >= 0 ? 'var(--probex-positive)' : 'var(--probex-negative)' }}>
+                {path.btcMove >= 0 ? '+' : ''}{(path.btcMove * 100).toFixed(2)}%
+              </span>
+            )}
+          </span>
+          <span className="t-metadata">{stamp(path.from.ts)} → {stamp(path.to.ts)}</span>
+        </p>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <LiveChart
+          title="YES price"
+          source="/api/markets/:id/history"
+          data={yesSeries}
+          variant="area"
+          height={180}
+          bare
+          color="var(--probex-yes)"
+          yTickFormatter={(v) => `${v.toFixed(0)}¢`}
+          valueFormatter={(v) => `${v.toFixed(1)}¢`}
+        />
+        <LiveChart
+          title="BTC at snapshot"
+          source="/api/markets/:id/history"
+          data={btcSeries}
+          variant="line"
+          height={180}
+          bare
+          color="var(--probex-primary)"
+          // BTC moves only tens of dollars inside a 5-minute market; a
+          // zero-based axis would render that as a flat line.
+          yDomain={['dataMin', 'dataMax']}
+          yTickFormatter={(v) => `$${v.toFixed(0)}`}
+          valueFormatter={(v) => `$${v.toLocaleString()}`}
+        />
+        <LiveChart
+          title="Volume"
+          source="/api/markets/:id/history"
+          data={volumeSeries}
+          variant="area"
+          height={160}
+          bare
+          color="var(--probex-text-muted)"
+          yTickFormatter={(v) => formatCurrency(v, true)}
+          valueFormatter={(v) => formatCurrency(v)}
+        />
+      </div>
+    </div>
+  )
+}
+
+function Mono({ children }: { children: React.ReactNode }) {
+  return <span className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>{children}</span>
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <dt className="t-label truncate">{label}</dt>
+      <dd className="m-0 font-mono text-xs font-semibold tabular-nums truncate" style={{ color: 'var(--probex-text-primary)' }}>{value}</dd>
     </div>
   )
 }

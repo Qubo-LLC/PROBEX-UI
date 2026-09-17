@@ -1,65 +1,93 @@
 'use client'
 
-// MarketActivityFeed — restored from V1 (git 0e3833a4). V1 needed a
-// dedicated per-market activity endpoint (markets.activity, still
-// awaiting-backend); V3 achieves the same result truthfully today by
-// filtering the confirmed, live global /api/events envelope client-side by
-// marketId — the same technique already proven on the Overview page.
+// MarketActivityFeed — the engine's events that name this market, on the
+// shared EventStream row.
+//
+// ─── Why it now uses the shared row ──────────────────────────────────────────
+// This was the last bespoke event row in the product: a dot, the wire message
+// (which for a trade is "Recorded paper trade … for 0xa2152dfb…" — the raw
+// id), a relative age, and two fields (`amount`, `probability`) the wire has
+// never carried. Live Feed, System and Portfolio had already moved to one row
+// grammar; a market's activity rendered a fourth way. The shared row also
+// brings the consecutive-repeat fold, the record disclosure and the UTC clock.
+//
+// ─── What "this market's activity" means, precisely ──────────────────────────
+// Events whose metadata names this id: a trade's `market_id`, or an edge
+// event's `top_edge_market_id`. An edge event names only its STRONGEST edge,
+// so a cycle that found two edges and led with another market is not listed
+// here even if this market was the second — the wire does not say. Resolution
+// events name no market at all. Stated in the section's qualifier rather than
+// left for the reader to infer.
+//
+// The one variant asked of the shared row: `hideMarket`, because every row
+// here is about the market the page is already showing.
 
 import { useMemo } from 'react'
+import Link from 'next/link'
 import { useApplicationStore } from '@/store/applicationStore'
-import { parseEventRows } from '@/lib/mappers/events'
-import { formatCurrency, formatPercent } from '@/lib/utils'
-import { EmptyState } from '@/components/ui/EmptyState'
-import { ErrorState } from '@/components/ui/ErrorState'
+import { parseEventRows, collapseConsecutiveRepeats } from '@/lib/mappers/events'
+import { deriveFreshness } from '@/lib/display/freshness'
+import { EventStream } from '@/components/shared/EventStream'
+import { ROUTES } from '@/config/constants'
 
-function formatAge(ts: number): string {
-  const s = Math.floor((Date.now() - ts) / 1000)
-  if (s < 60) return `${s}s ago`
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
-  return new Date(ts).toLocaleDateString()
-}
+/** Events poll at MEDIUM cadence (ApplicationStateLoader). */
+const EVENTS_POLL_MS = 5_000
 
 export function MarketActivityFeed({ marketId }: { marketId: string }) {
-  const eventsSlice = useApplicationStore((s) => s.engine.events)
+  const slice = useApplicationStore((s) => s.engine.events)
 
   const rows = useMemo(() => {
-    if (!eventsSlice.data) return null
-    const parsed = parseEventRows(eventsSlice.data)
-    if (parsed.kind !== 'rows') return []
-    return parsed.rows.filter((r) => r.marketId === marketId).sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
-  }, [eventsSlice.data, marketId])
+    if (!slice.data) return null
+    const parsed = parseEventRows(slice.data)
+    if (parsed.kind === 'unrecognized') return 'unrecognized' as const
+    if (parsed.kind === 'empty') return []
+    // Newest-first from the mapper; only consecutive repeats fold.
+    return collapseConsecutiveRepeats(parsed.rows.filter((r) => r.marketId === marketId))
+  }, [slice.data, marketId])
+
+  const freshness = deriveFreshness(slice, EVENTS_POLL_MS)
 
   return (
-    <div className="px-6 py-5" style={{ borderBottom: '1px solid var(--probex-border)' }}>
-      <h2 className="text-xs font-semibold mb-3" style={{ color: 'var(--probex-text-primary)' }}>Activity</h2>
+    <section aria-labelledby="md-activity" className="flex flex-col gap-3 pt-6" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <span className="flex items-baseline gap-2 flex-wrap">
+          <h2 id="md-activity" className="t-section-title">Activity</h2>
+          <span className="t-description">events that name this market, newest first</span>
+        </span>
+        <span className="flex items-baseline gap-3">
+          <span className="t-metadata">/api/events · retained window{slice.data ? ` of ${slice.data.limit}` : ''}</span>
+          <Link href={`${ROUTES.SYSTEM}?view=events`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>
+            Full log →
+          </Link>
+        </span>
+      </div>
 
-      {eventsSlice.status === 'error' && (
-        <ErrorState title="Activity unavailable" description={eventsSlice.error?.message ?? 'The /api/events endpoint did not respond.'} fullPage={false} />
+      {slice.status === 'error' ? (
+        // No data has ever arrived. Whether this market had activity is
+        // unknown — not "none".
+        <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+          The event log did not answer, so whether the engine recorded anything on this market is unknown.
+        </p>
+      ) : rows === null ? (
+        <p className="t-description">Waiting for the event log.</p>
+      ) : rows === 'unrecognized' ? (
+        <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+          The engine returned events whose shape doesn’t match the agreed schema — they are withheld rather than shown with guessed fields.
+        </p>
+      ) : rows.length === 0 ? (
+        <p className="t-description">
+          No event in the engine’s retained log names this market. Edge events name only their strongest market, and the log keeps the most recent {slice.data?.limit ?? '—'} events — older activity is no longer visible here.
+        </p>
+      ) : (
+        <>
+          {freshness.level === 'stale' && (
+            <p className="t-helper" style={{ color: 'var(--probex-warning)' }}>
+              Retained from the last successful refresh {freshness.ageLabel ?? ''} — the latest poll of /api/events failed.
+            </p>
+          )}
+          <EventStream rows={rows} compact hideMarket />
+        </>
       )}
-
-      {rows !== null && rows.length === 0 && (
-        <EmptyState size="sm" title="No activity for this market yet" description="Trades, edge detections, and resolutions for this market appear here as they happen." />
-      )}
-
-      {rows !== null && rows.length > 0 && (
-        <ul className="flex flex-col gap-0 list-none p-0 m-0">
-          {rows.map((r) => (
-            <li key={r.id} className="flex items-start gap-2.5 py-2" style={{ borderBottom: '1px solid var(--probex-border)' }}>
-              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5" style={{ background: 'var(--probex-primary)' }} aria-hidden="true" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs" style={{ color: 'var(--probex-text-secondary)' }}>{r.description}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  {r.timestamp !== null && <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{formatAge(r.timestamp)}</span>}
-                  {r.amount !== null && <span className="text-2xs font-semibold" style={{ color: 'var(--probex-text-primary)' }}>{formatCurrency(r.amount)}</span>}
-                  {r.probability !== null && <span className="text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>→ {formatPercent(r.probability)}</span>}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    </section>
   )
 }

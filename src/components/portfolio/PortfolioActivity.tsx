@@ -1,95 +1,65 @@
 'use client'
 
-// PortfolioActivity — restored from V1 (git 0e3833a4), live from /api/events.
-// Filtered to the event types that actually describe portfolio-affecting
-// action (position opens, resolutions) rather than the full engine-wide feed
-// Overview's ActivityFeed shows — same underlying envelope, a narrower lens,
-// following the same technique as Market Detail's MarketActivityFeed.
+// PortfolioActivity — where the engine's record of what it did to the book
+// lives, in one line.
+//
+// This section used to render its own trade/resolution EventStream — the
+// same filter, the same rows, as Execution › Paper Trading's "Recorded
+// activity" and a subset of Live Feed's stream (audit 2026-09-17: three
+// surfaces, one log). Portfolio's question is what the account is worth and
+// how it got there; the settlements that moved it are the ledger on Capital
+// & Ledger, and the event record is canonical on the paper console and the
+// full log. So this states what the log holds and points there, rather than
+// rendering the stream a fourth time.
 
 import { useMemo } from 'react'
+import Link from 'next/link'
 import { useApplicationStore } from '@/store/applicationStore'
-import { parseEventRows, type EventRow } from '@/lib/mappers/events'
-import { formatCurrency } from '@/lib/utils'
-import { EmptyState } from '@/components/ui/EmptyState'
-import { ErrorState } from '@/components/ui/ErrorState'
+import { parseEventRows } from '@/lib/mappers/events'
+import { latestActivity } from '@/lib/display/eventDisplay'
+import { formatAge } from '@/lib/display/freshness'
+import { stamp } from '@/lib/display/time'
+import { ROUTES } from '@/config/constants'
 
-const PORTFOLIO_EVENT_TYPES = new Set(['new-position-yes', 'new-position-no', 'market-resolved'])
-
-const EVENT_META: Record<string, { icon: string; color: string; label: string }> = {
-  'new-position-yes': { icon: '+', color: 'var(--probex-yes)', label: 'Position Opened' },
-  'new-position-no':  { icon: '+', color: 'var(--probex-no)', label: 'Position Opened' },
-  'market-resolved':  { icon: '✓', color: 'var(--probex-positive)', label: 'Market Resolved' },
-}
-
-function formatAge(ts: number): string {
-  const s = Math.floor((Date.now() - ts) / 1000)
-  if (s < 60) return `${s}s ago`
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
-  return `${Math.floor(s / 86400)}d ago`
-}
+/** The event types that describe an action on the book. */
+const BOOK_EVENT_TYPES = new Set(['trade', 'resolution'])
 
 export function PortfolioActivity() {
   const eventsSlice = useApplicationStore((s) => s.engine.events)
 
-  const rows: EventRow[] | null = useMemo(() => {
+  const summary = useMemo(() => {
     if (!eventsSlice.data) return null
     const parsed = parseEventRows(eventsSlice.data)
-    if (parsed.kind !== 'rows') return []
-    return parsed.rows.filter((r) => PORTFOLIO_EVENT_TYPES.has(r.type)).sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
+    if (parsed.kind !== 'rows') return { count: 0, latest: null }
+    const rows = parsed.rows.filter((r) => BOOK_EVENT_TYPES.has(r.type.toLowerCase()))
+    return { count: rows.length, latest: latestActivity(rows) }
   }, [eventsSlice.data])
 
   return (
-    <div className="flex flex-col rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
-        <div className="flex items-center gap-2">
-          <span className="live-dot" aria-hidden="true" />
-          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Portfolio Activity</h2>
-        </div>
-        {rows && <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{rows.length} events</span>}
+    <section aria-labelledby="pf-activity" className="flex flex-col gap-2 pt-6">
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <span className="flex items-baseline gap-2">
+          <h2 id="pf-activity" className="t-section-title">What the engine did</h2>
+          <span className="t-description">the event record behind the ledger</span>
+        </span>
+        <span className="t-metadata">/api/events</span>
       </div>
-
-      {eventsSlice.status === 'error' && (
-        <ErrorState title="Activity unavailable" description={eventsSlice.error?.message ?? 'The /api/events endpoint did not respond.'} fullPage={false} />
-      )}
-
-      {rows !== null && rows.length === 0 && (
-        <EmptyState size="sm" title="No portfolio activity yet" description="Position opens and market resolutions appear here as they happen." />
-      )}
-
-      {rows !== null && rows.length > 0 && (
-        <div className="overflow-y-auto max-h-[420px]">
-          {rows.map((r, i) => {
-            const meta = EVENT_META[r.type] ?? { icon: '·', color: 'var(--probex-text-muted)', label: r.type }
-            return (
-              <div
-                key={r.id}
-                className="flex items-start gap-3 px-4 py-3"
-                style={i < rows.length - 1 ? { borderBottom: '1px solid var(--probex-border)' } : undefined}
-              >
-                <span className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold mt-0.5" style={{ background: `color-mix(in srgb, ${meta.color} 14%, transparent)`, color: meta.color, border: `1px solid color-mix(in srgb, ${meta.color} 22%, transparent)` }} aria-hidden="true">
-                  {meta.icon}
-                </span>
-                <div className="flex-1 min-w-0 flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xs font-semibold px-1.5 py-0.5 rounded whitespace-nowrap" style={{ background: `color-mix(in srgb, ${meta.color} 12%, transparent)`, color: meta.color }}>{meta.label}</span>
-                    <span className="text-xs font-medium truncate" style={{ color: 'var(--probex-text-primary)' }}>{r.marketTitle ?? r.id}</span>
-                  </div>
-                  <p className="text-xs leading-snug" style={{ color: 'var(--probex-text-secondary)' }}>{r.description}</p>
-                </div>
-                <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                  {r.amount !== null && (
-                    <span className="text-xs font-bold tabular-nums" style={{ color: r.amount >= 0 ? 'var(--probex-positive)' : 'var(--probex-negative)' }}>
-                      {r.amount >= 0 ? '+' : ''}{formatCurrency(r.amount)}
-                    </span>
-                  )}
-                  {r.timestamp !== null && <span className="text-2xs tabular-nums" style={{ color: 'var(--probex-text-disabled)' }}>{formatAge(r.timestamp)}</span>}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </div>
+      <p className="t-description m-0">
+        {eventsSlice.status === 'error' && !eventsSlice.data
+          ? 'The event log did not answer.'
+          : summary === null
+            ? 'Waiting for the event log.'
+            : summary.count === 0
+              ? 'No trade or resolution event in the engine’s retained log.'
+              : <>
+                  {summary.count} trade and resolution event{summary.count === 1 ? '' : 's'} in the retained log
+                  {summary.latest && <>, the newest {formatAge(summary.latest.ageMs)} ({stamp(summary.latest.at)})</>}.
+                </>}
+        {' '}
+        <Link href={`${ROUTES.EXECUTION}?view=paper`} className="focus-ring font-semibold" style={{ color: 'var(--probex-primary)' }}>Recorded activity on Paper Trading →</Link>
+        {' · '}
+        <Link href={`${ROUTES.SYSTEM}?view=events&type=trade`} className="focus-ring font-semibold" style={{ color: 'var(--probex-primary)' }}>Full log →</Link>
+      </p>
+    </section>
   )
 }

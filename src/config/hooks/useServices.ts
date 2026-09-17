@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState, type DependencyList } from 'react'
 import { services } from '@/lib/services'
 import {
   ok, toServiceState, loadingState, errorState, staleState, toServiceError, isCanceledError,
-  type ServiceState, type ApiResult,
+  type ServiceState, type ServiceError, type ApiResult,
 } from '@/lib/services/response'
 import { toBtcPriceChart, type BtcPriceChartViewModel } from '@/lib/mappers/priceHistory'
 import { toCommandCenter, type CommandCenterVM }        from '@/lib/mappers/overview'
@@ -42,6 +42,11 @@ function useServiceQuery<T>(
   /** When set, refetches every N ms. Poll refreshes update in place (no loading
    *  flash) and pause while the tab is hidden. Overlapping requests are skipped. */
   refreshMs?: number,
+  /** Stops the poll for good when a failure matches — for a resource the
+   *  engine has said does not exist (a rotated-out market answering 404),
+   *  where asking again every few seconds can only produce the same answer
+   *  and costs a backend worker each time. The state keeps the error. */
+  stopPollingOn?: (error: ServiceError) => boolean,
 ): ServiceState<T> {
   const [state, setState] = useState<ServiceState<T>>(() => {
     const s = seed()
@@ -61,6 +66,7 @@ function useServiceQuery<T>(
     // so a cockpit that walks away from requests without cancelling them is
     // contributing to the failure it is trying to report. Aborting releases both.
     let controller: AbortController | null = null
+    let intervalId: ReturnType<typeof setInterval> | null = null
 
     const run = () => {
       if (inFlight) return
@@ -82,6 +88,7 @@ function useServiceQuery<T>(
           // fault beside it; errorState() still applies before any data has
           // arrived, where there is nothing to preserve.
           const err = toServiceError(e)
+          if (intervalId !== null && stopPollingOn?.(err)) { clearInterval(intervalId); intervalId = null }
           setState((prev) => (prev.status === 'success' || prev.status === 'empty')
             ? staleState(prev, err)
             : errorState<T>(err))
@@ -98,11 +105,11 @@ function useServiceQuery<T>(
       return () => { active = false; controller?.abort(); clearTimeout(initialTimer) }
     }
 
-    const id = setInterval(() => {
+    intervalId = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return
       run()
     }, refreshMs)
-    return () => { active = false; controller?.abort(); clearTimeout(initialTimer); clearInterval(id) }
+    return () => { active = false; controller?.abort(); clearTimeout(initialTimer); if (intervalId !== null) clearInterval(intervalId) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, refreshMs])
 
@@ -351,6 +358,10 @@ export function useMarketDetail(marketId: string, refreshMs = 8_000) {
     () => null,
     [marketId],
     refreshMs,
+    // A 404 here is the engine saying the window has rotated out. It will not
+    // rotate back in; polling it every 8s produced a steady stream of 404s on
+    // every expired market page (measured 2026-09-16).
+    (err) => err.code === 'NOT_FOUND',
   )
 }
 

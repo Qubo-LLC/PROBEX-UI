@@ -8,6 +8,7 @@
 import { useApplicationStore } from '@/store/applicationStore'
 import { LiveChart, type LiveChartPoint } from '@/components/shared/LiveChart'
 import { chartStateFromSlice } from '@/components/shared/ChartFrame'
+import { READING_STALE_AFTER_MS } from '@/lib/display/consensus'
 
 export function ConfidenceEvolution() {
   const slice = useApplicationStore((s) => s.engine.consensusHistory)
@@ -17,15 +18,22 @@ export function ConfidenceEvolution() {
 
   // Real state, not just "has rows": an errored slice is unavailable and an
   // available:false envelope is idle — both look like zero rows otherwise.
-  const { state, message } = chartStateFromSlice(slice, data.length)
+  const { state: sliceState, message } = chartStateFromSlice(slice, data.length)
+
+  // The series ends at the newest SNAPSHOT, not at the poll. A poll that
+  // succeeds every 30s over a series whose last point is a day old is not a
+  // live chart; the frame's own stale state carries the age of that point.
+  const newestTs = slice.data?.history.length ? slice.data.history[slice.data.history.length - 1]!.ts : undefined
+  const readingStale = newestTs !== undefined && Date.now() - newestTs > READING_STALE_AFTER_MS
+  const state = sliceState === 'live' && readingStale ? 'stale' : sliceState
 
   return (
     <LiveChart
-      title="Confidence Evolution"
-      subtitle="Consensus confidence over the session"
+      title="Confidence over the recorded snapshots"
+      subtitle="the engine’s own confidence in each reading"
       state={state}
       message={message}
-      lastConfirmedAt={slice.data?.timestamp}
+      {...(newestTs !== undefined ? { lastConfirmedAt: newestTs } : {})}
       source="/api/consensus/history"
       data={data}
       variant="area"

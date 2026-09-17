@@ -12,6 +12,7 @@ import { useApplicationStore } from '@/store/applicationStore'
 import { formatSignedCurrency } from '@/lib/utils'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { StatusChip } from '@/components/ui/StatusChip'
+import { Popover, InfoButton, PopoverText, PopoverTitle } from '@/components/ui/Popover'
 import type { RuntimeComponents } from '@/types/engine'
 
 /**
@@ -101,6 +102,21 @@ export function RuntimePanel() {
           >
             {activeCount}/{keys.length} components active
           </span>
+          {/* The clusters caveat, moved up from a permanent line beneath the
+              matrix into the heading's disclosure: it qualifies the whole
+              grouping once, and a reader who has learned it does not need to
+              read past it on every visit. */}
+          <Popover
+            label="About the component clusters"
+            trigger={(p) => <InfoButton what="the component clusters" {...p} />}
+          >
+            <PopoverTitle>Clusters are a presentation grouping</PopoverTitle>
+            <PopoverText>
+              The engine reports a flat list of component flags with no topology. The
+              clusters below are derived from component names so an incomplete area is
+              visible at a glance — they are not a dependency graph the engine reported.
+            </PopoverText>
+          </Popover>
         </div>
         <div className="flex items-center gap-3">
           {/* Live was the POSITIVE tone here, which reads as "good" for the
@@ -215,10 +231,6 @@ export function RuntimePanel() {
             </div>
           )
         })}
-        <p className="t-metadata">
-          Clusters are a presentation grouping derived from component names — the engine reports a flat
-          list with no topology.
-        </p>
       </div>
 
       {/* Bot-reported counters.
@@ -226,23 +238,39 @@ export function RuntimePanel() {
           outside the app via POST /api/update-stats and has held seeded test
           data. The previous label read "total P&L", which claims exactly the
           authority this field does not have — and the caveat that said so was a
-          footnote below it. The figure keeps its place and loses the claim. */}
+          footnote below it. The figure keeps its place and loses the claim.
+
+          The qualification stays INLINE — "not accounting" is part of what
+          these numbers are, and a reader must not need a click to learn that a
+          P&L figure is not the account's P&L. The two-sentence explanation of
+          why (the write path, where the real ledger lives) is the disclosure. */}
       <div className="flex flex-col gap-1.5 pt-1" style={{ borderTop: '1px solid var(--probex-border)' }}>
-        <span className="t-label">Bot-reported counters · not accounting</span>
+        <span className="flex items-center gap-1.5">
+          <span className="t-label">Bot-reported counters · not accounting</span>
+          <Popover
+            label="About the bot-reported counters"
+            trigger={(p) => <InfoButton what="the bot-reported counters" {...p} />}
+          >
+            <PopoverTitle>A report, not a ledger</PopoverTitle>
+            <PopoverText>
+              Written by the bot process and externally writable via POST /api/update-stats,
+              so nothing here is used for accounting anywhere else in the product.
+            </PopoverText>
+            <PopoverText>
+              Account P&amp;L is on Portfolio (/api/portfolio); execution activity is on the
+              Execution console.
+            </PopoverText>
+          </Popover>
+        </span>
         <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>
           <span>{runtime.stats.edgesDetected} edges detected</span>
           <span>{runtime.stats.ordersExecuted} orders executed</span>
-          <span title="Reported by the bot process and externally writable — not the account's P&L">
+          <span>
             {formatSignedCurrency(runtime.stats.totalPnl)}{' '}
             <span style={{ color: 'var(--probex-text-disabled)' }}>P&amp;L as reported</span>
           </span>
-          <span>since {new Date(runtime.stats.startedAt).toLocaleString()}</span>
+          <span className="t-metadata">since {new Date(runtime.stats.startedAt).toLocaleString()}</span>
         </div>
-        <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
-          Written by the bot process and externally writable via POST /api/update-stats, so these are a
-          report rather than a ledger. Account P&amp;L is on Portfolio (/api/portfolio); execution
-          activity is on the Execution console.
-        </p>
       </div>
     </section>
   )

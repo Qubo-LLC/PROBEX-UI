@@ -77,7 +77,13 @@ const CONFIG: Record<Provenance, { label: string; color: string; dot: boolean; p
   // word "Live" all remain; only the breath moves up a level. Motion on this
   // surface is reserved for things that actually happen: a value changing
   // (pulse-ring) or a condition needing attention.
-  live:        { label: 'Live',      color: 'var(--probex-positive)',      dot: true,  pulse: false, title: 'Polled from a live engine endpoint' },
+  // 2026-09-17: "Live" in green over a feed whose newest row was three days
+  // old, or over a series whose last snapshot was Sunday's, said something
+  // the product elsewhere refuses to say — that polling is liveness. The
+  // provenance this badge names is the SOURCE: read from the engine's API,
+  // not generated or derived. It says that now, in a source word, at
+  // metadata weight. Freshness is the frame's or figure's own claim.
+  live:        { label: 'Engine',    color: 'var(--probex-text-muted)',    dot: true,  pulse: false, title: 'Read from the engine’s API — not generated locally' },
   derived:     { label: 'Derived',   color: 'var(--probex-text-muted)',    dot: false, pulse: false, title: 'Computed from live values' },
   idle:        { label: 'Not yet',   color: 'var(--probex-text-muted)',    dot: true,  pulse: false, title: 'The endpoint is live, but the engine has not computed this value yet' },
   awaiting:    { label: 'Awaiting',  color: 'var(--probex-warning)',       dot: true,  pulse: false, title: 'The backing endpoint does not exist yet' },

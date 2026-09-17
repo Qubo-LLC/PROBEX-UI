@@ -58,7 +58,7 @@ export function MarketArc() {
   const feedLabel =
     status.dataIsSynthetic ? 'Generated feed — no engine produced these prices'
     : !status.dataIsLive   ? 'No feed'
-    : 'Live market'
+    : 'Engine price feed'
 
   const feedIsWarning = status.dataIsSynthetic || !status.dataIsLive
 
@@ -99,6 +99,15 @@ export function MarketArc() {
                 {formatBtcPrice(chart.data.currentPrice)}
               </Figure>
             </div>
+          ) : chart.status === 'error' ? (
+            // The feed did not answer. A skeleton here would promise a number
+            // that is not coming — in offline mode it shimmered indefinitely.
+            // Absence is drawn at the figure's own size, with the reason.
+            <Figure
+              size="display"
+              certainty="absent"
+              absentReason={chart.error?.message ?? 'The price feed did not answer'}
+            />
           ) : (
             <div className="skeleton h-12 w-64 rounded" />
           )}
@@ -116,6 +125,18 @@ export function MarketArc() {
           costs nothing: the truth machinery was never in the card. */}
       {series.hasData ? (
         <MarketChart points={series.points} up={isUp} height={CHART_H} />
+      ) : chart.status === 'error' ? (
+        // Same rule as the figure: no shimmer for a chart that will not
+        // arrive. The band keeps its height so the arc does not collapse and
+        // the sections beneath do not jump when the feed returns.
+        <div
+          className="flex items-center justify-center rounded w-full"
+          style={{ height: CHART_H, border: '1px dashed var(--probex-border)' }}
+          role="img"
+          aria-label="Price chart unavailable — the price feed did not answer"
+        >
+          <span className="t-helper">No price history — the feed did not answer. Nothing is drawn in its place.</span>
+        </div>
       ) : (
         <div className="skeleton rounded w-full" style={{ height: CHART_H }} />
       )}

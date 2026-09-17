@@ -27,15 +27,19 @@
 // background regardless (ApplicationStateLoader is untouched).
 
 import { useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useApplicationStore } from '@/store/applicationStore'
 import { useEnginePriceChart } from '@/config/hooks/useServices'
 import { useSystemStatus } from '@/config/hooks/useSystemStatus'
+import { useMarketLookup } from '@/config/hooks/useMarketLookup'
 import { useUIStore } from '@/store/uiStore'
-import { MARKET_DETAIL_PATH } from '@/config/constants'
+import { MARKET_DETAIL_PATH, ROUTES } from '@/config/constants'
 import { parseMarketRows } from '@/lib/mappers/markets'
-import { parseEventRows, dedupeEventRows } from '@/lib/mappers/events'
+import { parseEventRows, collapseConsecutiveRepeats, countByType, type EventRow } from '@/lib/mappers/events'
 import { parseEdgeRows, toEdgeRowMap, type EdgeRow } from '@/lib/mappers/edges'
+import { latestActivity, isAlerting } from '@/lib/display/eventDisplay'
+import { formatAge, deriveFreshness } from '@/lib/display/freshness'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Card } from '@/components/ui/Card'
@@ -43,7 +47,8 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { PriceCard } from '@/components/shared/PriceCard'
 import { EdgeTable } from '@/components/shared/EdgeTable'
-import { EventStream } from '@/components/shared/EventStream'
+import { EventStream, categoryFor } from '@/components/shared/EventStream'
+import { Figure, certaintyFromSlice } from '@/components/shared/Figure'
 import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
 import { MarketTable } from '@/components/markets/MarketTable'
 import { ProvenanceScope } from '@/components/shared/ProvenanceScope'
@@ -52,6 +57,21 @@ import { LivePauseControl } from './LivePauseControl'
 /** How much of the stream the console shows. The full log, with type and
  *  severity filters, remains System › Event Log — this is the live tail. */
 const STREAM_ROWS = 14
+
+/** Events poll at MEDIUM cadence (ApplicationStateLoader). Used only to
+ *  derive the slice's own certainty; the engine's cycle is a separate clock. */
+const EVENTS_POLL_MS = 5_000
+
+/** Past this, the newest event is old enough that "live" would overstate what
+ *  is on screen — the engine trades 5- and 15-minute windows, so a quarter
+ *  hour without a single recorded event is a real quiet spell, not jitter. */
+const QUIET_AFTER_MS = 15 * 60_000
+
+/** Where a type's full history lives. The Event Log reads `type` from the
+ *  URL, so this is the same filter the log's own chips apply. */
+function eventLogPath(type?: string): string {
+  return type === undefined ? `${ROUTES.SYSTEM}?view=events` : `${ROUTES.SYSTEM}?view=events&type=${encodeURIComponent(type)}`
+}
 
 export function LiveFeedConsole() {
   const router = useRouter()
@@ -101,13 +121,36 @@ export function LiveFeedConsole() {
     [edgeRows],
   )
 
-  const streamRows = useMemo(() => {
+  // ── The stream ────────────────────────────────────────────────────────────
+  // parseEventRows already orders newest-first and parses the engine's naive
+  // UTC clock correctly; this only collapses consecutive repeats and takes
+  // the tail. `all` keeps the full window for the type tally and the
+  // last-activity reading, which describe the log, not the fourteen rows.
+  const stream = useMemo(() => {
     if (!events.data) return null
     const parsed = parseEventRows(events.data)
-    if (parsed.kind !== 'rows') return []
-    const sorted = [...parsed.rows].sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
-    return dedupeEventRows(sorted).slice(0, STREAM_ROWS)
+    if (parsed.kind === 'unrecognized') return { kind: 'unrecognized' as const, count: parsed.count }
+    const all: EventRow[] = parsed.kind === 'rows' ? parsed.rows : []
+    return {
+      kind:     'rows' as const,
+      all,
+      rows:     collapseConsecutiveRepeats(all).slice(0, STREAM_ROWS),
+      byType:   countByType(all),
+      alerting: all.filter((r) => isAlerting(r.severity)).length,
+      latest:   latestActivity(all),
+    }
   }, [events.data])
+
+  const lookup = useMarketLookup()
+
+  // Two different clocks, stated separately: whether THIS SLICE is current
+  // (did the last poll succeed?) and whether THE ENGINE has done anything
+  // lately (how old is its newest event?). A healthy poll of a silent engine
+  // is fresh AND quiet, and the page must say both.
+  const eventsCertainty = certaintyFromSlice(events, EVENTS_POLL_MS)
+  const eventsFreshness = deriveFreshness(events, EVENTS_POLL_MS)
+  const latest = stream?.kind === 'rows' ? stream.latest : null
+  const quiet  = latest !== null && latest.ageMs > QUIET_AFTER_MS
 
   const sortedMarkets = useMemo(() => {
     if (marketRows?.kind !== 'rows') return []
@@ -115,7 +158,6 @@ export function LiveFeedConsole() {
     return [...marketRows.rows].sort((a, b) => {
       switch (sortBy) {
         case 'probability': return mult * ((a.probability ?? 0) - (b.probability ?? 0))
-        case 'liquidity':   return mult * ((a.liquidity ?? 0) - (b.liquidity ?? 0))
         case 'closesAt':    return mult * ((a.closesAt ?? 0) - (b.closesAt ?? 0))
         case 'volume24h':
         default:            return mult * ((a.volume24h ?? 0) - (b.volume24h ?? 0))
@@ -138,19 +180,50 @@ export function LiveFeedConsole() {
         actions={<LivePauseControl isPaused={isPaused} onToggle={togglePause} />}
       />
 
-      {/* Vitals strip. Compact by design: these are context for the stream
-          below, not the point of the page. */}
-      <div
-        className="flex items-center gap-5 flex-wrap rounded-lg px-4 py-2.5"
-        style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}
-      >
-        <Vital label="Markets" value={markets.data ? String(markets.data.count) : '—'} />
-        <Vital label="Active edges" value={edges.data ? String(edges.data.count) : '—'} />
-        <Vital label="Events" value={events.data ? String(events.data.count) : '—'} />
+      {/* ── The engine now ──────────────────────────────────────────────────
+          One row of figures, no container: the answer to "is anything
+          happening" leads, and every figure carries its own slice's
+          certainty. "Last activity" is the age of the newest event the engine
+          has recorded — a fresh poll of a silent engine is exactly the case
+          this reading exists to show. */}
+      <div className="flex items-start gap-x-8 gap-y-3 flex-wrap pb-1">
+        {latest !== null ? (
+          <Figure
+            label="Last activity"
+            size="sm"
+            title="Age of the newest event in /api/events"
+            footnote={
+              <span className="t-metadata">
+                {new Date(latest.at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </span>
+            }
+            {...eventsCertainty}
+          >
+            {formatAge(latest.ageMs)}
+          </Figure>
+        ) : (
+          <Figure
+            label="Last activity"
+            size="sm"
+            certainty="absent"
+            absentReason={events.status === 'error' ? 'the event log did not answer' : events.data ? 'no events recorded' : 'waiting for the event log'}
+          >
+            —
+          </Figure>
+        )}
+        <Figure label="Markets scanned" size="sm" title="/api/markets" {...certaintyFromSlice(markets, 8_000)}>
+          {markets.data ? String(markets.data.count) : '—'}
+        </Figure>
+        <Figure label="Active edges" size="sm" title="/api/edges" {...certaintyFromSlice(edges, 8_000)}>
+          {edges.data ? String(edges.data.count) : '—'}
+        </Figure>
+        <Figure label="Events retained" size="sm" title="/api/events" footnote={events.data ? <span className="t-metadata">of {events.data.limit} kept</span> : undefined} {...eventsCertainty}>
+          {events.data ? String(events.data.count) : '—'}
+        </Figure>
 
         {feed && (
           <span
-            className="flex items-center gap-1.5 text-2xs tabular-nums"
+            className="flex items-center gap-1.5 text-2xs tabular-nums self-end pb-1 ml-auto"
             style={{ color: 'var(--probex-text-muted)' }}
             title={
               status.dataIsSynthetic
@@ -167,50 +240,104 @@ export function LiveFeedConsole() {
                 over generated numbers whenever the engine was unreachable. */}
             {!feed.connected ? 'Feed disconnected'
               : status.dataIsSynthetic ? `Feed simulated · ${Math.round(feed.latencyMs)}ms`
-              : `Feed live · ${Math.round(feed.latencyMs)}ms`}
+              : `Feed connected · ${Math.round(feed.latencyMs)}ms`}
           </span>
         )}
-
-        <span className="ml-auto">
-          <ProvenanceBadge provenance="live" detail="/api/stats" state={stats} />
-        </span>
       </div>
 
       {/* ── 1 · The stream — the reason this page exists ─────────────────── */}
       <section className="flex flex-col gap-2.5">
         <SectionHeading
-          title="Engine Activity"
-          subtitle="Newest first — repeated events are collapsed"
-          {...(events.data ? { count: events.data.count } : {})}
+          title="Engine activity"
+          subtitle="Newest first · consecutive repeats collapsed"
           actions={<ProvenanceBadge provenance="live" detail="/api/events" state={events} />}
         />
 
+        {/* What kind of activity the window holds, each a link into the full
+            log already filtered to that type. Counts are of EVENTS, not rows:
+            they describe the retained window, not the tail below. */}
+        {stream?.kind === 'rows' && stream.byType.length > 0 && (
+          <p className="t-helper flex items-baseline gap-x-3 gap-y-1 flex-wrap">
+            {stream.byType.map(({ type, count }) => {
+              const cat = categoryFor(type)
+              return (
+                <Link
+                  key={type}
+                  href={eventLogPath(type)}
+                  className="focus-ring rounded-sm inline-flex items-baseline gap-1 whitespace-nowrap"
+                  title={`Open the event log filtered to ${cat.label.toLowerCase()} events`}
+                >
+                  <span className="tabular-nums font-semibold" style={{ color: 'var(--probex-text-secondary)' }}>{count}</span>
+                  <span>{cat.label.toLowerCase()}{count === 1 ? '' : 's'}</span>
+                </Link>
+              )
+            })}
+            {stream.alerting > 0 && (
+              <span style={{ color: 'var(--probex-warning)' }}>
+                {stream.alerting} flagged by the engine
+              </span>
+            )}
+          </p>
+        )}
+
         {events.status === 'error' ? (
+          // No data has ever arrived from /api/events. This says the LOG did
+          // not answer — nothing here knows whether the engine is reachable,
+          // and the page must not claim more than the one endpoint reports.
           <ErrorState
-            title="Event stream unavailable"
-            description={events.error?.message ?? 'The /api/events endpoint did not respond.'}
+            title="The event log did not answer"
+            description={`${events.error?.message ?? 'No response from /api/events.'} Whether the engine has done anything recently is unknown — not "nothing".`}
             fullPage={false}
           />
-        ) : streamRows === null ? (
+        ) : stream === null ? (
           <div className="flex flex-col gap-1.5" aria-hidden="true">
             {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton h-12 rounded-lg" />)}
           </div>
-        ) : streamRows.length === 0 ? (
+        ) : stream.kind === 'unrecognized' ? (
+          <Card>
+            <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+              The engine reports {stream.count} event{stream.count === 1 ? '' : 's'}, but the item
+              format doesn&rsquo;t match the agreed schema — rows are withheld rather than shown
+              with guessed fields.
+            </p>
+          </Card>
+        ) : stream.rows.length === 0 ? (
+          // The endpoint answered and holds nothing. That is a fact about the
+          // retained window — "the log is empty" — not a claim that nothing
+          // has ever happened.
           <EmptyState
             size="sm"
-            title="The engine has not logged activity yet"
-            description="Edge detections, trades, resolutions and health changes stream here as they happen. The log resets when the engine restarts."
+            title="The event log is empty"
+            description={`The engine has no events in its retained window (up to ${events.data?.limit ?? '—'}). Edge detections, trades, resolutions and errors appear here as it records them.`}
           />
         ) : (
           <>
-            <EventStream rows={streamRows} />
-            {/* This counted ROWS and called them events. Repeats are collapsed,
-                so one row can stand for two hundred occurrences — "showing the
-                1 most recent" described a 200-event stream as a single event.
-                State what is actually on screen. */}
+            {/* The feed is chronological and the endpoint is answering, but the
+                newest event is old. Said above the rows, in the warning
+                register, so yesterday's activity is not read as this
+                morning's — the rows themselves carry their dates too. */}
+            {quiet && latest !== null && (
+              <p className="t-helper" style={{ color: 'var(--probex-warning)' }}>
+                No activity recorded for {formatAge(latest.ageMs).replace(/ ago$/, '')} — the newest event is from{' '}
+                {new Date(latest.at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}.
+                {isPaused ? ' (View frozen.)' : ''}
+              </p>
+            )}
+            {eventsFreshness.level === 'stale' && (
+              <p className="t-helper" style={{ color: 'var(--probex-warning)' }}>
+                Retained from the last successful refresh {eventsFreshness.ageLabel ?? ''} — the latest poll of /api/events failed
+                {eventsFreshness.error ? ` (${eventsFreshness.error.message})` : ''}.
+              </p>
+            )}
+            <EventStream rows={stream.rows} lookup={lookup} />
+            {/* Rows are not events: a collapsed run stands for several. State
+                what is on screen against what the window holds. */}
             <p className="t-helper">
-              {streamRows.length === 1 ? '1 activity group' : streamRows.length + ' activity groups'}
-              {' · repeats collapsed · full history with filters in System › Event Log'}
+              {stream.rows.length} row{stream.rows.length === 1 ? '' : 's'} of {stream.all.length} event{stream.all.length === 1 ? '' : 's'} retained
+              {' · '}
+              <Link href={eventLogPath()} className="focus-ring rounded-sm font-semibold" style={{ color: 'var(--probex-primary)' }}>
+                full log with filters →
+              </Link>
             </p>
           </>
         )}
@@ -243,7 +370,7 @@ export function LiveFeedConsole() {
           actions={
             <div className="flex items-center gap-1.5 text-2xs">
               <span style={{ color: 'var(--probex-text-muted)' }}>Sort</span>
-              {(['volume24h', 'probability', 'liquidity', 'closesAt'] as const).map((field) => (
+              {(['volume24h', 'probability', 'closesAt'] as const).map((field) => (
                 <button
                   key={field}
                   onClick={() => setSort(field, sortBy === field && sortDir === 'desc' ? 'asc' : 'desc')}
@@ -257,7 +384,7 @@ export function LiveFeedConsole() {
                     fontWeight: sortBy === field ? 700 : 500,
                   }}
                 >
-                  {field === 'volume24h' ? 'Volume' : field === 'probability' ? 'Probability' : field === 'liquidity' ? 'Liquidity' : 'Closing'}
+                  {field === 'volume24h' ? 'Volume' : field === 'probability' ? 'YES price' : 'Closing'}
                   {sortBy === field && (sortDir === 'desc' ? ' ↓' : ' ↑')}
                 </button>
               ))}
@@ -293,7 +420,7 @@ export function LiveFeedConsole() {
           <EmptyState
             size="sm"
             title="No qualifying markets this cycle"
-            description="The engine scans Polymarket 5-minute BTC markets continuously. Candidates appear here the moment the fetcher returns them."
+            description="The engine scans Polymarket 5- and 15-minute Up-or-Down windows (BTC, ETH and SOL have appeared). Candidates appear here the moment the fetcher returns them."
           />
         )}
 
@@ -325,14 +452,5 @@ export function LiveFeedConsole() {
       </section>
     </div>
     </ProvenanceScope>
-  )
-}
-
-function Vital({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="flex items-baseline gap-1.5">
-      <span className="t-label">{label}</span>
-      <span className="t-metric-sm">{value}</span>
-    </span>
   )
 }

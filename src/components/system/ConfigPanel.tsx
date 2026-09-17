@@ -6,7 +6,7 @@
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatCurrency } from '@/lib/utils'
-import { Card }       from '@/components/ui/Card'
+
 import { ErrorState } from '@/components/ui/ErrorState'
 
 export function ConfigPanel() {
@@ -26,15 +26,15 @@ export function ConfigPanel() {
   // SLOW-tier poll (30s) — same reason as RuntimePanel.
   if (!cfg) {
     return (
-      <Card>
+      <div>
         <div className="flex items-center justify-between">
-          <h3 className="t-card-title">Configuration</h3>
+          <h2 className="t-section-title">Configuration</h2>
           <span className="t-metadata">awaiting /api/config</span>
         </div>
         <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
           Reading engine configuration… this endpoint is polled every 30 seconds.
         </p>
-      </Card>
+      </div>
     )
   }
 
@@ -58,11 +58,22 @@ export function ConfigPanel() {
   const groups = ['Trading', 'Connectivity', 'Dashboard']
 
   return (
-    <Card className="flex flex-col gap-4">
+    // ─── The quietest section on the page ───────────────────────────────────
+    // This was a full Card — measured, the heaviest surface on System — for the
+    // least-consulted information on it: fourteen read-only parameters that
+    // change roughly never. It out-weighted the posture verdict and the market
+    // feed, which is the same hierarchy inversion the endpoint gauges had, in a
+    // smaller form.
+    //
+    // Configuration is reference material, so it now reads as reference
+    // material: no container, no fill, a rule above it and the values in a
+    // dense three-column grid. Nothing is hidden and no value moved — only the
+    // weight changed.
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="t-card-title">
+        <h2 className="t-section-title">
           Configuration
-        </h3>
+        </h2>
         <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
           Read-only — the engine exposes no config write endpoint yet
         </span>
@@ -85,6 +96,6 @@ export function ConfigPanel() {
           </div>
         ))}
       </div>
-    </Card>
+    </div>
   )
 }

@@ -7,6 +7,7 @@
 // one that admits it does not know.
 
 import { marketLifecycle, type MarketLifecycle } from './marketLifecycle'
+import { shortMarketId } from './eventDisplay'
 
 /**
  * How long a position has been open, from `time_held_seconds`.
@@ -41,7 +42,7 @@ export function marketIdentity(
 ): string {
   if (assetSymbol !== null && durationMinutes !== null) return `${assetSymbol} ${durationMinutes}m`
   if (assetSymbol !== null) return assetSymbol
-  return `${marketId.slice(0, 10)}…`
+  return shortMarketId(marketId)
 }
 
 /** Underlying move between entry and now, as a signed fraction. */

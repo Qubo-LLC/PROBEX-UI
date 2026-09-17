@@ -24,7 +24,6 @@
 // dereferencing `undefined` — which is what produced a misleading hard-error
 // state before this audit.
 
-import { APP_NAME, APP_VERSION } from '@/config/constants'
 import { normalizeHealthStatus } from './health'
 import { ServiceException } from './response'
 import type {
@@ -82,25 +81,45 @@ function assetPriceOf(p: { asset_price?: number; btc_price?: number }): number |
 
 // ─── Time normalization ─────────────────────────────────────────────────────────
 
-export const isoToMs = (iso: string): number => new Date(iso).getTime()
-
 /**
  * Parse an ISO timestamp that carries NO timezone offset as UTC.
  *
  * The engine emits naive strings ("2026-09-09T22:24:43.012114") that are in
- * fact UTC. `isoToMs` delegates to `new Date()`, and ECMAScript parses an
- * offset-less date-TIME string as LOCAL time, so those values land off by the
- * viewer's UTC offset. Measured on a UTC+3 machine: a probe that answered one
- * second ago read as 3.00 hours old.
+ * fact UTC. ECMAScript parses an offset-less date-TIME string as LOCAL time,
+ * so those values land off by the viewer's UTC offset. Measured on a UTC+3
+ * machine: a probe that answered one second ago read as 3.00 hours old.
  *
- * Applied deliberately narrowly — see the note in HealthPanel. `isoToMs` feeds
- * 58 fields including frozen surfaces, so the global correction is tracked as
- * its own change rather than made here as a side effect.
+ * ─── Why this is now the product-wide parse (2026-09-15) ─────────────────────
+ * It was first applied to one field (`checked_at`) because only two of the
+ * fourteen naive fields had been proven UTC by clock comparison, and the
+ * portfolio-history series had never been captured. That evidence is now
+ * complete, all of it from the live engine on 2026-09-15:
+ *
+ *   initialized_at        naive "…T23:33:15.6" equals now − uptime_seconds
+ *                         (…T23:33:19Z, the gap being request latency)
+ *   events[].timestamp    interleaves with the ledger's opened_at/closed_at
+ *                         within 3–7 ms for the same trade
+ *   portfolio/history[]   a snapshot at …T23:29:32.999456 sits 220 µs from
+ *                         the edge event at …T23:29:32.999676 — one cycle
+ *   ledger / positions    the same process clock as the events above
+ *
+ * Every naive field is written by one process from one clock, and that clock
+ * is UTC. The three offset-aware fields (`closes_at`, `created_at`, the price
+ * feed) are untouched by construction: a zone suffix is honoured as written.
+ * Parsing the naive ones as local was the ONLY reason the Portfolio chart's
+ * axis and the activity rows beneath it disagreed by the viewer's offset.
+ *
+ * Strings with no time part are left to the platform: "2026-09-14Z" is not a
+ * date, so the suffix is added only when a time follows the date.
  */
 export const naiveUtcToMs = (iso: string): number => {
   const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(iso)
-  return new Date(hasZone ? iso : iso + 'Z').getTime()
+  const hasTime = /\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(iso)
+  return new Date(hasZone || !hasTime ? iso : iso + 'Z').getTime()
 }
+
+/** ISO 8601 → epoch ms, with the engine's naive-UTC convention applied. */
+export const isoToMs = naiveUtcToMs
 export const msToIso = (ms: number): string => new Date(ms).toISOString()
 
 // ─── Two-shape envelope guard ─────────────────────────────────────────────────
@@ -144,8 +163,8 @@ function toHealthComponent(dto: HealthComponentDTO): HealthComponent {
     healthy:   dto.healthy,
     message:   dto.message,
     latencyMs: dto.latency_ms,
-    // UTC-aware: see naiveUtcToMs. This field has no other consumer, so the
-    // correction is contained to the System health panel that renders it.
+    // Same convention as every other engine timestamp (naiveUtcToMs); this
+    // field was the first to get it, when the proof covered it alone.
     checkedAt: naiveUtcToMs(dto.checked_at),
   }
 }
@@ -328,18 +347,21 @@ export function toEngineIdentity(dto: EngineIdentityDTO): EngineIdentity {
 }
 
 /**
- * Identity synthesised from /api/runtime — the fallback source when the engine's
- * host-root `/` is unreachable (e.g. behind a reverse proxy that only forwards
- * `/api/*`, as in the DuckDNS production deployment). Runtime carries the
- * functional identity (mode, initialized_at, components); bot name and version
- * are static and come from app constants. `status` is 'online' because a
- * successful runtime response means the engine process is up.
+ * Identity synthesised from /api/runtime — the primary source, because the
+ * engine's host-root `/` is the marketing site behind the production bridge.
+ * Runtime carries the functional identity (mode, initialized_at, components).
+ * It does NOT carry the engine's name or version, and neither does any other
+ * /api/* endpoint; they used to be filled from the dashboard's own APP_NAME /
+ * APP_VERSION here, which put "Probex 2.0.0" under the label "Engine" in the
+ * shell. They are null now, and the shell says the version is not reported.
+ * `status` is 'online' because a successful runtime response means the engine
+ * process is up.
  */
 export function runtimeToIdentity(dto: EngineRuntimeDTO): EngineIdentity {
   return {
     status:        'online',
-    bot:           APP_NAME,
-    version:       APP_VERSION,
+    bot:           null,
+    version:       null,
     mode:          dto.mode as EngineMode,
     initializedAt: isoToMs(dto.initialized_at),
     components:    toRuntimeComponents(dto.components),
@@ -438,7 +460,10 @@ export function toEnginePositions(dto: EnginePositionsDTO): EnginePositions {
 }
 
 export function toEngineEvents(dto: EngineEventsDTO): EngineEvents {
-  return { events: dto.events, count: dto.count, limit: dto.limit, types: dto.types, timestamp: isoToMs(dto.timestamp) }
+  // UTC-aware, like the item timestamps in mappers/events.ts: this envelope's
+  // clock is compared against the newest event's to say how old the log is,
+  // so the two must be parsed the same way. See naiveUtcToMs for the proof.
+  return { events: dto.events, count: dto.count, limit: dto.limit, types: dto.types, timestamp: naiveUtcToMs(dto.timestamp) }
 }
 
 export function toEngineEdges(dto: EngineEdgesDTO): EngineEdges {
@@ -575,6 +600,11 @@ export function toConsensus(dto: ConsensusDTO): Consensus {
         macdTrend: c.signals.macd_trend,
         priceMomentum: c.signals.price_momentum,
       },
+      // Everything the wire sent, not only the five the type names — the
+      // typed projection is what hid three of eight signals from every view.
+      allSignals: Object.entries(c.signals as unknown as Record<string, unknown>)
+        .filter((kv): kv is [string, number] => typeof kv[1] === 'number' && Number.isFinite(kv[1]))
+        .map(([key, value]) => ({ key, value })),
       assetPrice:  assetPriceOf(c),
       assetSymbol: c.asset_symbol ?? null,
       interpretation: c.interpretation,
@@ -618,10 +648,14 @@ export function toConsensusBias(dto: ConsensusBiasDTO): ConsensusBias {
 export function toConsensusHistory(dto: ConsensusHistoryDTO): ConsensusHistory {
   return {
     available: dto.available,
+    // CHRONOLOGICAL, oldest first — a guarantee of the domain shape. This wire
+    // happens to arrive oldest-first (verified 2026-09-16, unlike every other
+    // history endpoint), and the three consumers plot it in order; the sort
+    // makes that a promise rather than an observation.
     history: dto.history.map((p) => ({
       ts: isoToMs(p.timestamp), score: p.score, confidence: p.confidence,
       assetPrice: assetPriceOf(p), assetSymbol: p.asset_symbol ?? null,
-    })),
+    })).sort((a, b) => a.ts - b.ts),
     timestamp: isoToMs(dto.timestamp),
   }
 }
@@ -669,11 +703,19 @@ export function toBalance(dto: BalanceDTO): Balance {
 export function toPortfolioHistory(dto: PortfolioHistoryDTO): PortfolioHistory {
   return {
     available: dto.available,
+    // CHRONOLOGICAL, oldest first — a guarantee of the domain shape, not of
+    // the wire. /api/portfolio/history returns snapshots NEWEST FIRST
+    // (verified 2026-09-15: 23:31 → 22:35). Every consumer is a time series
+    // or a running-peak derivation, and four of them were plotting wire order:
+    // the x-axis ran backwards on Portfolio's three charts and Analytics'
+    // two, and the drawdown curve was computed against the future. One sort
+    // here, at the adapter, is the one place that fixes all of them. The
+    // wire contract itself is untouched.
     history: dto.history.map((p) => ({
       ts: isoToMs(p.timestamp), totalValue: p.total_value, cashBalance: p.cash_balance,
       unrealizedPnl: p.unrealized_pnl, realizedPnl: p.realized_pnl, positionCount: p.position_count,
       btcPrice: p.btc_price, winRate: pctToFraction(p.win_rate), totalTrades: p.total_trades,
-    })),
+    })).sort((a, b) => a.ts - b.ts),
     timestamp: isoToMs(dto.timestamp),
   }
 }

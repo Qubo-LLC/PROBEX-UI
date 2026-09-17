@@ -15,6 +15,7 @@
 //                                 pnl ≈ −size at pnl_percent −100)
 
 import type { EnginePositions } from '@/types/engine'
+import { naiveUtcToMs } from '@/lib/services/dto'
 import { parseItems, isRecord, str, num, type ParseResult } from './parse'
 
 // ─── Confirmed wire schema (DTO) ──────────────────────────────────────────────
@@ -163,7 +164,7 @@ export function parsePositionRows(p: EnginePositions): ParseResult<PositionRow> 
       currentValue:     pnl !== null ? size + pnl : null,
       unrealizedPnl:    pnl,
       unrealizedPnlPct: num(dto.pnl_percent) ? dto.pnl_percent / 100 : null,
-      openedAt:         str(dto.opened_at) ? new Date(dto.opened_at).getTime() : null,
+      openedAt:         str(dto.opened_at) ? naiveUtcToMs(dto.opened_at) : null,
       edgePct:          num(dto.edge_pct) ? dto.edge_pct : null,
       timeHeldSeconds:  num(dto.time_held_seconds) ? dto.time_held_seconds : null,
       entryBtcPrice:    num(dto.entry_btc_price) ? dto.entry_btc_price : null,

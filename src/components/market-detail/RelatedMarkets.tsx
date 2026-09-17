@@ -62,10 +62,13 @@ export function RelatedMarkets({ currentMarketId, segment, onSelect }: RelatedMa
   }, [tab, allRows, currentMarketId, segment])
 
   return (
-    <div className="mx-6 my-5 rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
+    <div className="mt-2 rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
       <div style={{ borderBottom: '1px solid var(--probex-border)' }}>
         <div className="px-4 pt-3">
-          <h2 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--probex-text-primary)' }}>Related Markets</h2>
+          <span className="flex items-baseline gap-2 flex-wrap mb-2">
+            <h2 className="t-section-title">Other markets</h2>
+            <span className="t-description">what else the engine is scanning this cycle</span>
+          </span>
           <div className="flex" role="tablist" aria-label="Related markets tabs">
             {TABS.map((t) => (
               <button

@@ -31,3 +31,19 @@ export function sentimentTone(sentiment: string | null): string {
 export function isKnownSentiment(sentiment: string | null): boolean {
   return sentiment !== null && KNOWN_SENTIMENTS.has(sentiment)
 }
+
+/**
+ * A 15-minute window's title, compacted for a narrow column: the asset and
+ * the time window, which are the two things that distinguish one row from
+ * the next. "Bitcoin Up or Down - September 13, 3:00AM-3:15AM ET" becomes
+ * "Bitcoin · 3:00–3:15AM ET". Read from the title string only; when the
+ * title does not follow that shape the full title is returned unchanged, so
+ * nothing is ever invented for a market this pattern does not fit.
+ */
+export function compactWindowTitle(title: string): string {
+  const m = /^(.+?)\s+Up or Down\b.*?(\d{1,2}:\d{2}\s?[AP]M)\s*[-\u2013]\s*(\d{1,2}:\d{2}\s?[AP]M)\s*(ET|UTC|[A-Z]{2,4})?/i.exec(title)
+  if (!m) return title
+  const asset = m[1]!.trim()
+  const zone = m[4] ? ` ${m[4]}` : ''
+  return `${asset} · ${m[2]}–${m[3]}${zone}`
+}

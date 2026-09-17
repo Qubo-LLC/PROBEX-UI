@@ -14,7 +14,7 @@
 // Figure separates the two. The epistemic state becomes a property of the
 // number (the .c-* certainty scale in globals.css); the container becomes a
 // separate decision, made only where a causal or semantic boundary justifies
-// one. StatCard is NOT retired — it stays correct wherever a card is genuinely
+// one. StatCard was retired 2026-09-17 once its last consumer left — it stayed correct wherever a card was genuinely
 // warranted. What changes is that it is no longer the only way to be honest.
 //
 // ─── The asymmetry ───────────────────────────────────────────────────────────

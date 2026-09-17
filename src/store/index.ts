@@ -20,7 +20,7 @@ export {
 export {
   useUIStore,
 } from './uiStore'
-export type { MarketSortField, SortDir, MarketViewMode } from './uiStore'
+export type { MarketSortField, SortDir } from './uiStore'
 
 export {
   usePreferencesStore,

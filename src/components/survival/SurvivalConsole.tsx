@@ -1,222 +1,181 @@
 'use client'
 
-// SurvivalConsole — the capital-protection console (/survival).
+// SurvivalConsole — the capital-protection half of the mechanism.
 //
-// Operator questions, in order (PROBEX_PRODUCT_SPEC.md §4):
-//   1. What state is the survival brain in?      → state machine strip
-//   2. How much capital is left, and for how long? → capital + burn/runway
-//   3. Am I on target?                            → target progress + remaining
-//   4. How is the brain reacting?                 → sizing response (Kelly, threshold)
+// Operator questions, in order:
+//   1. What state is the survival brain in, and what is it doing about it?
+//   2. How much capital is there, against what it started with?
+//   3. Am I on target?
+//   4. What does the engine report about burn, runway and recovery?
 //
-// Reads /api/survival (+ /api/runtime for context) from ApplicationStore.
-// Truth rules: daysOfRunway is null when burn is zero — shown as "No burn",
-// never a fake number; behind_target_pct is labelled "target remaining"
-// (backend semantics: 100 = the full target remains).
+// Reads /api/survival from ApplicationStore.
+//
+// ─── What changed (2026-09-16) ───────────────────────────────────────────────
+// Six StatCards and three Cards became one posture sentence, a row of Figures
+// with their own certainty, the state strip (kept — it is the state machine,
+// drawn), the target bars (shared TargetProgress) and a ledger of the fields
+// the engine reports as-is. The per-state prose ("sizing sharply reduced,
+// only strong edges accepted") was the dashboard describing what it assumed
+// the brain does in each state; the wire reports what the brain is doing NOW
+// — kelly_modifier and min_edge_threshold — so that is what the page says.
+//
+// Truth rules kept: daysOfRunway is null when there is no burn — shown as
+// "not applicable", never a number; behind_target_pct is the engine's
+// "target remaining" (100 = the full target remains); daily_burn_rate,
+// avg_win_size and recovery_trades_needed are shown as reported, with their
+// source, because other endpoints disagree with them (see project memory on
+// the three accounting surfaces) and this page does not adjudicate.
 
 import { useApplicationStore } from '@/store/applicationStore'
-import { formatCurrency, formatPercent } from '@/lib/utils'
-import { survivalStateColor, survivalStateLabel, SURVIVAL_STATES } from '@/lib/display/engine'
-import { StatCard }       from '@/components/ui/StatCard'
-import { Card }           from '@/components/ui/Card'
+import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'
+import { formatEdgePct, survivalStateColor, survivalStateLabel, SURVIVAL_STATES } from '@/lib/display/engine'
+import { Figure, certaintyFromSlice } from '@/components/shared/Figure'
 import { PageHeader }     from '@/components/ui/PageHeader'
 import { ErrorState }     from '@/components/ui/ErrorState'
 import { TargetProgress } from '@/components/shared/TargetProgress'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
-// State-machine tiles come from the shared severity-ordered list so a new
-// backend state appears here automatically instead of vanishing from the strip.
-const STATE_DESCRIPTIONS: Record<string, string> = {
-  THRIVING: 'Capital above the starting bankroll — the brain is sizing up, not down.',
-  HEALTHY:  'Capital intact — full position sizing available.',
-  CAUTION:  'Capital drawdown detected — the brain reduces sizing and raises the edge bar.',
-  WOUNDED:  'Capital taking damage — sizing curtailed and the edge bar lifted.',
-  DANGER:   'Significant drawdown — sizing sharply reduced, only strong edges accepted.',
-  CRITICAL: 'Capital preservation mode — trading effectively halted until recovery.',
-  DEAD:     'Capital exhausted — the survival brain has halted all trading.',
-}
-
-/** Description for any state, with a safe fallback for unrecognised values. */
-function stateDescription(state: string): string {
-  return STATE_DESCRIPTIONS[String(state).toUpperCase()]
-    ?? 'Unrecognised survival state reported by the engine.'
-}
+/** /api/survival polls at MEDIUM cadence (ApplicationStateLoader). */
+const SURVIVAL_POLL_MS = 5_000
 
 export function SurvivalConsole({ embedded = false }: EmbeddableProps = {}) {
-  const slice   = useApplicationStore((s) => s.engine.survival)
-  const sv      = slice.data
+  const slice = useApplicationStore((s) => s.engine.survival)
+  const sv    = slice.data
+  const cert  = certaintyFromSlice(slice, SURVIVAL_POLL_MS)
 
   return (
-    <div className={pageShell(embedded, 'gap-4')}>
+    <div className={pageShell(embedded, 'gap-5')}>
       {!embedded && (
         <PageHeader
           title="Survival"
-          subtitle="Capital protection — state machine, burn rate, runway, and targets"
+          subtitle="Capital protection — the state the brain is in, and how it is sizing in response"
         />
       )}
 
-      {slice.status === 'loading' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-          {['Capital', 'Daily Burn', 'Runway', 'Recovery Trades', 'Avg Win Size', 'Daily Target Left'].map((label) => (
-            <StatCard key={label} label={label} value="" isLoading />
-          ))}
-        </div>
-      )}
-
-      {slice.status === 'error' && (
+      {slice.status === 'error' && !sv && (
         <ErrorState
-          title="Survival engine unavailable"
-          description={slice.error?.message ?? 'The /api/survival endpoint did not respond.'}
+          title="The survival brain did not answer"
+          description={slice.error?.message ?? 'No response from /api/survival.'}
           fullPage={false}
         />
       )}
 
+      {!sv && slice.status !== 'error' && (
+        <p className="t-description">Waiting for /api/survival.</p>
+      )}
+
       {sv && (
         <>
-          {/* 1 · State machine */}
-          <Card className="flex flex-col gap-3">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="t-card-title">
-                Survival State
-              </h3>
-              <span className="text-xs" style={{ color: 'var(--probex-text-muted)' }}>
-                {stateDescription(sv.state)}
+          {/* ── A · posture ────────────────────────────────────────────── */}
+          <section aria-labelledby="sv-posture" className="flex flex-col gap-3">
+            <h2 id="sv-posture" className="sr-only">Survival posture</h2>
+            <p className="text-sm font-medium leading-relaxed m-0" style={{ color: 'var(--probex-text-primary)' }}>
+              <span style={{ color: survivalStateColor(sv.state) }}>{survivalStateLabel(sv.state)}</span>
+              {' — capital '}{formatCurrency(sv.currentCapital)}{', '}{sv.capitalPct.toFixed(1)}% of the {formatCurrency(sv.initialCapital)} it started with.
+              {' '}The brain is {sv.kellyModifier > 1 ? 'sizing up' : sv.kellyModifier < 1 ? 'cutting size' : 'at full size'} (×{sv.kellyModifier.toFixed(2)}) and requires {formatEdgePct(sv.minEdgeThreshold, 2)} of edge.
+              {cert.certainty === 'stale' && <span style={{ color: 'var(--probex-warning)' }}> Retained — last updated {cert.staleFor}.</span>}
+            </p>
+
+            {/* The state machine, drawn. Every known state, the current one
+                lit; an unrecognised state is appended so it can never be
+                invisible on its own page. */}
+            <StateStrip state={sv.state} />
+          </section>
+
+          {/* ── B · the figures ───────────────────────────────────────────── */}
+          <section aria-labelledby="sv-figures" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+              <span className="flex items-baseline gap-2 flex-wrap">
+                <h2 id="sv-figures" className="t-section-title">Capital and response</h2>
+                <span className="t-description">what the brain has and what it is doing with it</span>
               </span>
+              <span className="t-metadata">/api/survival</span>
             </div>
-            <div className="flex items-center gap-1.5" role="list" aria-label="Survival state machine">
-              {(() => {
-                // Guarantee the active state always has a tile — even a future
-                // state not in the known list gets appended so it can never be
-                // invisible on its own page (the exact bug this sprint fixes).
-                const active = String(sv.state).toUpperCase()
-                const tiles: readonly string[] = SURVIVAL_STATES.includes(active as typeof SURVIVAL_STATES[number])
-                  ? SURVIVAL_STATES
-                  : [...SURVIVAL_STATES, active]
-                return tiles.map((state) => {
-                const isCurrent = state === active
-                return (
-                  <div
-                    key={state}
-                    role="listitem"
-                    aria-current={isCurrent}
-                    className="flex-1 flex flex-col items-center gap-1.5 rounded-lg py-2.5 px-2"
-                    style={{
-                      background: isCurrent ? 'var(--probex-surface-2)' : 'transparent',
-                      border:     `1px solid ${isCurrent ? survivalStateColor(state) : 'var(--probex-border)'}`,
-                      opacity:    isCurrent ? 1 : 0.45,
-                    }}
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ background: survivalStateColor(state) }}
-                      aria-hidden="true"
-                    />
-                    <span
-                      className="text-2xs font-bold uppercase tracking-wider"
-                      style={{ color: isCurrent ? survivalStateColor(state) : 'var(--probex-text-muted)' }}
-                    >
-                      {survivalStateLabel(state)}
-                    </span>
-                  </div>
-                )
-                })
-              })()}
+            <div className="flex items-start gap-x-8 gap-y-3 flex-wrap">
+              <Figure label="Capital" size="lg" footnote={<span className="t-helper">{sv.capitalPct.toFixed(1)}% of {formatCurrency(sv.initialCapital)} initial</span>} {...cert}>
+                {formatCurrency(sv.currentCapital)}
+              </Figure>
+              <Figure label="Kelly modifier" size="md" tone={sv.kellyModifier < 1 ? 'var(--probex-warning)' : undefined} footnote={<span className="t-helper">{sv.kellyModifier > 1 ? 'above 1× — sizing up while ahead' : sv.kellyModifier < 1 ? 'below 1× — sizing cut back' : 'full sizing'}</span>} {...cert}>
+                ×{sv.kellyModifier.toFixed(2)}
+              </Figure>
+              <Figure label="Edge required" size="md" footnote={<span className="t-helper">live threshold the filter applies</span>} {...cert}>
+                {formatEdgePct(sv.minEdgeThreshold, 2)}
+              </Figure>
+              <Figure label="Today" size="md" tone={sv.dailyPnl > 0 ? 'var(--probex-positive)' : sv.dailyPnl < 0 ? 'var(--probex-negative)' : undefined} footnote={<span className="t-helper">target {formatCurrency(sv.dailyTarget)} · {formatPercent(sv.behindTargetPct / 100)} remaining</span>} {...cert}>
+                {formatSignedCurrency(sv.dailyPnl)}
+              </Figure>
+              <Figure label="This week" size="md" tone={sv.weeklyPnl > 0 ? 'var(--probex-positive)' : sv.weeklyPnl < 0 ? 'var(--probex-negative)' : undefined} footnote={<span className="t-helper">target {formatCurrency(sv.weeklyTarget)}</span>} {...cert}>
+                {formatSignedCurrency(sv.weeklyPnl)}
+              </Figure>
             </div>
-          </Card>
+          </section>
 
-          {/* 2 · Capital vitals */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-            <StatCard
-              label="Capital"
-              value={formatCurrency(sv.currentCapital)}
-              delta={sv.capitalPct / 100 - 1}
-              deltaLabel={`${sv.capitalPct.toFixed(1)}% of initial ${formatCurrency(sv.initialCapital)}`}
-            />
-            <StatCard
-              label="Daily Burn"
-              value={sv.dailyBurnRate > 0 ? formatCurrency(sv.dailyBurnRate) : 'None'}
-              valueColor={sv.dailyBurnRate > 0 ? 'var(--probex-negative)' : 'var(--probex-positive)'}
-              deltaLabel={sv.dailyBurnRate > 0 ? 'capital consumed per day' : 'no capital being consumed'}
-            />
-            <StatCard
-              label="Runway"
-              value={sv.daysOfRunway !== null ? `${Math.floor(sv.daysOfRunway)}d` : '∞'}
-              valueColor={
-                sv.daysOfRunway !== null && sv.daysOfRunway < 7
-                  ? 'var(--probex-negative)'
-                  : undefined
-              }
-              deltaLabel={sv.daysOfRunway !== null ? 'at current burn rate' : 'no burn — not applicable'}
-            />
-            <StatCard
-              label="Recovery Trades"
-              value={String(sv.recoveryTradesNeeded)}
-              deltaLabel={sv.recoveryTradesNeeded > 0 ? 'wins needed to recover' : 'nothing to recover'}
-            />
-            <StatCard
-              label="Avg Win Size"
-              value={sv.avgWinSize > 0 ? formatCurrency(sv.avgWinSize) : '—'}
-              deltaLabel={sv.avgWinSize > 0 ? 'per winning trade' : 'no wins recorded yet'}
-            />
-            <StatCard
-              label="Daily Target Left"
-              value={formatPercent(sv.behindTargetPct / 100)}
-              deltaLabel={`${formatCurrency(Math.max(0, sv.dailyTarget - sv.dailyPnl))} to go`}
-            />
-          </div>
+          {/* ── C · targets ───────────────────────────────────────────────── */}
+          <TargetProgress capital={{
+            dailyPnl:     sv.dailyPnl,
+            dailyTarget:  sv.dailyTarget,
+            weeklyPnl:    sv.weeklyPnl,
+            weeklyTarget: sv.weeklyTarget,
+          }} />
 
-          {/* 3 · Targets + 4 · Sizing response */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-            <TargetProgress capital={{
-              dailyPnl:       sv.dailyPnl,
-              dailyTarget:    sv.dailyTarget,
-              dailyProgress:  sv.dailyTarget  > 0 ? Math.max(0, Math.min(1, sv.dailyPnl  / sv.dailyTarget))  : 0,
-              weeklyPnl:      sv.weeklyPnl,
-              weeklyTarget:   sv.weeklyTarget,
-              weeklyProgress: sv.weeklyTarget > 0 ? Math.max(0, Math.min(1, sv.weeklyPnl / sv.weeklyTarget)) : 0,
-            }} />
-
-            <Card className="flex flex-col gap-3">
-              <h3 className="t-card-title">
-                Brain Response
-              </h3>
-              <SizingRow
-                label="Kelly modifier"
-                value={`${sv.kellyModifier.toFixed(2)}×`}
-                note={sv.kellyModifier >= 1 ? 'full sizing' : 'sizing reduced by the survival brain'}
-                highlight={sv.kellyModifier < 1}
-              />
-              <SizingRow
-                label="Minimum edge threshold"
-                value={`${sv.minEdgeThreshold.toFixed(2)}%`}
-                note="edges below this are rejected"
-                highlight={false}
-              />
-              <p className="text-2xs leading-relaxed" style={{ color: 'var(--probex-text-disabled)' }}>
-                The survival brain adjusts these live: as capital declines, the Kelly
-                modifier shrinks and the edge threshold rises, so the engine trades
-                smaller and only on stronger signals.
-              </p>
-            </Card>
-          </div>
+          {/* ── D · as reported ───────────────────────────────────────────── */}
+          <section aria-labelledby="sv-reported" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+              <span className="flex items-baseline gap-2 flex-wrap">
+                <h2 id="sv-reported" className="t-section-title">Burn, runway and recovery</h2>
+                <span className="t-description">the brain’s own figures, shown as reported — other endpoints account differently and this page does not reconcile them</span>
+              </span>
+              <span className="t-metadata">/api/survival</span>
+            </div>
+            <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-2 m-0">
+              <Reported label="Daily burn rate" value={formatCurrency(sv.dailyBurnRate)} note="daily_burn_rate" />
+              <Reported label="Runway" value={sv.daysOfRunway !== null ? `${Math.floor(sv.daysOfRunway)}d` : 'not applicable'} note={sv.daysOfRunway !== null ? 'days_of_runway at this burn' : 'days_of_runway is null'} />
+              <Reported label="Recovery trades" value={String(sv.recoveryTradesNeeded)} note={sv.recoveryTradesNeeded > 0 ? 'wins needed to recover' : 'nothing to recover'} />
+              <Reported label="Avg win size" value={sv.avgWinSize > 0 ? formatCurrency(sv.avgWinSize) : '0'} note="avg_win_size" />
+            </dl>
+          </section>
         </>
       )}
     </div>
   )
 }
 
-function SizingRow({ label, value, note, highlight }: { label: string; value: string; note: string; highlight: boolean }) {
+function StateStrip({ state }: { state: string }) {
+  const active = String(state).toUpperCase()
+  const tiles: readonly string[] = SURVIVAL_STATES.includes(active as typeof SURVIVAL_STATES[number])
+    ? SURVIVAL_STATES
+    : [...SURVIVAL_STATES, active]
   return (
-    <div className="flex items-center justify-between gap-3 text-xs">
-      <span style={{ color: 'var(--probex-text-secondary)' }}>{label}</span>
-      <span className="flex items-baseline gap-2">
-        <span
-          className="font-bold tabular-nums text-sm"
-          style={{ color: highlight ? 'var(--probex-warning)' : 'var(--probex-text-primary)' }}
-        >
-          {value}
-        </span>
-        <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{note}</span>
-      </span>
+    <ol className="flex items-center gap-1 flex-wrap list-none m-0 p-0" aria-label="Survival state machine">
+      {tiles.map((s) => {
+        const isCurrent = s === active
+        return (
+          <li
+            key={s}
+            aria-current={isCurrent ? 'step' : undefined}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 whitespace-nowrap"
+            style={{
+              background: isCurrent ? `color-mix(in srgb, ${survivalStateColor(s)} 12%, transparent)` : 'transparent',
+              opacity: isCurrent ? 1 : 0.45,
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: survivalStateColor(s) }} aria-hidden="true" />
+            <span className="t-label" style={{ color: isCurrent ? survivalStateColor(s) : undefined }}>{survivalStateLabel(s)}</span>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+function Reported({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <dt className="t-label truncate">{label}</dt>
+      <dd className="m-0 flex flex-col min-w-0">
+        <span className="font-mono text-xs font-semibold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{value}</span>
+        <span className="t-metadata truncate">{note}</span>
+      </dd>
     </div>
   )
 }

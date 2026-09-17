@@ -377,8 +377,13 @@ export interface EngineIdentityDTO {
 export interface EngineIdentity {
   /** Canonical; `null` when unrecognised. See lib/services/health.ts. */
   status:        EngineHealthStatus | null
-  bot:           string
-  version:       string
+  /** The engine's own name and version, which only its host-root `/` reports.
+   *  Behind the production bridge that root is the marketing site, so the
+   *  identity is synthesised from /api/runtime and these are `null` —
+   *  never the dashboard's own name and version wearing the engine's label
+   *  (which is what they were until 2026-09-17). */
+  bot:           string | null
+  version:       string | null
   mode:          EngineMode
   initializedAt: number             // epoch ms
   components:    RuntimeComponents
@@ -883,6 +888,15 @@ export interface ConsensusReading {
   confidence:     number
   signalCount:    number
   signals:        ConsensusSignals
+  /**
+   * EVERY numeric signal the wire sent, under the engine's own key names, in
+   * wire order. The typed `signals` above names five; the live engine sends
+   * eight (kalman_direction, kalman_confidence, bayesian_regime_bias joined
+   * the set — captured 2026-09-16) and the typed projection silently dropped
+   * them. Scales are NOT documented by the contract: values are shown as
+   * reported.
+   */
+  allSignals:     Array<{ key: string; value: number }>
   /** Spot price of the asset this reading is about. Null when the engine
    *  omitted it — a missing price must not render as 0 or crash a cell. */
   assetPrice:     number | null

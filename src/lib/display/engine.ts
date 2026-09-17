@@ -84,7 +84,7 @@ export function survivalStateLabel(state: SurvivalState): string {
  * and, worse, silently breaks any comparison written against the scaled value.
  *
  * That mistake has already been made twice — once in this pass, and once in
- * AutoExecutionPanel, where `minEdgeThreshold * 100` made the threshold 100×
+ * the former AutoExecutionPanel, where `minEdgeThreshold * 100` made the threshold 100×
  * too large so "would this edge trigger a trade?" answered no for every edge
  * the engine could ever produce. Naming the unit in one function is cheaper
  * than remembering the convention at each call site.

@@ -17,7 +17,9 @@
 //
 //   1  MARKET       what the world is doing            (fast tier — moves)
 //   2  PERCEPTION   what the engine sees in it         (operational — still)
-//   3  COMMITMENT   what it holds, risks, has produced (operational — still)
+//   3  CAPITAL &    what that state means for the book — capital against its
+//      BOOK         targets, exposure against its limit, results so far.
+//                   The one CONTAINED movement: money is a different subject.
 //   4  FIELD        the markets it is choosing among
 //
 // Each arc is separated by a hairline rule and nothing else. There is no card
@@ -29,33 +31,48 @@
 // instrument panels → three market sections → consensus. Roughly eight bordered
 // surfaces, each carrying its own provenance badge, before the first market.
 //
-// After: three ruled arcs and the market board. The badges are gone; the page
-// makes ONE freshness claim, at the top, and the certainty of individual
-// figures is carried by the figures themselves (see shared/Figure).
+// After: two ruled arcs, one contained financial group, and the market board.
+// The badges are gone; the page makes ONE freshness claim, at the top, and the
+// certainty of individual figures is carried by the figures themselves.
+//
+// ─── The correction that followed ────────────────────────────────────────────
+// The first pass of this composition over-corrected. Retiring the four-panel
+// instrument row took roughly forty figures off the page and replaced them with
+// three, which is not restraint — the page went from information-dense to
+// sparse, and read as hero → whitespace → market list.
+//
+// The goal was never "remove cards". It was "stop using cards as the default
+// grammar for every piece of information". So the depth came back, in ONE
+// contained group organised by rules rather than by four bordered surfaces.
+// See CapitalBookGroup for what that restored and what it deliberately did not
+// (avg fill and backoff stayed on Execution, where they have context).
 //
 // ─── Containers, and why these ones are justified ────────────────────────────
-// Every container on this page marks a causal or semantic boundary:
+// A container earns its place when it creates a real semantic, interaction or
+// hierarchy boundary — not when a statistic needs somewhere to sit:
 //
+//   CapitalBookGroup money is a different subject from the market and the
+//                    decision. One boundary for one subject.
 //   EngineAttention  an INTERRUPTION. It is the one thing that should break the
 //                    reading order, and a bounded surface is how it does that.
-//   market cards     a market is a discrete object with its own identity, price
-//                    and lifecycle. The boundary is real.
-//   HotMarkets rail  a different question ("where is the action") beside the
-//                    field, not part of it.
+//   engine-field     a market the engine TRADES is a discrete object with its
+//   market cards     own identity, baseline, lifecycle and resolution. The
+//                    boundary is real — and there are two, not six. See
+//                    MarketField for why the field is ordered by the engine's
+//                    relationship to a market rather than by its volume.
 //
-// The three arcs have none, and need none.
+// The three arcs have none, and need none. The observed-markets board is a
+// table (its edge is the table's own chrome, not a container) and consensus is
+// a ruled block, so the sequence down the field is card → rule → table.
 
 import { useMemo } from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
 import { parseMarketRows } from '@/lib/mappers/markets'
 import { MarketArc } from './MarketArc'
 import { PerceptionArc } from './PerceptionArc'
-import { CommitmentArc } from './CommitmentArc'
+import { CapitalBookGroup } from './CapitalBookGroup'
 import { EngineAttention } from './EngineAttention'
-import { GlobalConsensusBar } from './GlobalConsensusBar'
-import { FeaturedMarkets } from './FeaturedMarkets'
-import { TrendingMarkets } from './TrendingMarkets'
-import { HotMarkets } from './HotMarkets'
+import { MarketField } from './MarketField'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -115,8 +132,17 @@ export function OverviewPage() {
       {/* ── 2 · PERCEPTION — what the engine sees in it ───────────────────── */}
       <PerceptionArc />
 
-      {/* ── 3 · COMMITMENT — what it holds, risks, and has produced ───────── */}
-      <CommitmentArc />
+      {/* ── 3 · CAPITAL & BOOK — what that state means for the account ─────
+             Not "committed": when the engine is HOLDING — the common case —
+             nothing has been committed, and a heading saying otherwise would
+             claim capital was deployed on a decision the engine explicitly
+             declined to make. The decision above stays the arc's climax; this
+             is its financial consequence.
+
+             This is the one CONTAINED movement of the arc, because money is a
+             genuinely different subject from the market and the decision. One
+             container, internally ruled — not the four-panel grid it replaces. */}
+      <CapitalBookGroup />
 
       {/* ── Attention — an interruption, not a step in the arc ─────────────
              Present only when something is actually wrong. It sits AFTER the
@@ -127,34 +153,23 @@ export function OverviewPage() {
         <EngineAttention />
       </div>
 
-      {/* ── 4 · FIELD — the markets it is choosing among ──────────────────── */}
-      <section className="mt-7">
-        <h2 className="t-section-title mb-3">Markets</h2>
-
-        {hasRows ? (
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5 items-start">
-            <div className="min-w-0 flex flex-col gap-6">
-              <FeaturedMarkets />
-              <TrendingMarkets />
-            </div>
-
-            <aside className="flex flex-col gap-4 xl:sticky xl:top-5">
-              <HotMarkets className="max-h-[460px]" />
-            </aside>
-          </div>
-        ) : (
+      {/* ── 4 · FIELD — the markets, ordered by the engine's relationship to
+             them: the two it trades as objects, consensus as a reading beside
+             them, the fifty-six it observes as a board beneath. Replaces
+             Featured (6 cards) + Trending (8 rows of the SAME markets) + the
+             Hot Markets rail + a bottom-of-page consensus strip. */}
+      {hasRows ? (
+        <MarketField />
+      ) : (
+        <section className="mt-7">
+          <h2 className="t-section-title mb-3">Markets</h2>
           <MarketContextFrame
             status={marketsSlice.status}
             message={marketsSlice.error?.message ?? null}
             unrecognizedCount={marketRows?.kind === 'unrecognized' ? marketRows.count : null}
           />
-        )}
-      </section>
-
-      {/* Consensus — renders nothing once the endpoint exists. */}
-      <div className="mt-6">
-        <GlobalConsensusBar />
-      </div>
+        </section>
+      )}
 
       <Footer />
     </div>
@@ -215,8 +230,8 @@ function MarketContextFrame({
   return (
     <EmptyState
       size="sm"
-      title="No markets open right now"
-      description="The engine's 5- and 15-minute BTC markets appear here as they open. Featured, trending and hot markets return with them."
+      title="Nothing in the engine’s scan"
+      description="The 5- and 15-minute Up-or-Down windows the engine is scanning appear here as its fetcher returns them; right now it holds none."
     />
   )
 }

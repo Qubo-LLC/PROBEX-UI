@@ -233,7 +233,7 @@ export function consensusScoreColorVar(score: number): string {
  * @deprecated for MARKET-SIDE values. This maps a probability onto the
  * FINANCIAL-DIRECTION band (positive / warning / negative), which is the wrong
  * band for a YES or NO price: a cheap YES is not a loss. Its three former
- * callers — MarketCard (grid and list) and EngineThesisPanel — now use
+ * callers — MarketCard (grid and list) and, formerly, EngineThesisPanel — now use
  * --probex-yes / --probex-no.
  *
  * Kept, not deleted, because mapping a probability to a confidence tone is a

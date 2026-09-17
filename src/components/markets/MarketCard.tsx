@@ -1,28 +1,30 @@
 'use client'
 
-// MarketCard — the one shared market card (Overview Featured grid + Markets
-// catalog). V1's fabricated consensus trio is replaced by the live EdgeBadge
-// (real /api/edges). Never duplicated — one card, every consumer.
+// MarketCard — a market from the current scan, as a small card. One consumer
+// remains: Market Detail's "related markets" strip, where a handful of
+// neighbours read better as cards than as a second table on the page. The
+// Markets › Live catalogue no longer uses it (2026-09-17): a grid of these
+// beside the shared MarketTable was two representations of one list, and the
+// ledger is the canonical one.
 //
-// Craft (Overview Experience Refinement): the card is the trader's market; the
-// ENGINE'S EDGE is the AI's mark on it. Markets the engine has flagged carry a
-// top accent in the edge-direction colour, so AI-selected opportunities stand
-// out from the field — the hybrid identity, expressed with real data only.
-// Numbers are mono (technical identity); a skeleton covers the loading state.
+// Every figure is the wire's: the question, the category, both prices,
+// the volume, the close time, and — when /api/edges names this market — the
+// direction, edge and confidence the detector reported. The "High conviction
+// / Moderate / Low conviction" tiers that used to grade the confidence at 0.7
+// and 0.5 were this file's invention; the engine reports a number and no
+// grade, so the number is what is shown.
 
 import { formatCompact } from '@/lib/utils'
 import { marketLifecycle, formatCloseTime, closeTimestamp, lifecycleLabel } from '@/lib/display/marketLifecycle'
 import { segmentLabel } from '@/lib/display/market'
 import type { MarketRow } from '@/lib/mappers/markets'
 import type { EdgeRow } from '@/lib/mappers/edges'
-import { EdgeBadge } from '@/components/shared/EdgeBadge'
 import { WatchlistButton } from '@/components/shared/WatchlistButton'
 
 interface MarketCardProps {
   market:     MarketRow
-  /** The engine's live edge for this market, if it currently has one. */
+  /** The engine's current edge on this market, if it reports one. */
   edge:       EdgeRow | undefined
-  variant?:   'grid' | 'list'
   onClick?:   (marketId: string) => void
   className?: string
 }
@@ -33,19 +35,10 @@ function edgeAccent(edge: EdgeRow | undefined): string | null {
   return edge.direction.toLowerCase() === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)'
 }
 
-/** Confidence tier from the real edge confidence. */
-function confidenceTier(c: number | null): { label: string; color: string } | null {
-  if (c === null) return null
-  if (c >= 0.7) return { label: 'High conviction', color: 'var(--probex-positive)' }
-  if (c >= 0.5) return { label: 'Moderate',        color: 'var(--probex-warning)' }
-  return { label: 'Low conviction', color: 'var(--probex-text-muted)' }
-}
-
-/** EngineStrip — the engine's live read on a market (direction · edge% ·
- *  confidence tier) from /api/edges. Rendered only when an edge exists. */
+/** The detector's read on this market, as reported: direction · edge ·
+ *  confidence. Rendered only when an edge exists. */
 function EngineStrip({ edge }: { edge: EdgeRow }) {
   const color = edge.direction.toLowerCase() === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)'
-  const tier  = confidenceTier(edge.confidence)
   const conf  = edge.confidence !== null ? Math.round(edge.confidence * 100) : null
 
   return (
@@ -54,23 +47,18 @@ function EngineStrip({ edge }: { edge: EdgeRow }) {
         <span className="text-2xs font-black uppercase tracking-wider" style={{ color }}>
           {edge.direction.toUpperCase()} · {edge.edgePct.toFixed(1)}% edge
         </span>
-        {tier && <span className="text-2xs font-semibold" style={{ color: tier.color }}>{tier.label}</span>}
+        {conf !== null && <span className="text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }} title="confidence, as the detector reported it">{conf}% confidence</span>}
       </div>
       {conf !== null && (
-        <div className="flex items-center gap-1.5">
-          <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }}>
-            <div className="h-full rounded-full" style={{ width: `${conf}%`, background: color }} />
-          </div>
-          <span className="text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{conf}%</span>
+        <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }} aria-hidden="true">
+          <div className="h-full rounded-full" style={{ width: `${conf}%`, background: color }} />
         </div>
       )}
     </div>
   )
 }
 
-export function MarketCard({ market, edge, variant = 'grid', onClick, className = '' }: MarketCardProps) {
-  if (variant === 'list') return <ListRow market={market} edge={edge} onClick={onClick} className={className} />
-
+export function MarketCard({ market, edge, onClick, className = '' }: MarketCardProps) {
   const category = segmentLabel(market.segment)
   const accent   = edgeAccent(edge)
 
@@ -92,9 +80,8 @@ export function MarketCard({ market, edge, variant = 'grid', onClick, className 
       // A resolved market is not an opportunity. It stays readable and stays
       // reachable (its history is still worth opening), but it loses the raised
       // interactive treatment so it cannot be mistaken for a live candidate.
-      aria-describedby={undefined}
-      // Engine-edge accent: a top border in the edge colour when the AI is
-      // acting on this market. Inline so it survives the hover border change.
+      // Engine-edge accent: a top border in the edge colour when the detector
+      // names this market. Inline so it survives the hover border change.
       style={accent ? { borderTop: `2px solid ${accent}` } : undefined}
     >
       {/* Top: category tag + watchlist */}
@@ -103,9 +90,6 @@ export function MarketCard({ market, edge, variant = 'grid', onClick, className 
           {category && (
             <span
               className="text-2xs font-bold uppercase tracking-wider rounded-sm px-2 py-0.5"
-              // The border was --probex-yes-border: the MARKET-SIDE token, on a
-              // category tag that has nothing to do with a market side. Brand
-              // text now carries a brand-tinted edge.
               style={{ color: 'var(--probex-primary)', background: 'var(--probex-primary-dim)', border: '1px solid var(--probex-border-active)' }}
             >
               {category}
@@ -132,11 +116,11 @@ export function MarketCard({ market, edge, variant = 'grid', onClick, className 
         {market.title}
       </p>
 
-      {/* YES / NO bars */}
+      {/* YES / NO prices */}
       {market.probability !== null ? (
         <ProbBars prob={market.probability} />
       ) : (
-        <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>Awaiting price data</p>
+        <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>No price on the wire for this market</p>
       )}
 
       {edge && <EngineStrip edge={edge} />}
@@ -160,76 +144,9 @@ export function MarketCard({ market, edge, variant = 'grid', onClick, className 
   )
 }
 
-// ─── Loading skeleton (grid variant) ───────────────────────────────────────
-
-export function MarketCardSkeleton({ className = '' }: { className?: string }) {
-  return (
-    <div className={`card flex flex-col gap-2.5 p-3.5 ${className}`}>
-      <div className="flex items-center justify-between">
-        <div className="skeleton h-4 w-16 rounded-full" />
-        <div className="skeleton h-4 w-4 rounded" />
-      </div>
-      <div className="skeleton h-4 w-full rounded" />
-      <div className="skeleton h-3 w-3/4 rounded" />
-      <div className="flex flex-col gap-1.5 mt-0.5">
-        <div className="skeleton h-1.5 w-full rounded-full" />
-        <div className="skeleton h-1.5 w-4/5 rounded-full" />
-      </div>
-      <div className="skeleton h-4 w-24 rounded-full" />
-    </div>
-  )
-}
-
-// ─── List variant ─────────────────────────────────────────────────────────
-
-function ListRow({ market, edge, onClick, className }: { market: MarketRow; edge: EdgeRow | undefined; onClick: ((id: string) => void) | undefined; className: string }) {
-  const category = segmentLabel(market.segment)
-  const accent   = edgeAccent(edge)
-  return (
-    <div
-      onClick={onClick ? () => onClick(market.id) : undefined}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      className={`flex items-center gap-3 px-4 py-2.5 transition-colors duration-100 ${onClick ? 'cursor-pointer hover:bg-[var(--probex-surface-2)]' : ''} ${className}`}
-      style={{ borderBottom: '1px solid var(--probex-border)', borderLeft: accent ? `2px solid ${accent}` : '2px solid transparent', background: 'var(--probex-surface)' }}
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-sm truncate" style={{ color: 'var(--probex-text-primary)' }}>{market.title}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          {category && (
-            <span className="text-2xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-primary)' }}>{category}</span>
-          )}
-          <EdgeBadge edge={edge} showEmpty={false} />
-        </div>
-      </div>
-      <div className="flex items-center gap-4 flex-shrink-0">
-        {market.probability !== null && (
-          // Same correction as the grid card: the YES price is a market side,
-          // not a financial direction.
-          <span className="text-base font-bold font-mono tabular-nums" style={{ color: 'var(--probex-yes)' }}>
-            {Math.round(market.probability * 100)}¢
-          </span>
-        )}
-        <WatchlistButton marketId={market.id} />
-      </div>
-    </div>
-  )
-}
-
 /**
- * The two market sides, in the two market-side colours.
- *
- * This previously coloured the YES row with probabilityColorVar(), which
- * returns --probex-positive above 65c, --probex-warning above 45c and
- * --probex-negative below it. So a YES at 70c was green and a YES at 30c was
- * red: the FINANCIAL-DIRECTION band painting a MARKET SIDE. A cheap YES is not
- * a loss, and the same card's EngineStrip was already using --probex-yes /
- * --probex-no correctly two elements away.
- *
- * NO had no colour at all — it borrowed text-muted while --probex-no existed
- * and was in use elsewhere. Both sides now use their own token, in every theme.
+ * The two market sides, in the two market-side colours — never the
+ * financial-direction band (a cheap YES is not a loss).
  */
 function ProbBars({ prob }: { prob: number }) {
   const pct = Math.round(prob * 100)

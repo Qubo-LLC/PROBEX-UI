@@ -6,7 +6,7 @@
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { LiveChart, type LiveChartPoint } from '@/components/shared/LiveChart'
-import { chartStateFromSlice } from '@/components/shared/ChartFrame'
+import { chartStateFromSlice, staleBySeriesAge } from '@/components/shared/ChartFrame'
 
 export function WinRateChart({ height = 160 }: { height?: number }) {
   const slice = useApplicationStore((s) => s.engine.portfolioHistory)
@@ -16,19 +16,22 @@ export function WinRateChart({ height = 160 }: { height?: number }) {
 
   // Real state, not just "has rows": an errored slice is unavailable and an
   // available:false envelope is idle — both look like zero rows otherwise.
-  const { state, message } = chartStateFromSlice(slice, data.length)
+  const { state: sliceState, message } = chartStateFromSlice(slice, data.length)
+  // The series ends at the newest SNAPSHOT (history is chronological at the
+  // adapter), not at the poll — see staleBySeriesAge.
+  const newestTs = slice.data?.history.length ? slice.data.history[slice.data.history.length - 1]!.ts : undefined
+  const state = staleBySeriesAge(sliceState, newestTs)
 
   return (
     <LiveChart
       title="Rolling Win Rate"
       state={state}
       message={message}
-      lastConfirmedAt={slice.data?.timestamp}
+      {...(newestTs !== undefined ? { lastConfirmedAt: newestTs } : {})}
       source="/api/portfolio/history"
       data={data}
       variant="area"
       height={height}
-      bare
       // --probex-yes is the MARKET-SIDE band. A win rate is not a YES.
       color="var(--probex-primary)"
       yTickFormatter={(v) => `${Math.round(v * 100)}%`}

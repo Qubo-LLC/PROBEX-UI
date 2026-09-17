@@ -6,7 +6,7 @@
 // These lines sit at the bottom of every route, and one of them was a
 // runtime-state claim written as a constant:
 //
-//   Live — "Real-time engine polling, not static data"
+//   Live — "Real-time engine polling, not static data"  (now "Connected — reading the engine's API…")
 //
 // That is true when an engine is answering and false in exactly the two states
 // the rest of this work exists to make visible. With the engine unreachable,
@@ -73,12 +73,12 @@ export function FooterTrust() {
       ? { k: 'Synthetic', v: 'Generated data — this session is not connected to an engine', tone: 'var(--probex-warning)' }
       : !status.dataIsLive
         ? { k: 'Disconnected', v: 'The engine is unreachable — values are withheld, not substituted', tone: 'var(--probex-negative)' }
-        : { k: 'Live', v: 'Real-time engine polling, not static data', tone: 'var(--probex-positive)' }
+        : { k: 'Connected', v: 'Reading the engine’s API every few seconds — each figure carries its own read time', tone: 'var(--probex-positive)' }
 
   const items = [
     { k: 'Autonomous', v: 'The engine trades without manual intervention', tone: 'var(--probex-text-muted)' },
     dataClaim,
-    { k: 'Transparent', v: 'Every figure traces to a live endpoint, or says so', tone: 'var(--probex-text-muted)' },
+    { k: 'Transparent', v: 'Every figure names the endpoint it came from, or says it is absent', tone: 'var(--probex-text-muted)' },
   ]
 
   return (

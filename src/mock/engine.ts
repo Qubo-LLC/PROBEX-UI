@@ -270,6 +270,10 @@ export const MOCK_CONSENSUS: Consensus = {
   reading: {
     scoreTimestamp: NOW, score: -0.125, confidence: 0.333, signalCount: 5,
     signals: { edgeDirection: -0.306, edgeConfidence: 0.36, rsiMomentum: -0.5, macdTrend: 0.0, priceMomentum: 0.0 },
+    allSignals: [
+      { key: 'edge_direction', value: -0.306 }, { key: 'edge_confidence', value: 0.36 }, { key: 'rsi_momentum', value: -0.5 },
+      { key: 'macd_trend', value: 0.0 }, { key: 'price_momentum', value: 0.0 },
+    ],
     assetPrice: 65590.2, assetSymbol: 'BTC', interpretation: 'NEUTRAL',
   },
   timestamp: NOW,

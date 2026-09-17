@@ -4,6 +4,7 @@
 // recommendation aren't on the wire and stay null.
 
 import type { EngineEdges } from '@/types/engine'
+import { naiveUtcToMs } from '@/lib/services/dto'
 import { parseItems, isRecord, str, num, type ParseResult } from './parse'
 
 export interface EngineEdgeIndicatorsDTO {
@@ -85,7 +86,7 @@ export function parseEdgeRows(e: EngineEdges): ParseResult<EdgeRow> {
       confidence:     num(dto.confidence) ? dto.confidence : null,
       signal:         str(dto.signal) ? dto.signal : null,
       recommendation: str(dto.recommendation) ? dto.recommendation : null,
-      detectedAt:     str(dto.detected_at) ? new Date(dto.detected_at).getTime() : null,
+      detectedAt:     str(dto.detected_at) ? naiveUtcToMs(dto.detected_at) : null,
       rsi:            indicators && num(indicators.rsi) ? indicators.rsi : null,
       rsiSignal:      indicators && str(indicators.rsi_signal) ? indicators.rsi_signal : null,
       macdTrend:      indicators && str(indicators.macd_trend) ? indicators.macd_trend : null,

@@ -22,7 +22,7 @@
 // 2. Feed latency was a second, quieter claim about the same subject as the
 //    indicator beside it. It is diagnostics, and diagnostics belong on System.
 //
-// 3. LiveHeartbeat and SystemStatusIndicator asserted the same fact — "the
+// 3. LiveHeartbeat (since deleted) and SystemStatusIndicator asserted the same fact — "the
 //    engine is answering" — twenty pixels apart, one of them by pulsing. The
 //    indicator already carries a live dot, so the heartbeat added motion
 //    without adding information.
@@ -65,16 +65,20 @@ export function EngineStatusStrip() {
     // scroll width was clean and only the two boxes were colliding.
     <div className="flex items-center gap-3 sm:gap-4 min-w-0" role="status" aria-label="Engine status">
       {currentPrice !== null && (
-        <span className="flex items-baseline gap-1.5 min-w-0">
-          {/* `sm:` (640px), not a hand-rolled `xs:` — this Tailwind config
-              defines no xs SCREEN breakpoint (the `xs` keys in it are the
-              fontSize and borderRadius scales), so `xs:inline` would be an
-              unknown class and the label would vanish at every width. */}
-          <span className="t-label hidden sm:inline">BTC</span>
-          {/* Truncates rather than overflowing. A clipped price is recoverable
-              (the figure is on the Overview hero); a price drawn through a
-              button is not. */}
-          <span className="t-metric-sm truncate">{formatBtcPrice(currentPrice)}</span>
+        // Hidden below `sm` rather than truncated. The right header track is
+        // ~150px on a phone and the status chip takes most of it; the price
+        // was left 14px and rendered as "$.." (measured at 375). A figure
+        // reduced to an ellipsis is not a smaller figure, it is a wrong one.
+        // The price is the Overview hero's display figure and one tap away on
+        // every other route; the status chip is the element that must survive.
+        //
+        // `sm:` (640px), not a hand-rolled `xs:` — this Tailwind config
+        // defines no xs SCREEN breakpoint (the `xs` keys in it are the
+        // fontSize and borderRadius scales), so `xs:` would be an unknown
+        // class and the element would vanish at every width.
+        <span className="hidden sm:flex items-baseline gap-1.5 min-w-0">
+          <span className="t-label">BTC</span>
+          <span className="t-metric-sm whitespace-nowrap">{formatBtcPrice(currentPrice)}</span>
         </span>
       )}
 

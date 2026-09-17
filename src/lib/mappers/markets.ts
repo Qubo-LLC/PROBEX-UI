@@ -86,7 +86,7 @@ function parseVolume(x: unknown): number | null {
 
 /**
  * Projects the confirmed /api/markets/:market_id payload onto the same MarketRow
- * the list surface uses, so MarketHeader / EngineThesisPanel / RelatedMarkets
+ * the list surface uses, so MarketHeader / MarketEngineView / RelatedMarkets
  * work unchanged against a single-market fetch.
  *
  * Deliberately a projection rather than a second row type: the detail endpoint

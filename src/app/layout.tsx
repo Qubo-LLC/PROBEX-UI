@@ -134,9 +134,14 @@ export const viewport: Viewport = {
 
 // ─── Theme SSR resolution ─────────────────────────────────────────────────
 
-// Reads the persisted theme from the request cookie so the server can set
-// data-theme before first paint (no theme flash). Cookie "probex-theme" is
-// written by the Zustand persist middleware as { state: { theme } }.
+// Reads a "probex-theme" cookie, if one is present, so the server can set
+// data-theme before first paint. NOTE (verified 2026-09-16): nothing in the
+// app writes that cookie — themeStore persists to localStorage only — so this
+// resolves to DEFAULT_THEME on every request, and the inline <head> script
+// below is what actually applies the persisted theme before hydration. The
+// script's list of valid names is generated from THEME_NAMES; a hand-typed
+// copy of it omitted 'ember', which gave Ember users a Midnight flash on
+// every load.
 /**
  * Public origin of the current request, used to turn a relative API base
  * ('/api') into something the server can probe. nginx sets both headers; the
@@ -232,7 +237,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
               try {
                 var stored = JSON.parse(localStorage.getItem('probex-theme') || '{}');
                 var theme  = stored?.state?.theme;
-                var valid  = ['aurora','midnight','quantum','emerald','institutional'];
+                var valid  = ${JSON.stringify(THEME_NAMES)};
                 if (theme && valid.includes(theme)) {
                   document.documentElement.setAttribute('data-theme', theme);
                 }

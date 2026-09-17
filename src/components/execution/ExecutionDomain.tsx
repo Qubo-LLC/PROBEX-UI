@@ -8,7 +8,9 @@
 //
 // Paper trading is a mode of the execution engine, not a parallel system — the
 // same order flow, the same risk limits, simulated fills. Two sidebar entries
-// implied two engines.
+// implied two engines. The two tabs still answer different questions: Engine
+// is the state of the real-order subsystem (idle in paper mode); Paper Trading
+// is what the paper session has recorded.
 
 import { useApplicationStore } from '@/store/applicationStore'
 import { DomainPage } from '@/components/layout/DomainPage'
@@ -28,7 +30,7 @@ export function ExecutionDomain() {
   return (
     <DomainPage
       title="Execution"
-      subtitle="Order flow, engine reliability, and the simulated trading session"
+      subtitle="The order-execution subsystem, and the paper session’s record"
       tabs={tabs}
       actions={
         paper ? (
@@ -37,7 +39,7 @@ export function ExecutionDomain() {
             style={{ color: paper.enabled ? 'var(--probex-positive)' : 'var(--probex-text-muted)' }}
           >
             <span
-              className={paper.enabled ? 'live-dot w-1.5 h-1.5' : 'w-1.5 h-1.5 rounded-full inline-block'}
+              className="w-1.5 h-1.5 rounded-full inline-block"
               style={{ background: paper.enabled ? 'var(--probex-positive)' : 'var(--probex-text-disabled)' }}
               aria-hidden="true"
             />

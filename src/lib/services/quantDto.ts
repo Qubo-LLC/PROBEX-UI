@@ -30,16 +30,17 @@ import type {
   MarketMakerMetricsDTO, MarketMakerMetrics,
 } from '@/types/quant'
 import { isKalmanInitialised, probabilitiesArePartition } from '@/types/quant'
+import { naiveUtcToMs } from './dto'
 
 /** win_rate is 0–100 on the wire everywhere; normalize to the 0–1 convention
  *  every domain type in this app uses. Mirrors dto.ts's helper. */
 const pctToFraction = (pct: number): number => pct / 100
 
-/** ISO 8601 → epoch ms. Mirrors dto.ts's helper; NaN-safe for absent values. */
+/** ISO 8601 → epoch ms via dto.ts's helper (the engine's naive strings are
+ *  UTC — see naiveUtcToMs); NaN for absent values. */
 function isoToMs(iso: string | undefined | null): number {
   if (!iso) return Number.NaN
-  const ms = Date.parse(iso)
-  return Number.isNaN(ms) ? Number.NaN : ms
+  return naiveUtcToMs(iso)
 }
 
 // These are counts of events the filter has OBSERVED, and the block is declared

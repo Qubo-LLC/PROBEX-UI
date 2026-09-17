@@ -48,20 +48,6 @@ export function Skeleton({
   )
 }
 
-// ─── Stat card skeleton ───────────────────────────────────────────────────
-
-export function StatCardSkeleton({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn('card p-4 flex flex-col gap-2 min-h-[88px]', className)}
-    >
-      <Skeleton height={10} width={80} />
-      <Skeleton height={28} width={100} />
-      <Skeleton height={12} width={60} />
-    </div>
-  )
-}
-
 // ─── Table row skeleton ───────────────────────────────────────────────────
 
 interface TableRowSkeletonProps {

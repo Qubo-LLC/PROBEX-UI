@@ -26,12 +26,13 @@
 // ProvenanceBadge, rather than shouted once and then contradicted by green LIVE
 // badges further down the page. Quieter, and strictly more honest than before.
 
-import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRuntimeConfig } from '@/providers/RuntimeConfigProvider'
+import { dataModeWord } from '@/lib/display/settings'
 import { useSystemStatus } from '@/config/hooks/useSystemStatus'
 import { statusColor, statusNeedsAttention } from '@/lib/display/systemStatus'
 import { useApplicationStore } from '@/store/applicationStore'
 import { formatUptime } from '@/lib/display/engine'
+import { Popover } from '@/components/ui/Popover'
 
 export function SystemStatusIndicator() {
   const status = useSystemStatus()
@@ -39,40 +40,26 @@ export function SystemStatusIndicator() {
   const health = useApplicationStore((s) => s.engine.health)
   const identity = useApplicationStore((s) => s.engine.identity)
 
-  const [open, setOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
-
-  const close = useCallback(() => setOpen(false), [])
-
-  // Dismiss on outside click / Escape. Both, not one: a popover that traps the
-  // pointer is worse than the banner it replaced.
-  useEffect(() => {
-    if (!open) return undefined
-    const onDown = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) close()
-    }
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
-    document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open, close])
-
   const color = statusColor(status.tone)
   const attention = statusNeedsAttention(status.state)
 
   const healthyProbes = health.data?.components.filter((c) => c.healthy).length ?? null
   const totalProbes = health.data?.components.length ?? null
 
+  // The open state, outside-click and Escape handling that used to live here
+  // are now the shared Popover primitive — this was the first of three
+  // hand-rolled popovers in the product, and it is the Level-2 disclosure
+  // every other one should look like.
   return (
-    <div ref={rootRef} className="relative flex-shrink-0">
+    <Popover
+      label="System status detail"
+      align="end"
+      width={320}
+      className="flex-shrink-0"
+      trigger={(triggerProps, open) => (
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-haspopup="dialog"
+        {...triggerProps}
         aria-label={`System status: ${status.label}. ${status.detail}`}
         title={status.detail}
         className="focus-ring inline-flex items-center gap-1.5 h-7 rounded-md px-2 cursor-pointer transition-colors duration-150"
@@ -112,18 +99,8 @@ export function SystemStatusIndicator() {
           <path d="m6 9 6 6 6-6" />
         </svg>
       </button>
-
-      {open && (
-        <div
-          role="dialog"
-          aria-label="System status detail"
-          className="absolute right-0 top-full mt-2 w-[320px] rounded-lg p-4 flex flex-col gap-3 animate-fade-in z-tooltip"
-          style={{
-            background: 'var(--probex-surface-2)',
-            border: '1px solid var(--probex-border-default)',
-            boxShadow: 'var(--probex-elev-4)',
-          }}
-        >
+      )}
+    >
           <div className="flex items-start gap-2.5">
             <span
               className="w-1.5 h-1.5 rounded-full inline-block mt-1.5 flex-shrink-0"
@@ -175,7 +152,11 @@ export function SystemStatusIndicator() {
 
           <dl className="flex flex-col gap-1.5 m-0">
             <DetailRow label="Deployment" value={runtime.deployment} />
-            <DetailRow label="Engine mode" value={runtime.mode} />
+            {/* runtime.mode is the dashboard's DATA-SOURCE resolution
+                (live engine / mock / offline), not the engine's trading
+                mode — "Engine mode: live" beside "Execution: paper" read as
+                live trading. The execution mode is the row below. */}
+            <DetailRow label="Data source" value={dataModeWord(runtime.mode).word.toLowerCase()} />
             {/* The engine's address is a genuinely useful diagnostic and a
                 genuinely bad thing to print on a shared screen. The old banner
                 showed it always, at body-text size, on every route. Here it is
@@ -185,7 +166,7 @@ export function SystemStatusIndicator() {
               <DetailRow label="API base" value={runtime.baseUrl} />
             )}
             {identity.data && (
-              <DetailRow label="Engine" value={`${identity.data.bot} ${identity.data.version}`} />
+              <DetailRow label="Engine" value={identity.data.bot !== null ? `${identity.data.bot}${identity.data.version !== null ? ` ${identity.data.version}` : ''}` : 'name and version not reported on /api/*'} />
             )}
             {identity.data && <DetailRow label="Execution" value={identity.data.mode} />}
             {healthyProbes !== null && totalProbes !== null && (
@@ -196,12 +177,10 @@ export function SystemStatusIndicator() {
 
           {/* The resolver's own words on why this mode was chosen. Kept verbatim
               — it is the one string that explains a surprising state. */}
-          <p className="t-helper" style={{ color: 'var(--probex-text-muted)' }}>
+          <p className="t-helper">
             {runtime.reason}
           </p>
-        </div>
-      )}
-    </div>
+    </Popover>
   )
 }
 

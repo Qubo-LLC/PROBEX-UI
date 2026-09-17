@@ -45,8 +45,9 @@ export interface RuntimeComponentChip {
 export interface CommandCenterVM {
   /** null while / identity has not resolved. */
   identity: {
-    botName:       string
-    version:       string
+    /** null when the engine does not report them (see EngineIdentity). */
+    botName:       string | null
+    version:       string | null
     mode:          EngineMode
     initializedAt: number
   } | null

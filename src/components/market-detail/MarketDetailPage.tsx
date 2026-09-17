@@ -1,52 +1,63 @@
 'use client'
 
-// MarketDetailPage — V3 Phase 2 assembly root, restoring V1's market detail
-// experience (git 0e3833a4) on the live data spine. V1 used a 3-column grid
-// (Consensus panel | content | TradingDrawer). V3 folds the consensus
-// column into the header's EdgeBadge/ProbabilityValue (a full Consensus
-// flagship panel is out of scope for this phase — see Phase 3 boundary) and
-// replaces TradingDrawer with the read-only AutoExecutionPanel, giving a
-// 2-column layout: content + auto-execution rail.
+// MarketDetailPage — one market, as an investigation.
 //
-// ─── Market lookup (corrected 2026-09-07) ────────────────────────────────────
-// This file previously stated "No single-market-by-id endpoint exists", and so
-// looked the market up client-side inside the live /api/markets envelope. That
-// was true when written — GET /api/markets/:market_id hung — and it stopped
-// being true without anyone re-probing. The consequence was not cosmetic:
-// /api/markets contains only what the engine is scanning RIGHT NOW, so a closed
-// or expired market could not be displayed at all, and the page reassembled
-// from two endpoints what one endpoint returns in a single 32KB response.
+//   MARKET          header: the question, the window, whether it still exists
+//   ENGINE VIEW     verdict · YES price · engine edge · edge required · book
+//   THE BOOK        the engine's position and settled trades on this id
+//   ACTIVITY        the events that name this id (shared EventStream)
+//   HISTORY         the recorded snapshots, as a path and as charts
+//   OTHER MARKETS   the rest of the cycle, for orientation
 //
-// The detail endpoint is now the primary source. The envelope lookup is kept as
-// a fallback for the case where the detail call fails but the market happens to
-// be in the currently-scanned list — strictly more coverage than either alone.
+// ─── Sources, and what each survives ─────────────────────────────────────────
+// /api/markets/:id is the market's own record and the primary source — but
+// every market here rotates out within minutes, after which it answers 404.
+// The previous page treated that as a dead end: "no longer active", a back
+// button, and the charts. Everything else the engine knows about the market —
+// its question (in the history), the trade it recorded (in the ledger), the
+// events that name it — was in the store and not shown. An expired market is
+// the COMMON case on this page, and it is where the investigation flow from
+// Positions and Portfolio lands. So the page now composes from every record
+// that names the id, and the header says which of them is speaking.
 //
-// Polymarket's 5-minute markets rotate constantly, so a 404 is phrased as "no
-// longer active" rather than as an error: it is frequently true and never a bug.
+// The scanned-markets envelope (/api/markets) remains a fallback for a market
+// the detail call cannot fetch but the engine is still scanning. A 404 is
+// phrased as expiry rather than error: it is frequently true and never a bug.
 
 import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApplicationStore } from '@/store/applicationStore'
 import { useMarketDetail } from '@/config/hooks/useServices'
+import { useMarketHistory } from '@/config/hooks/useMarketHistory'
 import { parseMarketRows, marketDetailToRow } from '@/lib/mappers/markets'
 import { parseEdgeRows, toEdgeRowMap, type EdgeRow } from '@/lib/mappers/edges'
-import { MARKET_DETAIL_PATH, ROUTES } from '@/config/constants'
+import { parsePositionRows } from '@/lib/mappers/positions'
+import { identityReading, marketBook } from '@/lib/display/marketDetail'
+import { MARKET_DETAIL_PATH } from '@/config/constants'
 import { Skeleton } from '@/components/ui/LoadingState'
-import { MarketHeader } from './MarketHeader'
-import { MarketCharts } from './MarketCharts'
-import { EngineThesisPanel } from './EngineThesisPanel'
-import { MarketActivityFeed } from './MarketActivityFeed'
-import { RelatedMarkets } from './RelatedMarkets'
-import { AutoExecutionPanel } from './AutoExecutionPanel'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { ProvenanceScope } from '@/components/shared/ProvenanceScope'
+import { MarketHeader } from './MarketHeader'
+import { MarketEngineView } from './MarketEngineView'
+import { MarketBook } from './MarketBook'
+import { MarketActivityFeed } from './MarketActivityFeed'
+import { MarketCharts } from './MarketCharts'
+import { RelatedMarkets } from './RelatedMarkets'
 
 export function MarketDetailPage({ marketId }: { marketId: string }) {
   const router = useRouter()
-  const marketsSlice = useApplicationStore((s) => s.engine.markets)
-  const edgesSlice   = useApplicationStore((s) => s.engine.edges)
+  const marketsSlice   = useApplicationStore((s) => s.engine.markets)
+  const edgesSlice     = useApplicationStore((s) => s.engine.edges)
+  const survivalSlice  = useApplicationStore((s) => s.engine.survival)
+  const statsSlice     = useApplicationStore((s) => s.engine.stats)
+  const positionsSlice = useApplicationStore((s) => s.engine.positions)
+  const ledgerSlice    = useApplicationStore((s) => s.engine.tradesLedger)
+  const historySlice   = useApplicationStore((s) => s.engine.positionsHistory)
 
-  // Primary source: the market's own endpoint.
+  // Primary source: the market's own endpoint. Secondary: its recorded history,
+  // which outlives it.
   const detailSlice = useMarketDetail(marketId)
+  const history = useMarketHistory(marketId)
 
   const marketRows = useMemo(() => {
     if (!marketsSlice.data) return null
@@ -59,138 +70,76 @@ export function MarketDetailPage({ marketId }: { marketId: string }) {
     [edgesSlice.data],
   )
 
-  const goToMarket = (id: string) => router.push(MARKET_DETAIL_PATH(id))
-
-  // Phase 6A: render the real page shell immediately instead of blocking on
-  // a single full-page spinner (the one page in the product that violated
-  // its own standard — every other page shows its structure right away with
-  // per-widget pending states). Same 2-column grid, same rail width, just
-  // skeleton content in place of the not-yet-resolved market.
-  // Skeleton only while BOTH sources are still loading. Once either resolves
-  // there is something real to render, and holding a spinner over available
-  // data would be its own small dishonesty.
-  if (detailSlice.status === 'loading' && marketsSlice.status === 'loading') {
-    return (
-      <div className="flex flex-col" style={{ background: 'var(--probex-bg)' }}>
-        <header className="px-6 pt-5 pb-4 flex flex-col gap-3" style={{ borderBottom: '1px solid var(--probex-border)', background: 'var(--probex-surface)' }}>
-          <Skeleton height={10} width={70} />
-          <Skeleton height={20} width="55%" />
-          <div className="flex items-center gap-3">
-            <Skeleton height={22} width={90} />
-            <Skeleton height={22} width={56} />
-          </div>
-        </header>
-        <div className="grid gap-0" style={{ gridTemplateColumns: 'minmax(0, 1fr) 320px' }}>
-          <div className="min-w-0 flex flex-col" style={{ borderRight: '1px solid var(--probex-border)' }}>
-            <div className="px-6 py-5" style={{ borderBottom: '1px solid var(--probex-border)' }}>
-              <Skeleton height={192} width="100%" />
-            </div>
-            <div className="px-6 py-5 flex flex-col gap-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
-              <Skeleton height={12} width={110} />
-              <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
-                {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={54} />)}
-              </div>
-            </div>
-          </div>
-          <div className="p-4">
-            <Skeleton height={240} width="100%" />
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // The engine's book on this id, once the records that hold it have answered.
+  // Positions is required (an open position is the most current fact); the
+  // ledger and the history back each other up, so either suffices for settled.
+  const book = useMemo(() => {
+    if (!positionsSlice.data) return null
+    if (!ledgerSlice.data && !historySlice.data) return null
+    const parsed = parsePositionRows(positionsSlice.data)
+    const open = parsed.kind === 'rows' ? parsed.rows : []
+    return marketBook(marketId, open, ledgerSlice.data?.ledger ?? [], historySlice.data?.history ?? [])
+  }, [marketId, positionsSlice.data, ledgerSlice.data, historySlice.data])
 
   // The detail endpoint wins when it answered; the scanned-markets envelope is
-  // the fallback. Both project onto the same MarketRow, so everything below is
-  // agnostic about which one supplied it.
+  // the fallback. Both project onto the same MarketRow.
   const detailRow = detailSlice.data ? marketDetailToRow(detailSlice.data.market) : undefined
   const market    = detailRow ?? marketRows?.find((m) => m.id === marketId)
-  const hasClosed = detailSlice.data?.market.hasClosed ?? false
+  const marketSlice = detailRow ? detailSlice : marketsSlice
 
-  // Degraded path. /api/markets intermittently stalls (audit finding B-02) and
-  // is also scoped to CURRENTLY-scanned markets, so a closed market won't be in
-  // it either. Neither case should blank the page: /api/markets/:id/history is a
-  // separate endpoint that still resolves and carries the market's own
-  // question, so the charts remain useful on their own. Previously both cases
-  // returned a dead end.
-  if (market === undefined) {
-    // "Expired" and "the feed is down" are different facts and get different
-    // copy. A NOT_FOUND from the detail endpoint is definitive — the engine
-    // looked this id up and does not have it — whereas an error on both
-    // sources means we simply could not ask.
-    const expired     = detailSlice.error?.code === 'NOT_FOUND'
-    const marketsDown = !expired && (marketsSlice.status === 'error' || detailSlice.status === 'error')
-    return (
-      <div className="flex flex-col" style={{ background: 'var(--probex-bg)' }}>
-        <div className="px-6 py-5" style={{ borderBottom: '1px solid var(--probex-border)' }}>
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div>
-              <h1 className="text-base font-bold" style={{ color: 'var(--probex-text-primary)' }}>
-                {marketsDown ? 'Live market data unavailable' : 'This market is no longer active'}
-              </h1>
-              <p className="text-xs mt-1 max-w-[62ch]" style={{ color: 'var(--probex-text-muted)' }}>
-                {marketsDown
-                  ? `The engine didn't respond (${detailSlice.error?.message ?? marketsSlice.error?.message ?? 'request failed'}), so current pricing and edge aren't available. Recorded history for this market is shown below.`
-                  : "Polymarket's 5-minute Bitcoin markets rotate continuously — this one has closed or been replaced. Its recorded history is shown below."}
-              </p>
-            </div>
-            <button onClick={() => router.push(ROUTES.MARKETS)} className="btn-secondary px-4 py-2 text-sm flex-shrink-0">
-              Back to Markets
-            </button>
-          </div>
-        </div>
-        <MarketCharts marketId={marketId} />
-      </div>
-    )
-  }
+  // "Expired" is the detail endpoint's own verdict (404 — it looked the id up
+  // and does not have it). An error on both sources is a different fact: we
+  // could not ask.
+  const expired = market === undefined && detailSlice.error?.code === 'NOT_FOUND'
+  const unreachable = market === undefined && !expired
+    && detailSlice.status === 'error' && (marketsSlice.status === 'error' || marketsSlice.data !== null)
+  const resolving = market === undefined && !expired && !unreachable
 
-  const edge = edgeMap.get(market.id)
+  const identity = identityReading(market, history.status === 'ready' ? history.data.history : [])
+  const btcNow = statsSlice.data?.currentPrice ?? null
 
   return (
-    // Same register as Markets, which this is the drill-down from.
     <ProvenanceScope detail="tooltip">
-    <div className="flex flex-col" style={{ background: 'var(--probex-bg)' }}>
-      <MarketHeader market={market} edge={edge} />
-
-      {/* D-4. The engine's /api/health reports `api_access` unhealthy with
-          "Market data stale (24623.8s old, 10 markets cached)", but /api/markets
-          and /api/markets/:id both return those cached markets with no
-          staleness field of their own — so a closed market renders with a live
-          price and nothing says it has expired. `closes_at` IS on the wire, so
-          this is derived from confirmed data, not inferred. See the backend
-          handoff for the request to expose freshness metadata directly. */}
-      {hasClosed && (
-        <div
-          className="mx-6 mt-4 flex items-start gap-2 px-3 py-2 rounded text-2xs"
-          style={{
-            background: 'var(--probex-warning-dim)',
-            color:      'var(--probex-warning)',
-            border:     '1px solid var(--probex-warning)',
-          }}
-          role="status"
-        >
-          <span className="w-1.5 h-1.5 rounded-full mt-1 shrink-0" style={{ background: 'currentColor' }} aria-hidden="true" />
-          <span>
-            <strong className="font-semibold">This market has closed.</strong>{' '}
-            Its scheduled close time has passed, so the prices below are the last
-            recorded values rather than a tradeable quote. The engine is still
-            returning it from its market cache.
-          </span>
-        </div>
+    <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
+      {resolving ? (
+        <header className="flex flex-col gap-3" aria-busy="true">
+          <Skeleton height={10} width={70} />
+          <Skeleton height={22} width="55%" />
+          <div className="flex items-center gap-3">
+            <Skeleton height={22} width={120} />
+            <Skeleton height={22} width={90} />
+          </div>
+        </header>
+      ) : (
+        <MarketHeader marketId={marketId} identity={identity} market={market} expired={expired} />
       )}
 
-      <div className="grid gap-0" style={{ gridTemplateColumns: 'minmax(0, 1fr) 320px' }}>
-        <div className="min-w-0" style={{ borderRight: '1px solid var(--probex-border)' }}>
-          <MarketCharts marketId={market.id} />
-          <EngineThesisPanel market={market} edge={edge} />
-          <MarketActivityFeed marketId={market.id} />
-          <RelatedMarkets currentMarketId={market.id} segment={market.segment} onSelect={goToMarket} />
-        </div>
+      {unreachable && (
+        <ErrorState
+          title="The market record did not answer"
+          description={`${detailSlice.error?.message ?? 'No response from /api/markets/:id.'} Current pricing and the engine's edge are unknown; what the engine recorded about this market is still shown below.`}
+          fullPage={false}
+        />
+      )}
 
-        <div className="p-4">
-          <AutoExecutionPanel edge={edge} />
-        </div>
-      </div>
+      {!resolving && (
+        <MarketEngineView
+          market={market}
+          expired={expired}
+          marketSlice={marketSlice}
+          edge={market !== undefined ? edgeMap.get(market.id) : edgeMap.get(marketId)}
+          edges={edgesSlice}
+          survival={survivalSlice}
+          btcNow={btcNow}
+          book={book}
+        />
+      )}
+
+      <MarketBook book={book} ledger={ledgerSlice} positions={positionsSlice} />
+      <MarketActivityFeed marketId={marketId} />
+      <MarketCharts history={history} />
+
+      <RelatedMarkets currentMarketId={marketId} segment={market?.segment ?? null} onSelect={(id) => router.push(MARKET_DETAIL_PATH(id))} />
     </div>
     </ProvenanceScope>
   )

@@ -1,7 +1,7 @@
 'use client'
 
 // RadialGauge — the signature premium primitive, extracted from the V1
-// ConsensusScoreCard's 270° arc gauge (git 0e3833a4) into a reusable,
+// the former ConsensusScoreCard's 270° arc gauge (git 0e3833a4) into a reusable,
 // parameterized shared component (PROBEX_V3_IMPLEMENTATION_BLUEPRINT §3).
 //
 // In V3 this one gauge powers multiple lenses on the engine's reasoning:

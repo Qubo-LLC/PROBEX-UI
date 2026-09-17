@@ -1,203 +1,250 @@
 'use client'
 
-// PaperTradingConsole — the Paper Trading page (/paper): session vitals,
-// edge-bucket/hourly breakdowns, survival-state timeline, and the settled
-// ledger, from /api/paper-stats, /api/paper/status, /api/trades/ledger.
-// paper-stats.total_trades and paper/status.completed_trades disagree upstream;
-// both are shown rather than silently reconciled.
+// PaperTradingConsole — what the paper session has recorded.
+//
+// A RECORD of simulated execution, not a live execution console: the engine
+// prices a trade, records it, and later settles it against the window's
+// outcome. Nothing is sent anywhere. Sources: /api/paper-stats (the session's
+// figures), /api/paper/status (enabled, pending/completed counts), and the
+// event log for the trade and resolution events the session wrote.
+//
+// ─── Boundaries ──────────────────────────────────────────────────────────────
+//   settlements, one by one, with the balance after each → Capital & Ledger
+//   the positions themselves                              → Positions
+//   why a trade was taken                                → not on the wire
+//
+// paper-stats.total_trades and paper/status.completed_trades are two counters
+// in the engine's own bookkeeping; when they differ, both are shown and the
+// difference is named rather than reconciled here.
+//
+// ─── What changed (2026-09-16) ───────────────────────────────────────────────
+// Ten StatCards, a Card per breakdown with its own mini-grid, and a third
+// copy of the settled ledger became: a posture sentence, Figures for the
+// session, an outcomes ledger, two DataTable breakdowns (hours labelled UTC —
+// the engine's clock — rather than bare "22:00"), and the session's own
+// events on the shared EventStream.
 
+import { useMemo } from 'react'
+import { stamp, clockOrDate } from '@/lib/display/time'
+import Link from 'next/link'
 import { useApplicationStore } from '@/store/applicationStore'
-import type { ServiceState } from '@/lib/services/response'
-import type { PaperStats } from '@/types/engine'
+import { useMarketLookup } from '@/config/hooks/useMarketLookup'
+import { parseEventRows, collapseConsecutiveRepeats } from '@/lib/mappers/events'
 import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'
-import { survivalStateColor } from '@/lib/display/engine'
+import { survivalStateColor, survivalStateLabel } from '@/lib/display/engine'
+import { bucketRows, hourLabel } from '@/lib/display/execution'
+import { ROUTES } from '@/config/constants'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { StatCard }   from '@/components/ui/StatCard'
-import { Card }       from '@/components/ui/Card'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
-import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
-import { CapitalLedger } from '@/components/wallet/CapitalLedger'
+import { StatusChip } from '@/components/ui/StatusChip'
+import { Figure, certaintyFromSlice } from '@/components/shared/Figure'
+import { TableShell, Thead, Th, Tr, Td } from '@/components/shared/DataTable'
+import { EventStream } from '@/components/shared/EventStream'
 import { PaperTradingControls } from './PaperTradingControls'
-import type { BucketPerformanceStat } from '@/types/engine'
+import type { BucketRow } from '@/lib/display/execution'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
+
+const POLL_MS = 5_000
+const PAPER_EVENTS = new Set(['trade', 'resolution'])
+const RECENT_EVENTS = 8
+
 
 export function PaperTradingConsole({ embedded = false }: EmbeddableProps = {}) {
   const statsSlice  = useApplicationStore((s) => s.engine.paperStats)
   const statusSlice = useApplicationStore((s) => s.engine.paperStatus)
+  const events      = useApplicationStore((s) => s.engine.events)
+  const lookup      = useMarketLookup()
 
-  const p      = statsSlice.status === 'success' && statsSlice.data ? statsSlice.data.paperTrading : null
-  const status = statusSlice.status === 'success' ? statusSlice.data : null
+  const p      = statsSlice.data?.paperTrading ?? null
+  const status = statusSlice.data ?? null
+  const cert   = certaintyFromSlice(statsSlice, POLL_MS)
+  const net    = p ? p.currentCapital - p.initialCapital : null
+
+  const recent = useMemo(() => {
+    if (!events.data) return null
+    const parsed = parseEventRows(events.data)
+    if (parsed.kind !== 'rows') return []
+    return collapseConsecutiveRepeats(parsed.rows.filter((r) => PAPER_EVENTS.has(r.type.toLowerCase()))).slice(0, RECENT_EVENTS)
+  }, [events.data])
+
+  const edgeBuckets  = useMemo(() => (p ? bucketRows(p.edgeBuckets) : []), [p])
+  const hourlyBuckets = useMemo(() => (p ? bucketRows(p.hourlyPerformance, hourLabel) : []), [p])
 
   return (
-    <div className={pageShell(embedded, 'gap-4')}>
+    <div className={pageShell(embedded, 'gap-5')}>
       {!embedded && (
-        <PageHeader
-          title="Paper Trading"
-          subtitle="The engine's simulated trading session — capital, trades, and settlement, all in one place"
-          actions={
-            status ? (
-              <span className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider" style={{ color: status.enabled ? 'var(--probex-positive)' : 'var(--probex-text-muted)' }}>
-                <span className={status.enabled ? 'live-dot w-1.5 h-1.5' : 'w-1.5 h-1.5 rounded-full inline-block'} style={{ background: status.enabled ? 'var(--probex-positive)' : 'var(--probex-text-disabled)' }} aria-hidden="true" />
-                {status.enabled ? 'Enabled' : 'Disabled'}
-              </span>
-            ) : undefined
-          }
-        />
+        <PageHeader title="Paper Trading" subtitle="What the paper session has recorded — simulated trades, their outcomes, and the events it wrote" />
       )}
 
-      {statsSlice.status === 'error' && (
-        <ErrorState title="Paper trading data unavailable" description={statsSlice.error?.message ?? 'The /api/paper-stats endpoint did not respond.'} fullPage={false} />
-      )}
+      {/* ── A · session posture ──────────────────────────────────────────── */}
+      <section aria-label="Paper session state" className="flex flex-col gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="t-label">Paper session</span>
+          {status ? (
+            <StatusChip tone={status.enabled ? 'positive' : 'neutral'} dot={false}>{status.enabled ? 'ENABLED' : 'DISABLED'}</StatusChip>
+          ) : (
+            <StatusChip tone="warning" dot={false}>{statusSlice.status === 'error' ? 'STATUS UNKNOWN' : 'STATUS PENDING'}</StatusChip>
+          )}
+          {p && <span className="t-helper">since {stamp(p.sessionStart)} · /api/paper-stats · /api/paper/status</span>}
+        </div>
+        <p className="text-sm font-medium leading-relaxed m-0" style={{ color: 'var(--probex-text-primary)' }}>
+          {p === null
+            ? statsSlice.status === 'error' ? 'The paper session did not answer — what it has recorded is unknown.' : 'Waiting for the paper session.'
+            : p.totalTrades === 0
+              ? `Recording, nothing settled yet — capital is the ${formatCurrency(p.initialCapital)} it started with.`
+              : `${p.totalTrades} simulated trade${p.totalTrades === 1 ? '' : 's'} settled: ${p.wins} won, ${p.losses} lost${p.pushes > 0 ? `, ${p.pushes} pushed` : ''} — ${formatSignedCurrency(p.totalPnl)} on ${formatCurrency(p.initialCapital)} of starting capital${p.pending > 0 ? `, ${p.pending} still pending` : ''}.`}
+        </p>
+        {status && p && status.completedTrades !== p.totalTrades && (
+          <p className="t-helper m-0" style={{ color: 'var(--probex-warning)' }}>
+            Two engine counters disagree: /api/paper-stats reports {p.totalTrades} trades, /api/paper/status reports {status.completedTrades} completed ({status.pendingTrades} pending). Both are the engine’s own; neither is chosen here.
+          </p>
+        )}
+      </section>
 
-      {/* Controls render regardless of whether stats loaded — if the session is
-          in a bad state, the ability to stop or reset it is exactly what's
-          needed, so it must not be gated behind a successful stats fetch. */}
+      {/* Controls render regardless of stats: a session in a bad state is
+          exactly when stop/reset must be reachable. */}
       <PaperTradingControls />
 
+      {/* ── B · the session's figures ────────────────────────────────────── */}
+      {statsSlice.status === 'error' && !p && (
+        <ErrorState title="Paper session data did not answer" description={statsSlice.error?.message ?? 'No response from /api/paper-stats.'} fullPage={false} />
+      )}
       {p && (
-        <>
-          {/* 1 · Session vitals */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-            <StatCard
-              label="Capital"
-              value={formatCurrency(p.currentCapital)}
-              valueSize="lg"
-              deltaLabel={`${formatSignedCurrency(p.currentCapital - p.initialCapital)} vs $${p.initialCapital.toFixed(0)} start`}
-              valueColor={p.currentCapital >= p.initialCapital ? 'var(--probex-positive)' : 'var(--probex-negative)'}
-            />
-            <StatCard
-              label="Session P&L"
-              value={formatSignedCurrency(p.totalPnl)}
-              valueColor={p.totalPnl > 0 ? 'var(--probex-positive)' : p.totalPnl < 0 ? 'var(--probex-negative)' : undefined}
-            />
-            <StatCard
-              label="Total Trades"
-              value={String(p.totalTrades)}
-              deltaLabel={p.totalTrades > 0 ? `${p.wins}W / ${p.losses}L` : 'none yet'}
-            />
-            <StatCard
-              label="Win Rate"
-              value={p.totalTrades > 0 ? formatPercent(p.winRate) : '—'}
-              valueColor={p.totalTrades > 0 ? (p.winRate >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-warning)') : undefined}
-            />
-            <StatCard
-              label="Pending"
-              value={String(p.pending)}
-              {...(p.pushes > 0 && { deltaLabel: `${p.pushes} pushes` })}
-            />
-            <StatCard
-              label="Session Started"
-              value={new Date(p.sessionStart).toLocaleDateString()}
-              deltaLabel={new Date(p.sessionStart).toLocaleTimeString()}
-            />
+        <section aria-labelledby="pt-figures" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <span className="flex items-baseline gap-2 flex-wrap">
+              <h2 id="pt-figures" className="t-section-title">The session</h2>
+              <span className="t-description">capital and outcomes as the paper engine reports them</span>
+            </span>
+            <span className="flex items-baseline gap-3">
+              <span className="t-metadata">/api/paper-stats</span>
+              <Link href={`${ROUTES.PORTFOLIO}?view=capital`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>Settlements on Capital &amp; Ledger →</Link>
+            </span>
+          </div>
+          <div className="flex items-start gap-x-8 gap-y-3 flex-wrap">
+            <Figure label="Capital" size="lg" title="current_capital" footnote={<span className="t-helper">from {formatCurrency(p.initialCapital)} at session start</span>} {...cert}>
+              {formatCurrency(p.currentCapital)}
+            </Figure>
+            <Figure label="Session P&L" size="md" tone={p.totalPnl > 0 ? 'var(--probex-positive)' : p.totalPnl < 0 ? 'var(--probex-negative)' : undefined} title="total_pnl" footnote={net !== null && Math.abs(net - p.totalPnl) > 0.005 ? <span className="t-helper" style={{ color: 'var(--probex-warning)' }}>capital moved {formatSignedCurrency(net)} — differs</span> : <span className="t-helper">equals the capital change</span>} {...cert}>
+              {formatSignedCurrency(p.totalPnl)}
+            </Figure>
+            <Figure label="Trades" size="md" title="total_trades" footnote={<span className="t-helper">{p.totalTrades > 0 ? `${p.wins} won · ${p.losses} lost${p.pushes > 0 ? ` · ${p.pushes} pushed` : ''}` : 'none settled'}</span>} {...cert}>
+              {p.totalTrades}
+            </Figure>
+            {p.totalTrades > 0 ? (
+              <Figure label="Win rate" size="md" title="win_rate" footnote={<span className="t-helper">of settled trades</span>} {...cert}>
+                {formatPercent(p.winRate)}
+              </Figure>
+            ) : (
+              <Figure label="Win rate" size="md" certainty="absent" absentReason="no trade has settled">—</Figure>
+            )}
+            <Figure label="Pending" size="md" title="pending — recorded, not yet settled" footnote={status ? <span className="t-helper">{status.pendingTrades} per /api/paper/status</span> : undefined} {...cert}>
+              {p.pending}
+            </Figure>
           </div>
 
-          {/* 2 · Best / worst trade */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Avg. Win" value={p.avgWin !== 0 ? formatCurrency(p.avgWin) : '—'} valueColor={p.avgWin !== 0 ? 'var(--probex-positive)' : undefined} />
-            <StatCard label="Avg. Loss" value={p.avgLoss !== 0 ? formatCurrency(p.avgLoss) : '—'} valueColor={p.avgLoss !== 0 ? 'var(--probex-negative)' : undefined} />
-            <StatCard label="Largest Win" value={p.largestWin !== 0 ? formatCurrency(p.largestWin) : '—'} valueColor={p.largestWin !== 0 ? 'var(--probex-positive)' : undefined} />
-            <StatCard label="Largest Loss" value={p.largestLoss !== 0 ? formatCurrency(p.largestLoss) : '—'} valueColor={p.largestLoss !== 0 ? 'var(--probex-negative)' : undefined} />
-          </div>
-
-          {/* 3 · Cross-source discrepancy note, shown honestly rather than hidden */}
-          {status && status.completedTrades !== p.totalTrades && (
-            <Card>
-              <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
-                <strong>Two backend counters disagree:</strong> /api/paper-stats reports {p.totalTrades} total trades, but
-                /api/paper/status reports {status.completedTrades} completed ({status.pendingTrades} pending). Both are shown
-                rather than picking one — this is a real discrepancy in the engine's own bookkeeping, not a frontend bug.
-              </p>
-            </Card>
+          {p.totalTrades > 0 && (
+            <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-2 m-0">
+              <Outcome label="Average win" value={p.avgWin !== 0 ? formatSignedCurrency(p.avgWin) : '—'} tone={p.avgWin > 0 ? 'var(--probex-positive)' : undefined} />
+              <Outcome label="Average loss" value={p.avgLoss !== 0 ? formatSignedCurrency(p.avgLoss) : '—'} tone={p.avgLoss < 0 ? 'var(--probex-negative)' : undefined} />
+              <Outcome label="Largest win" value={p.largestWin !== 0 ? formatSignedCurrency(p.largestWin) : '—'} tone={p.largestWin > 0 ? 'var(--probex-positive)' : undefined} />
+              <Outcome label="Largest loss" value={p.largestLoss !== 0 ? formatSignedCurrency(p.largestLoss) : '—'} tone={p.largestLoss < 0 ? 'var(--probex-negative)' : undefined} />
+            </dl>
           )}
 
-          {/* 4 · Survival state timeline */}
           {p.survivalStates.length > 0 && (
-            <Card className="flex flex-col gap-3">
-              <h3 className="t-card-title">
-                Survival State Timeline
-              </h3>
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col gap-1">
+              <span className="t-label">Survival states this session</span>
+              <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 list-none m-0 p-0">
                 {p.survivalStates.map(([ts, state], i) => (
-                  <div key={`${ts}-${i}`} className="flex items-center gap-2">
-                    <span
-                      className="text-2xs font-bold uppercase tracking-wider px-2 py-1 rounded"
-                      style={{
-                        background: `color-mix(in srgb, ${stateColorVar(state)} 14%, transparent)`,
-                        color: stateColorVar(state),
-                        border: `1px solid color-mix(in srgb, ${stateColorVar(state)} 24%, transparent)`,
-                      }}
-                    >
-                      {state}
-                    </span>
-                    <span className="text-2xs tabular-nums" style={{ color: 'var(--probex-text-disabled)' }}>
-                      {new Date(ts).toLocaleTimeString()}
-                    </span>
+                  <li key={`${ts}-${i}`} className="flex items-center gap-1.5 text-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: survivalStateColor(state) }} aria-hidden="true" />
+                    <span className="font-semibold" style={{ color: survivalStateColor(state) }}>{survivalStateLabel(state)}</span>
+                    <span className="font-mono" style={{ color: 'var(--probex-text-disabled)' }}>{clockOrDate(ts)}</span>
                     {i < p.survivalStates.length - 1 && <span aria-hidden="true" style={{ color: 'var(--probex-text-disabled)' }}>→</span>}
-                  </div>
+                  </li>
                 ))}
-              </div>
-            </Card>
+              </ol>
+            </div>
           )}
+        </section>
+      )}
 
-          {/* 5 · Edge bucket + hourly performance */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-            <BucketTable title="By Edge Bucket" source="/api/paper-stats" slice={statsSlice} buckets={p.edgeBuckets} />
-            <BucketTable title="By Hour of Day" source="/api/paper-stats" slice={statsSlice} buckets={p.hourlyPerformance} formatKey={(k) => `${k}:00`} />
+      {/* ── C · breakdowns ───────────────────────────────────────────────── */}
+      {p && p.totalTrades > 0 && (
+        <section aria-labelledby="pt-breakdown" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <span className="flex items-baseline gap-2 flex-wrap">
+              <h2 id="pt-breakdown" className="t-section-title">By edge bucket and hour</h2>
+              <span className="t-description">the paper engine’s own tallies; hours are on its clock, which is UTC</span>
+            </span>
+            <span className="t-metadata">/api/paper-stats</span>
           </div>
-        </>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <BucketLedger label="By edge bucket" head="Edge bucket" rows={edgeBuckets} />
+            <BucketLedger label="By hour" head="Hour (UTC)" rows={hourlyBuckets} />
+          </div>
+        </section>
       )}
 
-      {!p && statsSlice.status !== 'error' && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-          {['Capital', 'Session P&L', 'Total Trades', 'Win Rate', 'Pending', 'Session Started'].map((label) => (
-            <StatCard key={label} label={label} value="" isLoading />
-          ))}
+      {/* ── D · what the session wrote ───────────────────────────────────── */}
+      <section aria-labelledby="pt-events" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <span className="flex items-baseline gap-2 flex-wrap">
+            <h2 id="pt-events" className="t-section-title">Recorded activity</h2>
+            <span className="t-description">the trade and resolution events the engine wrote, newest first</span>
+          </span>
+          <span className="flex items-baseline gap-3">
+            <span className="t-metadata">/api/events</span>
+            <Link href={`${ROUTES.SYSTEM}?view=events&type=trade`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>All trade events →</Link>
+          </span>
         </div>
-      )}
-
-      {/* 6 · Settled ledger — reuses the existing Wallet component rather than
-         duplicating the table (same /api/trades/ledger source). */}
-      <CapitalLedger />
+        {events.status === 'error' && !events.data ? (
+          <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>The event log did not answer — what the session recorded is unknown.</p>
+        ) : recent === null ? (
+          <p className="t-description">Waiting for the event log.</p>
+        ) : recent.length === 0 ? (
+          <p className="t-description">No trade or resolution events in the engine’s retained log.</p>
+        ) : (
+          <EventStream rows={recent} compact lookup={lookup} />
+        )}
+      </section>
     </div>
   )
 }
 
-// Delegates to the shared severity source so this timeline can never drift
-// from the rest of the survival UI (it previously mis-coloured DEAD as grey).
-const stateColorVar = survivalStateColor
-// `slice` is threaded in rather than re-subscribed here: the badge must
-// describe the freshness of the SAME read the parent rendered these buckets
-// from, and a second subscription could resolve a tick apart.
-function BucketTable({ title, source, slice, buckets, formatKey }: { title: string; source: string; slice: ServiceState<PaperStats>; buckets: Record<string, BucketPerformanceStat>; formatKey?: (key: string) => string }) {
-  const entries = Object.entries(buckets)
+function Outcome({ label, value, tone }: { label: string; value: string; tone?: string | undefined }) {
   return (
-    <Card className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h3 className="t-card-title">{title}</h3>
-        <ProvenanceBadge provenance="live" detail={source} state={slice} />
-      </div>
-      {entries.length === 0 ? (
-        <EmptyState size="sm" title="No data yet" description="Populates as trades settle in this bucket." />
-      ) : (
-        <div className="flex flex-col gap-1.5">
-          <div className="grid grid-cols-4 gap-2 text-2xs font-semibold uppercase tracking-wider px-1" style={{ color: 'var(--probex-text-disabled)' }}>
-            <span>Bucket</span>
-            <span className="text-right">Trades</span>
-            <span className="text-right">Win Rate</span>
-            <span className="text-right">P&L</span>
-          </div>
-          {entries.map(([key, stat]) => (
-            <div key={key} className="grid grid-cols-4 gap-2 items-center px-1 py-1.5 rounded text-xs" style={{ background: 'var(--probex-surface-2)' }}>
-              <span className="font-medium truncate" style={{ color: 'var(--probex-text-primary)' }}>{formatKey ? formatKey(key) : key}</span>
-              <span className="text-right tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>{stat.wins + stat.losses}</span>
-              <span className="text-right tabular-nums font-semibold" style={{ color: stat.winRate >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-warning)' }}>{formatPercent(stat.winRate)}</span>
-              <span className="text-right tabular-nums" style={{ color: stat.totalPnl >= 0 ? 'var(--probex-positive)' : 'var(--probex-negative)' }}>{formatSignedCurrency(stat.totalPnl)}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </Card>
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <dt className="t-label truncate">{label}</dt>
+      <dd className="m-0 font-mono text-xs font-semibold tabular-nums" style={{ color: tone ?? 'var(--probex-text-primary)' }}>{value}</dd>
+    </div>
+  )
+}
+
+function BucketLedger({ label, head, rows }: { label: string; head: string; rows: BucketRow[] }) {
+  if (rows.length === 0) return <p className="t-description">{label}: nothing tallied yet.</p>
+  return (
+    <TableShell label={label}>
+      <Thead>
+        <Th align="left" dense grow>{head}</Th>
+        <Th align="right" dense>Trades</Th>
+        <Th align="right" dense>Win rate</Th>
+        <Th align="right" dense hideBelow="sm">P&amp;L</Th>
+      </Thead>
+      <tbody>
+        {rows.map((r) => (
+          <Tr key={r.key} accent={r.totalPnl > 0 ? 'var(--probex-positive)' : r.totalPnl < 0 ? 'var(--probex-negative)' : undefined}>
+            <Td align="left" dense grow>
+              <span className="font-medium" style={{ color: 'var(--probex-text-primary)' }}>{r.label}</span>
+              <span className="sm:hidden block font-mono text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>{formatSignedCurrency(r.totalPnl)}</span>
+            </Td>
+            <Td align="right" dense><span className="font-mono tabular-nums">{r.trades} <span style={{ color: 'var(--probex-text-muted)' }}>({r.wins}W {r.losses}L)</span></span></Td>
+            <Td align="right" dense><span className="font-mono tabular-nums font-semibold" style={{ color: r.winRate >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-text-secondary)' }}>{formatPercent(r.winRate)}</span></Td>
+            <Td align="right" dense hideBelow="sm"><span className="font-mono tabular-nums" style={{ color: r.totalPnl > 0 ? 'var(--probex-positive)' : r.totalPnl < 0 ? 'var(--probex-negative)' : 'var(--probex-text-secondary)' }}>{formatSignedCurrency(r.totalPnl)}</span></Td>
+          </Tr>
+        ))}
+      </tbody>
+    </TableShell>
   )
 }

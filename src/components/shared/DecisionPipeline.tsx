@@ -1,61 +1,81 @@
 'use client'
 
-// DecisionPipeline — the engine's live SCAN → DETECT → FILTER → SIZE → EXECUTE
-// cycle, extracted from StrategyConsole (M4) so it can be reused verbatim by
-// both the ops lens (Strategy) and the consumer lens (Consensus flagship,
-// V3 Phase 3) — one source, two frames, per the implementation blueprint.
-// No logic lives here beyond rendering; both callers compute their own stage
-// values from the same applicationStore slices.
+// DecisionPipeline — the engine's cycle, SCAN → DETECT → FILTER → SIZE →
+// EXECUTE, as a mechanism ledger. Extracted from StrategyConsole so Strategy
+// and Consensus draw the same cycle; the stage VALUES are computed by the
+// callers from the same store slices (see lib/display/mechanism.ts for the
+// readings both should use).
+//
+// ─── Why rows, not tiles ─────────────────────────────────────────────────────
+// Five bordered tiles in a grid read as five unrelated statistics. A pipeline
+// is a sequence: each stage's number is the INPUT to the next, and the gate
+// between them is the rule that shrinks it. Rows with hairlines put the
+// stage, its current number and its gate on one line, in order, and let a
+// stage carry more than one figure when the mechanism has more than one gate
+// (the filter has four thresholds and a pattern filter — one tile could not
+// hold that honestly).
 
-interface Stage {
+import type { ReactNode } from 'react'
+
+export interface PipelineStage {
   step:    number
   name:    string
+  /** The stage's current number, already formatted. */
   value:   string
   unit:    string
+  /** The rule applied at this stage — the engine's own gate, stated. */
   gate:    string
+  /** True for the stage the operator's eye should land on. */
   accent?: boolean
+  /** Optional richer content beneath the gate: figures, thresholds, links. */
+  detail?: ReactNode
+  /** Certainty word for the value: 'derived' marks a number computed on
+   *  this screen from two wire values. */
+  certainty?: 'confirmed' | 'derived'
 }
 
 interface DecisionPipelineProps {
-  stages: Stage[]
-  /** Optional footnote under the stage grid (e.g. session-scope disclaimer). */
+  stages: PipelineStage[]
+  /** Optional footnote under the stages (e.g. session-scope disclaimer). */
   note?:  string
 }
 
 export function DecisionPipeline({ stages, note }: DecisionPipelineProps) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-        {stages.map((s) => (
-          <PipelineStage key={s.step} {...s} />
-        ))}
-      </div>
-      {note && (
-        <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>{note}</p>
-      )}
+    <div className="flex flex-col">
+      <ol className="flex flex-col list-none m-0 p-0" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+        {stages.map((s) => <StageRow key={s.step} {...s} />)}
+      </ol>
+      {note && <p className="t-metadata mt-2">{note}</p>}
     </div>
   )
 }
 
-function PipelineStage({ step, name, value, unit, gate, accent = false }: Stage) {
+function StageRow({ step, name, value, unit, gate, accent = false, detail, certainty = 'confirmed' }: PipelineStage) {
   return (
-    <div
-      className="flex flex-col gap-1.5 rounded-lg p-3"
+    <li
+      className="grid gap-x-6 gap-y-1.5 py-3 pl-2.5 items-baseline"
       style={{
-        background: 'var(--probex-surface-2)',
-        border:     `1px solid ${accent ? 'var(--probex-primary)' : 'var(--probex-border)'}`,
+        borderTop: '1px solid var(--probex-border)',
+        borderLeft: `2.5px solid ${accent ? 'var(--probex-primary)' : 'transparent'}`,
+        gridTemplateColumns: 'minmax(0, 1fr)',
       }}
     >
-      <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: accent ? 'var(--probex-primary)' : 'var(--probex-text-muted)' }}>
-        {step} · {name}
-      </span>
-      <span className="text-xl font-bold tabular-nums leading-none" style={{ color: 'var(--probex-text-primary)' }}>
-        {value}
-        <span className="text-2xs font-medium ml-1" style={{ color: 'var(--probex-text-muted)' }}>{unit}</span>
-      </span>
-      <span className="text-2xs leading-snug" style={{ color: 'var(--probex-text-disabled)' }}>
-        {gate}
-      </span>
-    </div>
+      <div className="grid gap-x-6 gap-y-1 items-baseline sm:grid-cols-[7.5rem_minmax(7rem,10rem)_minmax(0,1fr)]">
+        <span className="t-label" style={{ color: accent ? 'var(--probex-primary)' : undefined }}>
+          <span className="font-mono tabular-nums mr-1.5" style={{ color: 'var(--probex-text-disabled)' }}>{step}</span>
+          {name}
+        </span>
+        <span
+          className={`flex items-baseline gap-1.5 ${certainty === 'derived' ? 'c-derived' : ''}`}
+          {...(certainty === 'derived' ? { title: 'Derived value — computed on this screen from two wire values' } : {})}
+        >
+          <span className="t-metric-sm">{value}</span>
+          <span className="t-helper">{unit}{certainty === 'derived' ? ' · derived' : ''}</span>
+        </span>
+        <span className="t-helper">{gate}</span>
+      </div>
+      {detail !== undefined && <div className="sm:pl-[9rem]">{detail}</div>}
+    </li>
   )
 }

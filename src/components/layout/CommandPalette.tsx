@@ -22,7 +22,6 @@ const COMMANDS: Cmd[] = [
   { label: 'Execution',  href: ROUTES.EXECUTION, group: 'Trading' },
   { label: 'Paper Trading', href: ROUTES.PAPER,  group: 'Trading' },
   { label: 'Analytics',  href: ROUTES.ANALYTICS, group: 'Insights' },
-  { label: 'Research',   href: ROUTES.RESEARCH,  group: 'Insights' },
   { label: 'Watchlist',  href: ROUTES.WATCHLIST, group: 'Insights' },
   { label: 'Survival',   href: ROUTES.SURVIVAL,  group: 'Engine' },
   { label: 'Events',     href: ROUTES.EVENTS,    group: 'Engine' },

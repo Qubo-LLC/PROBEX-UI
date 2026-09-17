@@ -121,13 +121,21 @@ export function SystemPosture() {
           the one thing this section exists to say. */}
       <h2 id="sys-posture" className="t-label">System posture</h2>
 
-      {/* The verdict. */}
+      {/* ── One anchor, not a verdict plus four loose rows ──────────────────
+          The layer rows used to sit OUTSIDE this container, which made the
+          page open with two weak elements instead of one strong one. They are
+          the components of this verdict, so they now live inside it, separated
+          from the headline by a rule. The result is the page's single highest-
+          signal group — which is what the top of an instrument should be. */}
       <div
-        className="flex items-start gap-3 rounded-lg px-4 py-3.5"
+        className="flex flex-col rounded-lg overflow-hidden"
         style={{
-          background: `color-mix(in srgb, ${color} 8%, transparent)`,
+          background: `color-mix(in srgb, ${color} 7%, var(--probex-surface))`,
           border: `1px solid color-mix(in srgb, ${color} 24%, transparent)`,
         }}
+      >
+      <div
+        className="flex items-start gap-3 px-4 py-3.5"
       >
         <span
           className="w-2 h-2 rounded-full inline-block mt-1.5 flex-shrink-0"
@@ -148,9 +156,12 @@ export function SystemPosture() {
       </div>
 
       {/* The layers, as ruled rows rather than four bordered tiles. Each is a
-          component of the verdict above, so they share one surface and are
+          component of the verdict above, so they share its surface and are
           separated by rhythm. */}
-      <div className="flex flex-col">
+      <div
+        className="flex flex-col px-4 pb-1"
+        style={{ borderTop: `1px solid color-mix(in srgb, ${color} 18%, transparent)` }}
+      >
         {layers.map((l, i) => (
           <div
             key={l.label}
@@ -174,6 +185,7 @@ export function SystemPosture() {
             </span>
           </div>
         ))}
+      </div>
       </div>
 
       {synthetic && (

@@ -1,388 +1,322 @@
 'use client'
 
-// StrategyConsole — PROBEX's flagship experience (/strategy).
+// StrategyConsole — how the engine operates, and what can currently be seen
+// of it operating.
 //
-// This page explains HOW THE ENGINE THINKS, not just what its numbers are
-// (PROBEX_PRODUCT_SPEC.md §1, §4). It walks the operator through the live
-// decision pipeline the bot runs every cycle:
+// ─── What "strategy" is here ─────────────────────────────────────────────────
+// The wire has no strategy object — no name, type, on/off flag, decision log
+// or per-trade rationale. It exposes the MECHANISM in parts: the rules the
+// engine was started with (/api/config), the survival brain's live
+// adjustments (/api/survival), the candidates it sees (/api/edges), what it
+// scanned (/api/markets), process counters (/api/stats), the paper session's
+// record (/api/paper-stats) and the events it wrote. This page composes
+// those, and says which is which. See lib/display/mechanism.ts.
 //
-//   SCAN → DETECT → FILTER → SIZE → EXECUTE
+// ─── The hierarchy (Investigation lens) ──────────────────────────────────────
+//   A  the posture: one sentence — acting / blocked and why / holding — from
+//      the same reading Overview leads with, plus how long since the engine
+//      last recorded anything
+//   B  the cycle: SCAN → DETECT → FILTER → SIZE → EXECUTE as a ledger of
+//      stages, each with its current number and the gate applied
+//   C  the conditions: current candidates, the survival brain's state, the
+//      rules as configured
+//   D  the record: recent trade/edge events on the shared row, technical
+//      units flagged where the contract leaves them undocumented, and the
+//      engine's own one-line self-reports (formerly the Research tab)
 //
-// Every stage shows the real number currently at that stage and the gate
-// applied to it. Below the pipeline: the active edges the filter has let
-// through, the position-sizing model with the survival brain's live
-// adjustment, and the hard limits the engine will not cross.
-//
-// Truth rules: session-scoped counters are labelled as such; the max-stake
-// dollar figure is labelled as derived; unrecognized edge items are reported,
-// never guessed at.
+// ─── Two readings corrected ──────────────────────────────────────────────────
+// "Filter · 0 passed" read survival.filtered_patterns, which is the number of
+// tracked patterns the brain has STOPPED trading. "Execute · 0 trades" read
+// the real-order subsystem, which is legitimately zero in paper mode while
+// the paper session had recorded ten trades. Both readings now come from
+// mechanism.ts, shared with Consensus.
 
 import { useMemo } from 'react'
+import Link from 'next/link'
 import { useApplicationStore } from '@/store/applicationStore'
+import { useMarketLookup } from '@/config/hooks/useMarketLookup'
 import { parseEdgeRows } from '@/lib/mappers/edges'
+import { parseEventRows, collapseConsecutiveRepeats } from '@/lib/mappers/events'
+import { latestActivity } from '@/lib/display/eventDisplay'
+import { formatAge } from '@/lib/display/freshness'
+import { formatEdgePct, formatUptime, survivalStateColor, survivalStateLabel } from '@/lib/display/engine'
+import { mechanismVerdict, patternFilterReading, processCounters } from '@/lib/display/mechanism'
 import { formatCurrency } from '@/lib/utils'
+import { ROUTES } from '@/config/constants'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { Card }       from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { EdgeTable }  from '@/components/shared/EdgeTable'
-import { DecisionPipeline } from '@/components/shared/DecisionPipeline'
-import { ProvenanceBadge } from '@/components/shared/ProvenanceBadge'
+import { MechanismCycle } from './MechanismCycle'
+import { EngineReports } from './EngineReports'
+import { EventStream } from '@/components/shared/EventStream'
+import { Figure, certaintyFromSlice } from '@/components/shared/Figure'
 import { ProvenanceScope } from '@/components/shared/ProvenanceScope'
-import { SectionHeading } from '@/components/ui/SectionHeading'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
+import type { EngineConfig, SurvivalStatus } from '@/types/engine'
+
+/** Event types that are the mechanism acting or seeing — not health/system. */
+const MECHANISM_EVENTS = new Set(['edge', 'trade', 'resolution'])
+const RECENT_EVENTS = 8
 
 export function StrategyConsole({ embedded = false }: EmbeddableProps = {}) {
   const survival  = useApplicationStore((s) => s.engine.survival)
   const config    = useApplicationStore((s) => s.engine.config)
   const markets   = useApplicationStore((s) => s.engine.markets)
   const edges     = useApplicationStore((s) => s.engine.edges)
-  const execution = useApplicationStore((s) => s.engine.executionStatus)
+  const stats     = useApplicationStore((s) => s.engine.stats)
+  const events    = useApplicationStore((s) => s.engine.events)
+  const lookup    = useMarketLookup()
 
   const sv  = survival.data
   const cfg = config.data
-  const ex  = execution.data
 
-  const edgeRows = useMemo(
-    () => (edges.data ? parseEdgeRows(edges.data) : null),
-    [edges.data],
-  )
+  const edgeRows = useMemo(() => (edges.data ? parseEdgeRows(edges.data) : null), [edges.data])
+  const rows = edgeRows?.kind === 'rows' ? edgeRows.rows : edgeRows?.kind === 'empty' ? [] : null
 
-  // Effective Kelly = configured base fraction × live survival modifier.
-  const effectiveKelly = cfg && sv ? cfg.kellyFraction * sv.kellyModifier : null
-  // Derived: the engine's current per-position dollar cap.
-  const maxStakeUsd = cfg && sv ? sv.currentCapital * (cfg.maxBetPercent / 100) : null
+  const verdict   = mechanismVerdict({ markets: markets.data, edges: edges.data, edgeRows: rows, survival: sv })
+  const patterns  = patternFilterReading(sv)
+  const counters  = processCounters(stats.data)
+
+  // What the engine last wrote down — the same reading Live Feed leads with.
+  const recent = useMemo(() => {
+    if (!events.data) return null
+    const parsed = parseEventRows(events.data)
+    if (parsed.kind !== 'rows') return { rows: [], latest: null }
+    const mech = parsed.rows.filter((r) => MECHANISM_EVENTS.has(r.type.toLowerCase()))
+    return { rows: collapseConsecutiveRepeats(mech).slice(0, RECENT_EVENTS), latest: latestActivity(mech) }
+  }, [events.data])
 
   return (
-    // Strategy is the product's flagship INTELLIGENCE surface: it explains what
-    // the engine is seeing and deciding. The endpoint that served each reading
-    // is lineage, so badges keep their word and move the path to the tooltip and
-    // the accessible name — the same treatment as Markets and Analytics. System
-    // is the surface that shows paths prominently, and it stays that way.
     <ProvenanceScope detail="tooltip">
-    <div className={pageShell(embedded, 'gap-4')}>
+    <div className={pageShell(embedded, 'gap-5')}>
       {!embedded && (
         <PageHeader
           title="Strategy"
-          subtitle="How the engine makes decisions — the live pipeline from market scan to execution"
-          actions={<ProvenanceBadge provenance="live" detail="/api/survival · /api/config" state={survival} />}
+          subtitle="How the engine operates — the cycle it runs, the gates it applies, and what it currently sees"
         />
       )}
 
       {survival.status === 'error' && config.status === 'error' && (
         <ErrorState
-          title="Strategy layer unavailable"
-          description="Neither /api/survival nor /api/config responded — the strategy state cannot be shown."
+          title="The mechanism's records did not answer"
+          description="Neither /api/survival nor /api/config responded — the rules and the survival brain's state are unknown."
           fullPage={false}
         />
       )}
 
-      {/* ── The decision pipeline ─────────────────────────────────────── */}
-      <Card className="flex flex-col gap-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className="t-card-title">
-            Decision Pipeline
-          </h3>
-          <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
-            Counters are session-scoped — they reset when the engine restarts
-          </span>
-        </div>
-
-        <DecisionPipeline
-          stages={[
-            { step: 1, name: 'Scan',    value: markets.data ? String(markets.data.count) : '…', unit: markets.data?.count === 1 ? 'market' : 'markets', gate: 'Polymarket 5-minute BTC markets, refreshed each cycle' },
-            { step: 2, name: 'Detect',  value: sv ? sv.totalPatterns.toLocaleString() : '…', unit: 'patterns', gate: 'price patterns evaluated against market odds' },
-            // The gate is NOT one number — see the Edge Thresholds panel. The
-            // live survival threshold is named as the live one rather than as
-            // "the" requirement.
-            { step: 3, name: 'Filter',  value: sv ? sv.filteredPatterns.toLocaleString() : '…', unit: 'passed', gate: sv ? `live edge threshold ${sv.minEdgeThreshold.toFixed(2)}% — side-specific minimums also apply` : 'edge threshold gate', accent: true },
-            { step: 4, name: 'Size',    value: effectiveKelly !== null ? `${effectiveKelly.toFixed(2)}×` : '…', unit: 'Kelly', gate: cfg ? `capped at ${cfg.maxBetPercent}% of bankroll` : 'fractional Kelly sizing' },
-            { step: 5, name: 'Execute', value: ex ? String(ex.totalTrades) : '…', unit: ex?.totalTrades === 1 ? 'trade' : 'trades', gate: cfg ? `only if execution < ${cfg.maxLatencyMs}ms` : 'latency-guarded execution' },
-          ]}
-        />
-
-        {sv && sv.totalPatterns === 0 && (
-          <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
-            The pattern detector has not evaluated any patterns this session — the
-            pipeline is idle until the market fetcher returns candidates.
+      {/* ── A · posture ──────────────────────────────────────────────────── */}
+      <section aria-labelledby="st-posture" className="flex flex-col gap-2">
+        <h2 id="st-posture" className="sr-only">Current posture</h2>
+        <Posture verdict={verdict} survival={sv} edgesState={edges.status} marketsState={markets.status} />
+        {recent?.latest ? (
+          <p className="t-helper">
+            Last recorded action {formatAge(recent.latest.ageMs)} ({new Date(recent.latest.at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })})
+            {counters && ` · engine counters: ${counters.edgesDetected} edge${counters.edgesDetected === 1 ? '' : 's'} detected, ${counters.ordersExecuted} order${counters.ordersExecuted === 1 ? '' : 's'} executed · process up ${formatUptime(counters.uptimeSeconds)}`}
           </p>
-        )}
-      </Card>
-
-      {/* ── What made it through: active edges ────────────────────────── */}
-      <section className="flex flex-col gap-2.5">
-        <SectionHeading
-          title="Active Edges"
-          {...(edges.data ? { count: edges.data.count } : {})}
-          actions={<ProvenanceBadge provenance="live" detail="/api/edges" state={edges} />}
-        />
-        {edges.status === 'error' ? (
-          <ErrorState
-            title="Edges unavailable"
-            description={edges.error?.message ?? 'The /api/edges endpoint did not respond.'}
-            fullPage={false}
-          />
-        ) : edgeRows ? (
-          <EdgeTable
-            result={edgeRows}
-            emptyTitle="Nothing has cleared the filter"
-            emptyDescription={
-              sv
-                ? `Nothing has cleared the engine's edge thresholds — the live threshold is ${sv.minEdgeThreshold.toFixed(2)}%, with side-specific minimums on top. The engine prefers no trade over a bad trade.`
-                : 'The engine prefers no trade over a bad trade.'
-            }
-          />
+        ) : events.status === 'error' ? (
+          <p className="t-helper">The event log did not answer — when the engine last acted is unknown.</p>
         ) : null}
       </section>
 
-      {/* ── Edge thresholds ──────────────────────────────────────────────
-          Four real numbers from two endpoints. The engine publishes all four
-          and documents none of their interaction, so all four are shown with
-          their source, and the gap is stated rather than papered over with an
-          invented rule. */}
-      {cfg && (
-        <Card className="flex flex-col gap-3">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <h3 className="t-card-title">Edge Thresholds</h3>
-            <ProvenanceBadge provenance="live" detail="/api/config · /api/survival" state={config} />
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-            <ThresholdCell
-              label="Live threshold"
-              value={sv ? `${sv.minEdgeThreshold.toFixed(2)}%` : '—'}
-              source="/api/survival"
-              live
-            />
-            <ThresholdCell label="Base minimum" value={`${cfg.minEdge.toFixed(2)}%`} source="/api/config" />
-            <ThresholdCell
-              label="YES side"
-              value={cfg.minEdgeYes !== null ? `${cfg.minEdgeYes.toFixed(2)}%` : 'not reported'}
-              source="/api/config"
-              side="yes"
-            />
-            <ThresholdCell
-              label="NO side"
-              value={cfg.minEdgeNo !== null ? `${cfg.minEdgeNo.toFixed(2)}%` : 'not reported'}
-              source="/api/config"
-              side="no"
-            />
-          </div>
-
-          {/* The asymmetry is the interesting part — it is a deliberate strategy
-              choice and the product hid it entirely until now. */}
-          {cfg.minEdgeYes !== null && cfg.minEdgeNo !== null && cfg.minEdgeYes !== cfg.minEdgeNo && (
-            <p className="text-xs" style={{ color: 'var(--probex-text-secondary)' }}>
-              The engine is <strong>asymmetric</strong>: it demands{' '}
-              <span className="tabular-nums font-semibold" style={{ color: 'var(--probex-yes)' }}>
-                {cfg.minEdgeYes.toFixed(2)}%
-              </span>{' '}
-              to buy YES but only{' '}
-              <span className="tabular-nums font-semibold" style={{ color: 'var(--probex-no)' }}>
-                {cfg.minEdgeNo.toFixed(2)}%
-              </span>{' '}
-              to buy NO — a {Math.abs(cfg.minEdgeYes - cfg.minEdgeNo).toFixed(2)} point difference.
-            </p>
-          )}
-
-          <p className="text-2xs leading-relaxed" style={{ color: 'var(--probex-text-disabled)' }}>
-            The contract publishes these four values but does not document how they combine — whether the
-            live survival threshold overrides the configured pair, floors it, or applies only to the base
-            minimum. They are shown as reported rather than resolved into a single figure.
-          </p>
-        </Card>
-      )}
-
-      {/* ── Timing and exit rules ────────────────────────────────────────
-          All three are real /api/config fields the product has never shown. Two
-          of them are currently inert (no blocked hours, no low-liquidity window)
-          — which is itself worth stating on a strategy surface: an operator
-          asking "does the engine avoid certain hours?" deserves an answer, and
-          "no" is an answer. */}
-      {cfg && (cfg.blockedHours !== null || cfg.earlyExitThreshold !== null || cfg.lowLiquidityStartHour !== null) && (
-        <Card className="flex flex-col gap-2.5">
-          <h3 className="t-card-title">Timing &amp; Exit Rules</h3>
-          <div className="flex flex-col gap-2 text-xs">
-            {cfg.blockedHours !== null && (
-              <LimitRow
-                label="Blocked hours"
-                value={cfg.blockedHours.length === 0 ? 'none' : cfg.blockedHours.map((h) => `${String(h).padStart(2, '0')}:00`).join(', ')}
-                note={cfg.blockedHours.length === 0 ? 'the engine trades around the clock' : 'trading suspended during these hours'}
-              />
-            )}
-            {cfg.lowLiquidityStartHour !== null && cfg.lowLiquidityEndHour !== null && (
-              <LimitRow
-                label="Low-liquidity window"
-                value={
-                  cfg.lowLiquidityStartHour === 0 && cfg.lowLiquidityEndHour === 0
-                    ? 'not set'
-                    : `${String(cfg.lowLiquidityStartHour).padStart(2, '0')}:00–${String(cfg.lowLiquidityEndHour).padStart(2, '0')}:00`
-                }
-                note={
-                  cfg.lowLiquidityStartHour === 0 && cfg.lowLiquidityEndHour === 0
-                    ? 'start and end are both 0, so no window is in force'
-                    : 'reduced activity during these hours'
-                }
-              />
-            )}
-            {cfg.earlyExitThreshold !== null && (
-              <LimitRow
-                label="Early exit"
-                value={cfg.earlyExitThreshold.toFixed(0)}
-                note="early_exit_threshold as reported — unit not documented"
-              />
-            )}
-          </div>
-        </Card>
-      )}
-
-      {/* ── Sizing model + hard limits ────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
-        <Card className="flex flex-col gap-3">
-          <h3 className="t-card-title">
-            Position Sizing Model
-          </h3>
-          {cfg && sv ? (
-            <>
-              <div className="flex items-center gap-2 text-sm tabular-nums flex-wrap">
-                <SizingTerm label="base Kelly" value={`${cfg.kellyFraction.toFixed(2)}×`} />
-                <span style={{ color: 'var(--probex-text-disabled)' }}>×</span>
-                <SizingTerm
-                  label="survival modifier"
-                  value={`${sv.kellyModifier.toFixed(2)}×`}
-                  warn={sv.kellyModifier < 1}
-                />
-                <span style={{ color: 'var(--probex-text-disabled)' }}>=</span>
-                <SizingTerm label="effective" value={`${(cfg.kellyFraction * sv.kellyModifier).toFixed(2)}×`} strong />
-              </div>
-              {maxStakeUsd !== null && (
-                <p className="text-xs" style={{ color: 'var(--probex-text-secondary)' }}>
-                  Largest possible stake right now:{' '}
-                  <span className="font-bold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>
-                    {formatCurrency(maxStakeUsd)}
-                  </span>{' '}
-                  <span style={{ color: 'var(--probex-text-muted)' }}>
-                    ({cfg.maxBetPercent}% of {formatCurrency(sv.currentCapital)} capital — derived)
-                  </span>
-                </p>
-              )}
-              {/* The modifier is not a one-way brake. Observed live at 1.50×
-                  with capital at 149.9% of the starting bankroll — the brain
-                  sizing UP. The previous copy described only the downside, so a
-                  reader seeing 1.50× had no explanation for it. */}
-              <p className="text-2xs leading-relaxed" style={{ color: 'var(--probex-text-disabled)' }}>
-                Each edge’s Kelly-optimal size is scaled by the effective multiplier, then capped.
-                The survival brain moves the modifier in both directions: below 1× after losses, so the
-                engine bets smaller, and above 1× while capital is ahead.
-                {sv.kellyModifier > 1 && ' It is currently above 1×, so sizing is being scaled up.'}
-                {sv.kellyModifier < 1 && ' It is currently below 1×, so sizing is being cut back.'}
-              </p>
-            </>
-          ) : (
-            <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
-              Waiting for /api/config and /api/survival…
-            </p>
-          )}
-        </Card>
-
-        <Card className="flex flex-col gap-3">
-          <h3 className="t-card-title">
-            Hard Limits
-          </h3>
-          {cfg ? (
-            <div className="flex flex-col gap-2 text-xs">
-              {/* "Minimum edge" used to live here as a single row reading the
-                  live survival threshold with the note "configured floor 2.00%"
-                  — i.e. a value below its own floor. Edge thresholds are not one
-                  hard limit; they have their own panel below. */}
-              <LimitRow label="Max bet"                value={`${cfg.maxBetPercent}%`}          note="of bankroll per position" />
-              <LimitRow label="Max concurrent positions" value={String(cfg.maxConcurrentPositions)} note="open at once" />
-              <LimitRow label="Max execution latency"  value={`${cfg.maxLatencyMs}ms`}          note="orders abort above this" />
-              {cfg.minVolume !== null && (
-                <LimitRow label="Minimum market volume" value={cfg.minVolume.toLocaleString()} note="as the engine reports it" />
-              )}
-              {cfg.edgeConfirmationCount !== null && (
-                <LimitRow
-                  label="Edge confirmations"
-                  value={String(cfg.edgeConfirmationCount)}
-                  note={cfg.edgeConfirmationCount === 1 ? 'one detection is enough to act' : 'detections required before acting'}
-                />
-              )}
-              <p className="text-2xs leading-relaxed pt-1" style={{ color: 'var(--probex-text-disabled)' }}>
-                These limits are configured at engine start and cannot be changed from
-                the dashboard yet (config write endpoint is on the backend roadmap, P1-02).
-              </p>
-            </div>
-          ) : (
-            <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
-              Waiting for /api/config…
-            </p>
-          )}
-        </Card>
+      {/* ── B · the cycle ────────────────────────────────────────────────── */}
+      <div className="pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+        <MechanismCycle />
       </div>
+
+      {/* ── C · candidates ───────────────────────────────────────────────── */}
+      <section aria-labelledby="st-candidates" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <span className="flex items-baseline gap-2 flex-wrap">
+            <h2 id="st-candidates" className="t-section-title">Current candidates</h2>
+            <span className="t-description">edges the detector reports this cycle{rows !== null ? ` · ${rows.length}` : ''}</span>
+          </span>
+          <span className="flex items-baseline gap-3">
+            <span className="t-metadata">/api/edges{certaintyFromSlice(edges, 8_000).certainty === 'stale' ? ' · stale' : ''}</span>
+            <Link href={ROUTES.LIVE} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>Live Feed →</Link>
+          </span>
+        </div>
+        {edges.status === 'error' ? (
+          <ErrorState title="The edge detector did not answer" description={edges.error?.message ?? 'No response from /api/edges.'} fullPage={false} />
+        ) : edgeRows === null ? (
+          <p className="t-description">Waiting for the edge detector.</p>
+        ) : (
+          <EdgeTable
+            result={edgeRows}
+            emptyTitle={verdict.marketsScanned === 0 ? 'Nothing to evaluate' : 'No edge this cycle'}
+            emptyDescription={
+              verdict.marketsScanned === 0
+                ? 'The engine scanned no markets this cycle, so the detector had nothing to evaluate. Candidates appear the moment the market fetcher returns windows.'
+                : `The detector reports no edge on the ${verdict.marketsScanned ?? ''} market${verdict.marketsScanned === 1 ? '' : 's'} it scanned. Whether any candidate was rejected by a gate is not recorded on the wire.`
+            }
+          />
+        )}
+      </section>
+
+      {/* ── C · the survival brain ───────────────────────────────────────── */}
+      <section aria-labelledby="st-brain" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <span className="flex items-baseline gap-2 flex-wrap">
+            <h2 id="st-brain" className="t-section-title">The survival brain</h2>
+            <span className="t-description">the part of the mechanism that moves — sizing and the edge bar follow capital</span>
+          </span>
+          <span className="flex items-baseline gap-3">
+            <span className="t-metadata">/api/survival</span>
+            <Link href={`${ROUTES.STRATEGY}?view=survival`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>Capital protection →</Link>
+          </span>
+        </div>
+        {sv ? (
+          <div className="flex items-start gap-x-8 gap-y-3 flex-wrap">
+            <Figure label="State" size="md" tone={survivalStateColor(sv.state)} title="survival.state" {...certaintyFromSlice(survival, 5_000)}>
+              {survivalStateLabel(sv.state)}
+            </Figure>
+            <Figure label="Capital" size="md" footnote={<span className="t-helper">{sv.capitalPct.toFixed(1)}% of {formatCurrency(sv.initialCapital)} initial</span>} {...certaintyFromSlice(survival, 5_000)}>
+              {formatCurrency(sv.currentCapital)}
+            </Figure>
+            <Figure label="Kelly modifier" size="md" tone={sv.kellyModifier < 1 ? 'var(--probex-warning)' : undefined} footnote={<span className="t-helper">{sv.kellyModifier > 1 ? 'sizing up while ahead' : sv.kellyModifier < 1 ? 'sizing cut back' : 'full sizing'}</span>} {...certaintyFromSlice(survival, 5_000)}>
+              ×{sv.kellyModifier.toFixed(2)}
+            </Figure>
+            <Figure label="Edge required" size="md" footnote={<span className="t-helper">survival brain’s threshold · min_edge_threshold</span>} {...certaintyFromSlice(survival, 5_000)}>
+              {formatEdgePct(sv.minEdgeThreshold, 2)}
+            </Figure>
+            {patterns && (
+              <Figure
+                label="Patterns"
+                size="md"
+                footnote={
+                  <span className="t-helper">
+                    {patterns.stopped} stopped · <Link href={ROUTES.ANALYTICS} className="focus-ring rounded-sm" style={{ color: 'var(--probex-primary)' }}>per pattern →</Link>
+                  </span>
+                }
+                title="Outcomes tallied per hour × window × edge bucket; a pattern the brain judges losing is stopped (`filtered`)"
+                {...certaintyFromSlice(survival, 5_000)}
+              >
+                {patterns.tracked}
+              </Figure>
+            )}
+          </div>
+        ) : survival.status === 'error' ? (
+          <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>The survival brain did not answer — its state, modifier and threshold are unknown.</p>
+        ) : (
+          <p className="t-description">Waiting for /api/survival.</p>
+        )}
+      </section>
+
+      {/* ── C/D · rules as configured ────────────────────────────────────── */}
+      <section aria-labelledby="st-rules" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <span className="flex items-baseline gap-2 flex-wrap">
+            <h2 id="st-rules" className="t-section-title">Rules as configured</h2>
+            <span className="t-description">set at engine start; the dashboard cannot change them</span>
+          </span>
+          <span className="t-metadata">/api/config{cfg ? ` · ${cfg.environment} mode` : ''}</span>
+        </div>
+        {cfg ? <RulesLedger cfg={cfg} /> : config.status === 'error'
+          ? <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>The configuration did not answer — the rules are unknown.</p>
+          : <p className="t-description">Waiting for /api/config.</p>}
+      </section>
+
+      {/* ── D · the record ───────────────────────────────────────────────── */}
+      <section aria-labelledby="st-record" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <span className="flex items-baseline gap-2 flex-wrap">
+            <h2 id="st-record" className="t-section-title">What it did</h2>
+            <span className="t-description">edge, trade and resolution events, newest first — observed alongside, not explained</span>
+          </span>
+          <span className="flex items-baseline gap-3">
+            <span className="t-metadata">/api/events</span>
+            <Link href={`${ROUTES.SYSTEM}?view=events`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>Full log →</Link>
+          </span>
+        </div>
+        {events.status === 'error' ? (
+          <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>The event log did not answer — what the engine recorded is unknown.</p>
+        ) : recent === null ? (
+          <p className="t-description">Waiting for the event log.</p>
+        ) : recent.rows.length === 0 ? (
+          <p className="t-description">No edge, trade or resolution events in the engine’s retained log.</p>
+        ) : (
+          <EventStream rows={recent.rows} compact lookup={lookup} />
+        )}
+      </section>
+
+      {/* ── D · the engine's own summaries ───────────────────────────────── */}
+      <EngineReports />
     </div>
     </ProvenanceScope>
   )
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── A · posture ──────────────────────────────────────────────────────────────
 
-/**
- * One threshold, with the endpoint that reported it.
- *
- * `side` tints the figure on the MARKET-SIDE band (yes/no) because that is
- * exactly what these two thresholds are about — which side the engine is
- * willing to buy. The live and base cells stay on interface colours: they are
- * not side-specific.
- */
-function ThresholdCell({
-  label, value, source, live = false, side,
-}: { label: string; value: string; source: string; live?: boolean; side?: 'yes' | 'no' }) {
-  const colour =
-    side === 'yes' ? 'var(--probex-yes)'
-    : side === 'no' ? 'var(--probex-no)'
-    : live ? 'var(--probex-primary)'
-    : 'var(--probex-text-primary)'
-  return (
-    <div
-      className="flex flex-col gap-1 rounded-lg px-3 py-2.5"
-      style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}
-    >
-      <span className="t-label">{label}</span>
-      <span className="text-base font-bold tabular-nums" style={{ color: colour }}>{value}</span>
-      <span className="flex items-center gap-1.5">
-        {/* A word, not only a colour: "live" vs "configured" is the distinction
-            this panel exists to draw. */}
-        <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: live ? 'var(--probex-primary)' : 'var(--probex-text-disabled)' }}>
-          {live ? 'live' : 'configured'}
-        </span>
-        <span className="t-metadata truncate" title={source}>{source}</span>
-      </span>
-    </div>
-  )
+function Posture({ verdict, survival, edgesState, marketsState }: {
+  verdict: ReturnType<typeof mechanismVerdict>
+  survival: SurvivalStatus | null
+  edgesState: string
+  marketsState: string
+}) {
+  const f = verdict.focus
+  let text: string
+  let tone = 'var(--probex-text-primary)'
+
+  if (f.kind === 'acting') {
+    text = `Acting on a ${f.edge.direction.toUpperCase()} edge of ${formatEdgePct(f.edge.edgePct)}` +
+      (survival ? ` — it clears the ${formatEdgePct(survival.minEdgeThreshold, 2)} the survival brain currently requires.` : '.')
+    tone = 'var(--probex-positive)'
+  } else if (f.kind === 'blocked') {
+    const why = f.reasons.map((r) =>
+      r.kind === 'halted' ? `trading is halted (survival state ${r.state})`
+      : r.kind === 'threshold' ? `${formatEdgePct(r.edgePct)} is below the ${formatEdgePct(r.minEdge, 2)} required`
+      : `the Kelly modifier is ${r.kellyModifier.toFixed(2)}, so every position sizes to zero`,
+    ).join('; ')
+    text = `Sees a ${f.edge.direction.toUpperCase()} edge of ${formatEdgePct(f.edge.edgePct)} but will not act — ${why}.`
+    tone = 'var(--probex-warning)'
+  } else if (f.kind === 'holding') {
+    const scanned = verdict.marketsScanned
+    text = f.halted
+      ? `Halted — survival state ${f.state ?? 'DEAD'}; the engine is not trading.`
+      : scanned === 0
+        ? 'Idle — the engine scanned no markets this cycle, so there is nothing to evaluate.'
+        : `Holding — ${scanned ?? 'the'} market${scanned === 1 ? '' : 's'} scanned, no edge reported this cycle.`
+    tone = scanned === 0 || f.halted ? 'var(--probex-text-secondary)' : 'var(--probex-text-primary)'
+  } else {
+    text = edgesState === 'error' || marketsState === 'error'
+      ? 'The scanner or the edge detector did not answer — what the engine currently sees is unknown.'
+      : 'Waiting for the scanner and the edge detector.'
+    tone = 'var(--probex-text-muted)'
+  }
+
+  return <p className="text-sm font-medium leading-relaxed m-0" style={{ color: tone }}>{text}</p>
 }
 
-function SizingTerm({ label, value, warn = false, strong = false }: { label: string; value: string; warn?: boolean; strong?: boolean }) {
-  return (
-    <span className="flex flex-col items-center gap-0.5 rounded-lg px-2.5 py-1.5" style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}>
-      <span
-        className={strong ? 'text-base font-bold' : 'text-sm font-semibold'}
-        style={{ color: warn ? 'var(--probex-warning)' : strong ? 'var(--probex-primary)' : 'var(--probex-text-primary)' }}
-      >
-        {value}
-      </span>
-      <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{label}</span>
-    </span>
-  )
-}
+// ─── C/D · rules ──────────────────────────────────────────────────────────────
 
-function LimitRow({ label, value, note }: { label: string; value: string; note: string }) {
+function RulesLedger({ cfg }: { cfg: EngineConfig }) {
+  const rows: Array<{ label: string; value: string; note: string; flag?: boolean }> = [
+    { label: 'Max bet', value: `${cfg.maxBetPercent}%`, note: 'of bankroll per position' },
+    { label: 'Max concurrent positions', value: String(cfg.maxConcurrentPositions), note: 'open at once' },
+    { label: 'Max execution latency', value: `${cfg.maxLatencyMs} ms`, note: 'orders abort above this' },
+    { label: 'Initial bankroll', value: formatCurrency(cfg.initialBankroll), note: 'the capital figures are measured against this' },
+  ]
+  if (cfg.blockedHours !== null) {
+    rows.push({ label: 'Blocked hours', value: cfg.blockedHours.length === 0 ? 'none' : cfg.blockedHours.map((h) => `${String(h).padStart(2, '0')}:00`).join(', '), note: cfg.blockedHours.length === 0 ? 'the engine trades around the clock' : 'trading suspended during these hours' })
+  }
+  if (cfg.lowLiquidityStartHour !== null && cfg.lowLiquidityEndHour !== null) {
+    const unset = cfg.lowLiquidityStartHour === 0 && cfg.lowLiquidityEndHour === 0
+    rows.push({ label: 'Low-liquidity window', value: unset ? 'not set' : `${String(cfg.lowLiquidityStartHour).padStart(2, '0')}:00–${String(cfg.lowLiquidityEndHour).padStart(2, '0')}:00`, note: unset ? 'start and end are both 0, so no window is in force' : 'reduced activity during these hours' })
+  }
+  if (cfg.earlyExitThreshold !== null) {
+    rows.push({ label: 'Early exit', value: String(cfg.earlyExitThreshold), note: 'early_exit_threshold as reported — unit not documented', flag: true })
+  }
   return (
-    <div className="flex items-baseline justify-between gap-3">
-      <span style={{ color: 'var(--probex-text-secondary)' }}>{label}</span>
-      <span className="flex items-baseline gap-2">
-        <span className="font-bold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{value}</span>
-        <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{note}</span>
-      </span>
-    </div>
+    <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2 m-0">
+      {rows.map((r) => (
+        <div key={r.label} className="flex flex-col gap-0.5 min-w-0">
+          <dt className="t-label truncate">{r.label}</dt>
+          <dd className="m-0 flex items-baseline gap-2 min-w-0">
+            <span className="font-mono text-xs font-semibold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{r.value}</span>
+            <span className="t-helper truncate" style={r.flag ? { color: 'var(--probex-text-disabled)' } : undefined}>{r.note}</span>
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }

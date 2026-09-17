@@ -1,7 +1,13 @@
 'use client'
 
-// ProfileMenu — top-bar session identity: gradient avatar + dropdown. No auth
-// backend, so it represents the engine session (bot/version/mode), not a user.
+// ProfileMenu — the top-bar session menu. There is no account layer: no
+// /api/identity, no auth, no user. What the engine does publish about itself
+// is on /api/runtime — its mode, when the process started, which components
+// are up — and that is what the header of this menu shows, as the ENGINE
+// SESSION. Its name and version are not on any /api/* endpoint (the host root
+// that carries them is the marketing site behind the bridge), so none is
+// shown; until 2026-09-17 the dashboard's own "Probex v2.0.0" stood here
+// under the engine's label.
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -25,6 +31,9 @@ export function ProfileMenu() {
   }, [open])
 
   const mode = id?.mode ?? null
+  const since = id ? new Date(id.initializedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : null
+  const up = id ? Object.values(id.components).filter(Boolean).length : null
+  const all = id ? Object.keys(id.components).length : null
 
   return (
     <div className="relative" ref={ref}>
@@ -61,9 +70,11 @@ export function ProfileMenu() {
               <svg width="15" height="15" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
             </span>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold truncate" style={{ color: 'var(--probex-text-primary)' }}>{id?.bot ?? 'Probex Engine'}</span>
+              <span className="text-xs font-bold truncate" style={{ color: 'var(--probex-text-primary)' }}>{id?.bot ?? 'Engine session'}</span>
               <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
-                {id ? `v${id.version}` : 'connecting…'}
+                {id
+                  ? `since ${since} · ${up}/${all} components`
+                  : identity.status === 'error' ? 'runtime did not answer' : 'reading /api/runtime…'}
                 {mode && (
                   <span
                     className="ml-1.5 font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
@@ -84,7 +95,7 @@ export function ProfileMenu() {
           </nav>
 
           <p className="px-3.5 py-2.5 text-2xs leading-relaxed" style={{ borderTop: '1px solid var(--probex-border)', color: 'var(--probex-text-disabled)' }}>
-            No account layer yet — this reflects the running engine session, not a signed-in user.
+            No account layer — this is the running engine session (/api/runtime), not a signed-in user. Preferences are kept in this browser.
           </p>
         </div>
       )}

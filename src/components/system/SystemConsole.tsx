@@ -114,9 +114,10 @@ export function SystemConsole({ embedded = false }: EmbeddableProps = {}) {
       <IncidentsSection />
 
       <Rule />
-      <section aria-label="Configuration" className="flex flex-col gap-4">
-        <ConfigPanel />
-      </section>
+      {/* ConfigPanel supplies its own heading now that it is no longer a Card,
+          so no wrapper label here — a section labelled "Configuration" around a
+          heading reading "Configuration" announces it twice. */}
+      <ConfigPanel />
 
       <Rule />
       {/* The diagnostic layer. A disclosure is a justified container: the
