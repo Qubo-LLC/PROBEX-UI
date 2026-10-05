@@ -82,16 +82,16 @@ function readTokens() {
   const cs = getComputedStyle(document.documentElement)
   const v = (name: string, fallback: string) => cs.getPropertyValue(name).trim() || fallback
   return {
-    up:      v('--probex-positive', '#10B981'),
-    down:    v('--probex-negative', '#EF4444'),
-    upDim:   v('--probex-positive-dim', 'rgba(16,185,129,0.15)'),
-    downDim: v('--probex-negative-dim', 'rgba(239,68,68,0.15)'),
-    grid:    v('--probex-chart-grid', 'rgba(255,255,255,0.05)'),
-    // --probex-chart-axis is no longer read: axis borders are hidden on both
+    up:      v('--synatra-positive', '#10B981'),
+    down:    v('--synatra-negative', '#EF4444'),
+    upDim:   v('--synatra-positive-dim', 'rgba(16,185,129,0.15)'),
+    downDim: v('--synatra-negative-dim', 'rgba(239,68,68,0.15)'),
+    grid:    v('--synatra-chart-grid', 'rgba(255,255,255,0.05)'),
+    // --synatra-chart-axis is no longer read: axis borders are hidden on both
     // stacks now (recharts already set axisLine={false}). Kept in the token file
     // for any future chart that wants a visible rule.
-    text:    v('--probex-text-muted', '#8891a5'),
-    cross:   v('--probex-border-strong', 'rgba(255,255,255,0.22)'),
+    text:    v('--synatra-text-muted', '#8891a5'),
+    cross:   v('--synatra-border-strong', 'rgba(255,255,255,0.22)'),
     mono:    v('--font-mono', 'monospace'),
   }
 }

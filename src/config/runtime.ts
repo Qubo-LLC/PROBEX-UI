@@ -10,7 +10,7 @@
 //
 // So configuration is resolved at REQUEST time on the server (where process.env
 // is genuinely runtime state) and handed to the browser as a small JSON blob on
-// `window.__PROBEX_RUNTIME__`. One artifact, many environments, zero rebuilds.
+// `window.__SYNATRA_RUNTIME__`. One artifact, many environments, zero rebuilds.
 //
 // This file is import-safe from client components: it contains only types and
 // pure readers. The resolver that performs the backend probe lives in
@@ -38,7 +38,7 @@ export type AppEnvironment = 'development' | 'production' | 'test'
  * two independent means "what the app tries to do" (mode) and "what this
  * environment is allowed to do" (policy) can never be conflated.
  *
- * Chosen over a boolean `PROBEX_ALLOW_MOCK` deliberately: a boolean is a
+ * Chosen over a boolean `SYNATRA_ALLOW_MOCK` deliberately: a boolean is a
  * permission, and permissions get flipped "just for a minute" — worse, it makes
  * `ALLOW_MOCK=true` a *legal* production configuration, which merely relocates
  * the risk. A named tier makes mock-in-production unrepresentable rather than
@@ -95,14 +95,29 @@ export interface RuntimeConfig {
   environment:   AppEnvironment
   /** Human-readable explanation of why `mode` was chosen — surfaced in the UI. */
   reason:        string
+  /** What the page-render engine check found — see StartupProbe. */
+  startupProbe:  StartupProbe
 }
 
+/**
+ * Outcome of the server-side engine check made when the page renders.
+ *
+ *   reachable    the engine answered with JSON inside the check's window
+ *   timeout      no answer inside the window — NOT proof the engine is down:
+ *                the check's window is much shorter than a normal request's,
+ *                so the client connects and its own requests decide
+ *   unreachable  a definite failure: refused, an HTTP error, or a non-JSON
+ *                answer (something other than the engine replied)
+ *   not-probed   the mode was explicit (live / mock), or the check has not run
+ */
+export type StartupProbe = 'reachable' | 'timeout' | 'unreachable' | 'not-probed'
+
 /** Global the server injects and the client reads. */
-export const RUNTIME_GLOBAL_KEY = '__PROBEX_RUNTIME__'
+export const RUNTIME_GLOBAL_KEY = '__SYNATRA_RUNTIME__'
 
 declare global {
   // eslint-disable-next-line no-var
-  var __PROBEX_RUNTIME__: RuntimeConfig | undefined
+  var __SYNATRA_RUNTIME__: RuntimeConfig | undefined
 }
 
 /**
@@ -114,7 +129,7 @@ export const DEFAULT_BASE_URL = '/api'
 
 /**
  * First value that is actually present. `??` is wrong here: an env var set to
- * the empty string is not `undefined`, so `PROBEX_X ?? NEXT_PUBLIC_X` silently
+ * the empty string is not `undefined`, so `SYNATRA_X ?? NEXT_PUBLIC_X` silently
  * ignores the legacy fallback whenever the new var is declared-but-blank — a
  * shape templated env files and CI secret injection produce constantly. Losing
  * a base URL that way would look exactly like a broken backend.
@@ -183,18 +198,18 @@ export function isAbsoluteUrl(url: string): boolean {
  * state and therefore render identically on first paint.
  */
 export function readRuntimeConfig(): RuntimeConfig {
-  if (typeof window !== 'undefined' && window.__PROBEX_RUNTIME__) {
-    return window.__PROBEX_RUNTIME__
+  if (typeof window !== 'undefined' && window.__SYNATRA_RUNTIME__) {
+    return window.__SYNATRA_RUNTIME__
   }
 
   const requestedMode = normalizeApiMode(
-    firstPresent(process.env.PROBEX_API_MODE, process.env.NEXT_PUBLIC_API_MODE),
+    firstPresent(process.env.SYNATRA_API_MODE, process.env.NEXT_PUBLIC_API_MODE),
   )
   const { baseUrl } = normalizeBaseUrl(
-    firstPresent(process.env.PROBEX_API_BASE_URL, process.env.NEXT_PUBLIC_API_BASE_URL),
+    firstPresent(process.env.SYNATRA_API_BASE_URL, process.env.NEXT_PUBLIC_API_BASE_URL),
   )
   const environment = normalizeEnvironment(process.env.NODE_ENV)
-  const deployment  = normalizeDeployment(process.env.PROBEX_DEPLOYMENT)
+  const deployment  = normalizeDeployment(process.env.SYNATRA_DEPLOYMENT)
 
   // Mock is honoured here only if the policy permits it; otherwise this falls
   // through to 'live', which renders identically to 'offline' on first paint.
@@ -207,5 +222,6 @@ export function readRuntimeConfig(): RuntimeConfig {
     deployment,
     environment,
     reason:        'Runtime config not injected yet — using environment defaults.',
+    startupProbe:  'not-probed',
   })
 }

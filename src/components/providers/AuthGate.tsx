@@ -1,7 +1,7 @@
 'use client'
 
 // AuthGate — the single route-protection point for the cockpit
-// (PROBEX_PRODUCT_SPEC.md §6.3).
+// (SYNATRA_PRODUCT_SPEC.md §6.3).
 //
 // The engine API is currently unauthenticated (single-operator mode), so this
 // gate passes through unconditionally. When the P3 auth backend lands

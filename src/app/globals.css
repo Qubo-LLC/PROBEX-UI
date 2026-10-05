@@ -1,7 +1,7 @@
 /* ─────────────────────────────────────────────────────────────────────────
    IMPORTS — must come before all other rules
 ───────────────────────────────────────────────────────────────────────── */
-@import "../styles/probex-tokens.css";
+@import "../styles/synatra-tokens.css";
 
 /* Tailwind layers */
 @tailwind base;
@@ -15,29 +15,29 @@
    all five themes (M6 — replaces hardcoded rgba literals in components).
 ───────────────────────────────────────────────────────────────────────── */
 :root {
-  --probex-positive-border: color-mix(in srgb, var(--probex-positive) 25%, transparent);
-  --probex-negative-border: color-mix(in srgb, var(--probex-negative) 28%, transparent);
-  --probex-warning-border:  color-mix(in srgb, var(--probex-warning) 30%, transparent);
+  --synatra-positive-border: color-mix(in srgb, var(--synatra-positive) 25%, transparent);
+  --synatra-negative-border: color-mix(in srgb, var(--synatra-negative) 28%, transparent);
+  --synatra-warning-border:  color-mix(in srgb, var(--synatra-warning) 30%, transparent);
 
   /* ─── Certainty ink ─────────────────────────────────────────────────────
      The certainty scale needs its OWN steps, not the general text ramp.
-     Measured on the first build, the scale borrowed --probex-text-secondary /
+     Measured on the first build, the scale borrowed --synatra-text-secondary /
      -muted / -disabled, whose alphas are 0.72 / 0.64 / 0.52 — an eight-point
      gap between "derived" and "stale" that no reader can perceive. Those
      tokens are tuned for prose hierarchy, where the steps are meant to be
      subtle; certainty is a claim about whether a number is TRUE, and its steps
      must be obvious.
 
-     Derived from --probex-text-primary via color-mix, like the tone borders
+     Derived from --synatra-text-primary via color-mix, like the tone borders
      above, so all five themes adapt with no per-theme entries.
 
      `stale` deliberately stops at 54% rather than continuing the ramp down: a
      stale figure is a RETAINED READING the operator still has to be able to
      read. Only `absent` — which renders a placeholder glyph, not a value —
      goes dim enough to recede. */
-  --probex-certainty-derived: color-mix(in srgb, var(--probex-text-primary) 68%, transparent);
-  --probex-certainty-stale:   color-mix(in srgb, var(--probex-text-primary) 54%, transparent);
-  --probex-certainty-absent:  color-mix(in srgb, var(--probex-text-primary) 28%, transparent);
+  --synatra-certainty-derived: color-mix(in srgb, var(--synatra-text-primary) 68%, transparent);
+  --synatra-certainty-stale:   color-mix(in srgb, var(--synatra-text-primary) 54%, transparent);
+  --synatra-certainty-absent:  color-mix(in srgb, var(--synatra-text-primary) 28%, transparent);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@
    ── Stack composition ────────────────────────────────────────────────────
    Sans leads with `system-ui` (the platform UI face: SF Pro, Segoe UI
    Variable, Roboto), which is the closest widely-available match to the
-   geometric-neutral register Probex was designed in. Inter is deliberately
+   geometric-neutral register Synatra was designed in. Inter is deliberately
    NOT listed: it is not shipped, so naming it would only take effect on the
    minority of machines that happen to have it installed locally — which is
    the same non-determinism this change removes, just quieter.
@@ -121,8 +121,8 @@
   }
 
   body {
-    background-color: var(--probex-bg);
-    color: var(--probex-text-primary);
+    background-color: var(--synatra-bg);
+    color: var(--synatra-text-primary);
     font-family: var(--font-sans);
     font-size: 0.875rem; /* 14px base */
     line-height: 1.5;
@@ -161,7 +161,7 @@
 
   /* Focus visible — keyboard navigation */
   :focus-visible {
-    outline: 2px solid var(--probex-primary);
+    outline: 2px solid var(--synatra-primary);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -173,8 +173,8 @@
 
   /* Selection */
   ::selection {
-    background-color: var(--probex-primary-dim);
-    color: var(--probex-text-primary);
+    background-color: var(--synatra-primary-dim);
+    color: var(--synatra-text-primary);
   }
 }
 
@@ -187,16 +187,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--probex-scrollbar-track, transparent);
+  background: var(--synatra-scrollbar-track, transparent);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--probex-scrollbar-thumb, rgba(255, 255, 255, 0.1));
+  background: var(--synatra-scrollbar-thumb, rgba(255, 255, 255, 0.1));
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--probex-border-strong);
+  background: var(--synatra-border-strong);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -204,14 +204,14 @@
 ───────────────────────────────────────────────────────────────────────── */
 @layer utilities {
   .text-gradient-brand {
-    background: var(--probex-gradient-brand);
+    background: var(--synatra-gradient-brand);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .text-gradient-yes {
-    background: var(--probex-gradient-yes);
+    background: var(--synatra-gradient-yes);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -240,7 +240,7 @@
        instrument      → .card           (the standard data surface)
        interactive     → .card-interactive (adds hover lift)
        recessed        → .card-recessed  (more opaque, less blur, dashed — pending/awaiting)
-       status          → semantic -dim tokens (var(--probex-{tone}-dim) + border);
+       status          → semantic -dim tokens (var(--synatra-{tone}-dim) + border);
                          applied inline per panel, not a card class.
   ──────────────────────────────────────────────────────────────────────────── */
   /* Institutional refinement: cards are now fully opaque and carry elev-1.
@@ -251,26 +251,26 @@
      lip of the card its milled edge. */
   .card {
     @apply rounded-lg border;
-    background-color: var(--probex-surface);
-    border-color: var(--probex-border);
-    box-shadow: var(--probex-elev-1);
+    background-color: var(--synatra-surface);
+    border-color: var(--synatra-border);
+    box-shadow: var(--synatra-elev-1);
   }
 
   .card-elevated {
     @apply rounded-lg border;
-    background-color: var(--probex-surface-2);
-    border-color: var(--probex-border-default);
-    box-shadow: var(--probex-elev-2);
+    background-color: var(--synatra-surface-2);
+    border-color: var(--synatra-border-default);
+    box-shadow: var(--synatra-elev-2);
   }
 
   .card-interactive {
     @apply rounded-lg border cursor-pointer;
-    background-color: var(--probex-surface);
-    border-color: var(--probex-border);
+    background-color: var(--synatra-surface);
+    border-color: var(--synatra-border);
     /* Quiet resting glow (2026-07-23 revamp) — a near-invisible theme-tinted
        ring so surfaces read as "alive" before the pointer ever arrives,
        instead of flat panels that only react on contact. */
-    box-shadow: var(--probex-elev-1);
+    box-shadow: var(--synatra-elev-1);
     transition: transform var(--motion-fast) var(--motion-ease),
                 border-color var(--motion-fast) var(--motion-ease),
                 background-color var(--motion-fast) var(--motion-ease),
@@ -285,15 +285,15 @@
      intensity used elsewhere, so every interactive surface in the app gets the
      same "glow under the card" the mock UI had. */
   .card-interactive:hover {
-    border-color: color-mix(in srgb, var(--probex-primary) 32%, var(--probex-border-strong));
-    background-color: var(--probex-surface-2);
+    border-color: color-mix(in srgb, var(--synatra-primary) 32%, var(--synatra-border-strong));
+    background-color: var(--synatra-surface-2);
     /* Lift only — the 1.01 scale was dropped: on a dense grid it made adjacent
        cards appear to nudge each other, which reads as instability rather than
        responsiveness. Depth now comes from the elevation step. */
     transform: translateY(-2px);
-    box-shadow: var(--probex-elev-3),
-                0 0 0 1px color-mix(in srgb, var(--probex-primary) 18%, transparent),
-                0 10px 36px -8px color-mix(in srgb, var(--probex-primary) 26%, transparent);
+    box-shadow: var(--synatra-elev-3),
+                0 0 0 1px color-mix(in srgb, var(--synatra-primary) 18%, transparent),
+                0 10px 36px -8px color-mix(in srgb, var(--synatra-primary) 26%, transparent);
   }
 
   /* Recessed tier — pending / awaiting surfaces. More opaque and less blurred
@@ -301,8 +301,8 @@
      with the dashed border that signals "not real data yet". */
   .card-recessed {
     @apply rounded-md border;
-    background-color: color-mix(in srgb, var(--probex-surface) 94%, transparent);
-    border-color: var(--probex-border);
+    background-color: color-mix(in srgb, var(--synatra-surface) 94%, transparent);
+    border-color: var(--synatra-border);
     border-style: dashed;
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
@@ -343,8 +343,8 @@
   /* A condition needing attention. Warning-toned, paired with a left rail and
      text by the consumer — never the only signifier. */
   .glow-attention {
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--probex-warning) var(--glow-active), transparent),
-                0 4px 30px -10px color-mix(in srgb, var(--probex-warning) var(--glow-attention), transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--synatra-warning) var(--glow-active), transparent),
+                0 4px 30px -10px color-mix(in srgb, var(--synatra-warning) var(--glow-attention), transparent);
   }
 
   /* `.card-glow-hover` and `.card-glow-active` were removed here. Both were
@@ -360,14 +360,14 @@
      and stroke weight first — the series itself, not the surface behind it. */
 
   .panel-glow {
-    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--probex-text-primary) 6%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--synatra-text-primary) 6%, transparent);
   }
 
   .hero-glow {
     position: relative;
-    box-shadow: var(--probex-shadow-sm),
-                inset 0 1px 0 color-mix(in srgb, var(--probex-text-primary) 7%, transparent),
-                0 0 48px -14px color-mix(in srgb, var(--probex-primary) 20%, transparent);
+    box-shadow: var(--synatra-shadow-sm),
+                inset 0 1px 0 color-mix(in srgb, var(--synatra-text-primary) 7%, transparent),
+                0 0 48px -14px color-mix(in srgb, var(--synatra-primary) 20%, transparent);
   }
   /* Ambient interior light — two theme-hue radials, breathing very slowly.
      Opacity-only animation (GPU-cheap); neutralised by reduced-motion. */
@@ -378,8 +378,8 @@
     pointer-events: none;
     border-radius: inherit;
     background:
-      radial-gradient(55% 85% at 88% 10%, color-mix(in srgb, var(--probex-primary) 9%, transparent), transparent 62%),
-      radial-gradient(45% 70% at 6% 95%, color-mix(in srgb, var(--probex-secondary) 6%, transparent), transparent 65%);
+      radial-gradient(55% 85% at 88% 10%, color-mix(in srgb, var(--synatra-primary) 9%, transparent), transparent 62%),
+      radial-gradient(45% 70% at 6% 95%, color-mix(in srgb, var(--synatra-secondary) 6%, transparent), transparent 65%);
     animation: hero-breathe var(--motion-ambient) var(--motion-ease) infinite alternate;
   }
 
@@ -394,38 +394,38 @@
     border-radius: inherit;
     pointer-events: none;
     opacity: 0;
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--probex-primary) 30%, transparent),
-                0 0 22px -4px color-mix(in srgb, var(--probex-primary) 24%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--synatra-primary) 30%, transparent),
+                0 0 22px -4px color-mix(in srgb, var(--synatra-primary) 24%, transparent);
     animation: pulse-ring var(--motion-ring) var(--motion-ease);
   }
 
   /* ── Input base ─────────────────────────────────────────── */
   .input-base {
     @apply w-full rounded-md px-3 py-2 text-sm transition-colors duration-150;
-    background-color: var(--probex-surface-2);
-    border: 1px solid var(--probex-border-default);
-    color: var(--probex-text-primary);
+    background-color: var(--synatra-surface-2);
+    border: 1px solid var(--synatra-border-default);
+    color: var(--synatra-text-primary);
   }
 
   .input-base::placeholder {
-    color: var(--probex-text-muted);
+    color: var(--synatra-text-muted);
   }
 
   /* The border shift is a good affordance and it stays. What it cannot do is
      be the ONLY focus indication: it is a 1px colour change from
-     --probex-border-default to --probex-border-active, and the blanket
+     --synatra-border-default to --synatra-border-active, and the blanket
      `outline: none` removed the ring that every other control in the product
      gets. Keyboard users had no visible focus on any text input.
 
      A text field is always focus-visible when focused (it accepts keyboard
      input), so the ring shows on click too — which is correct for an input and
-     matches .focus-ring elsewhere: 2px, offset 2px, --probex-primary. */
+     matches .focus-ring elsewhere: 2px, offset 2px, --synatra-primary. */
   .input-base:focus {
-    border-color: var(--probex-border-active);
+    border-color: var(--synatra-border-active);
   }
 
   .input-base:focus-visible {
-    outline: 2px solid var(--probex-primary);
+    outline: 2px solid var(--synatra-primary);
     outline-offset: 2px;
   }
 
@@ -435,8 +435,8 @@
      control, and one a single ink colour cannot fix because the two ends of a
      gradient want different inks.
 
-     A flat --probex-primary fill has one ink question with one answer, and
-     --probex-on-accent is declared per theme to answer it. Measured after the
+     A flat --synatra-primary fill has one ink question with one answer, and
+     --synatra-on-accent is declared per theme to answer it. Measured after the
      change: 9.50:1 (aurora) through 5.17:1 (institutional), every theme.
 
      Hover raises brightness rather than lowering opacity: opacity fades the
@@ -445,8 +445,8 @@
      move under the cursor. */
   .btn-primary {
     @apply rounded-sm px-4 py-2 text-sm font-semibold cursor-pointer;
-    background: var(--probex-primary);
-    color: var(--probex-on-accent);
+    background: var(--synatra-primary);
+    color: var(--synatra-on-accent);
     border: 1px solid transparent;
     transition: filter var(--motion-fast) var(--motion-ease),
                 background-color var(--motion-fast) var(--motion-ease);
@@ -459,7 +459,7 @@
      2px offset puts it on the surface behind the button, which is where it is
      visible. Same geometry as .focus-ring so focus reads identically product-wide. */
   .btn-primary:focus-visible {
-    outline: 2px solid var(--probex-primary);
+    outline: 2px solid var(--synatra-primary);
     outline-offset: 2px;
     border-radius: inherit;
   }
@@ -473,23 +473,23 @@
 
   .btn-yes {
     @apply rounded-md px-4 py-2 text-sm font-bold transition-all duration-150 cursor-pointer;
-    background: var(--probex-gradient-yes);
-    color: var(--probex-on-yes);
+    background: var(--synatra-gradient-yes);
+    color: var(--synatra-on-yes);
   }
 
   .btn-yes:hover { opacity: 0.88; }
 
   /* NOTE — .btn-no keeps a literal white and is NOT re-pointed at
-     --probex-on-no. It is painted with --probex-gradient-no (the SECONDARY
-     violet #6D5EF7 -> #4F46E5), not with --probex-no (#8B5CF6), so the
+     --synatra-on-no. It is painted with --synatra-gradient-no (the SECONDARY
+     violet #6D5EF7 -> #4F46E5), not with --synatra-no (#8B5CF6), so the
      market-NO ink token does not describe this surface. Measured on this
-     gradient: white 4.57:1 / 6.29:1 (passes); --probex-on-no would be 4.45:1 /
+     gradient: white 4.57:1 / 6.29:1 (passes); --synatra-on-no would be 4.45:1 /
      3.24:1 in aurora (fails). Pointing it at the token would be a regression.
      The gradient/token mismatch itself is real and is logged for the palette
      stage. */
   .btn-no {
     @apply rounded-md px-4 py-2 text-sm font-bold transition-all duration-150 cursor-pointer;
-    background: var(--probex-gradient-no);
+    background: var(--synatra-gradient-no);
     color: #ffffff;
   }
 
@@ -498,14 +498,14 @@
   .btn-ghost {
     @apply rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 cursor-pointer;
     background: transparent;
-    border: 1px solid var(--probex-border-default);
-    color: var(--probex-text-secondary);
+    border: 1px solid var(--synatra-border-default);
+    color: var(--synatra-text-secondary);
   }
 
   .btn-ghost:hover {
-    border-color: var(--probex-border-active);
-    color: var(--probex-text-primary);
-    background-color: var(--probex-primary-dim);
+    border-color: var(--synatra-border-active);
+    color: var(--synatra-text-primary);
+    background-color: var(--synatra-primary-dim);
   }
 
   /* ── Badges / chips ─────────────────────────────────────── */
@@ -515,50 +515,50 @@
 
   .badge-primary {
     @apply badge;
-    background-color: var(--probex-primary-dim);
-    color: var(--probex-primary);
-    border: 1px solid var(--probex-yes-border);
+    background-color: var(--synatra-primary-dim);
+    color: var(--synatra-primary);
+    border: 1px solid var(--synatra-yes-border);
   }
 
   .badge-secondary {
     @apply badge;
-    background-color: var(--probex-secondary-dim);
-    color: var(--probex-secondary);
-    border: 1px solid var(--probex-no-border);
+    background-color: var(--synatra-secondary-dim);
+    color: var(--synatra-secondary);
+    border: 1px solid var(--synatra-no-border);
   }
 
   .badge-positive {
     @apply badge;
-    background-color: var(--probex-positive-dim);
-    color: var(--probex-positive);
+    background-color: var(--synatra-positive-dim);
+    color: var(--synatra-positive);
   }
 
   .badge-negative {
     @apply badge;
-    background-color: var(--probex-negative-dim);
-    color: var(--probex-negative);
+    background-color: var(--synatra-negative-dim);
+    color: var(--synatra-negative);
   }
 
   .badge-warning {
     @apply badge;
-    background-color: var(--probex-warning-dim);
-    color: var(--probex-warning);
+    background-color: var(--synatra-warning-dim);
+    color: var(--synatra-warning);
   }
 
   /* ── Probability bar ────────────────────────────────────── */
   .prob-bar {
     @apply h-1 w-full rounded-full overflow-hidden;
-    background-color: var(--probex-border-default);
+    background-color: var(--synatra-border-default);
   }
 
   .prob-bar-fill-yes {
     @apply h-full rounded-full transition-all duration-500;
-    background: var(--probex-gradient-yes);
+    background: var(--synatra-gradient-yes);
   }
 
   .prob-bar-fill-no {
     @apply h-full rounded-full transition-all duration-500;
-    background: var(--probex-gradient-no);
+    background: var(--synatra-gradient-no);
   }
 
   /* ── Live indicator ─────────────────────────────────────── */
@@ -568,7 +568,7 @@
      colour: unifying the timing must not make liveness louder. */
   .live-dot {
     @apply w-1.5 h-1.5 rounded-full;
-    background-color: var(--probex-positive);
+    background-color: var(--synatra-positive);
     animation: live-pulse var(--motion-pulse) var(--motion-pulse-ease) infinite;
   }
 
@@ -579,7 +579,7 @@
      Motion is the scarce channel; this is how a dot opts out of it. */
   .state-dot {
     @apply w-1.5 h-1.5 rounded-full;
-    background-color: var(--probex-positive);
+    background-color: var(--synatra-positive);
   }
 
   /* ── Shimmer skeleton ───────────────────────────────────── */
@@ -587,9 +587,9 @@
     @apply rounded;
     background: linear-gradient(
       90deg,
-      var(--probex-surface) 25%,
-      var(--probex-surface-2) 50%,
-      var(--probex-surface) 75%
+      var(--synatra-surface) 25%,
+      var(--synatra-surface-2) 50%,
+      var(--synatra-surface) 75%
     );
     background-size: 700px 100%;
     animation: shimmer 1.8s linear infinite;
@@ -599,7 +599,7 @@
   .divider {
     @apply w-full;
     height: 1px;
-    background-color: var(--probex-border);
+    background-color: var(--synatra-border);
   }
 
   /* ── Sidebar nav item ───────────────────────────────────── */
@@ -607,14 +607,14 @@
      groups ran together, which flattened the sidebar's own hierarchy. */
   .nav-item {
     @apply flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium cursor-pointer select-none;
-    color: var(--probex-text-secondary);
+    color: var(--synatra-text-secondary);
     transition: background-color var(--motion-fast) var(--motion-ease),
                 color var(--motion-fast) var(--motion-ease);
   }
 
   .nav-item:hover {
-    background-color: var(--probex-state-hover);
-    color: var(--probex-text-primary);
+    background-color: var(--synatra-state-hover);
+    color: var(--synatra-text-primary);
   }
 
   .nav-item:active {
@@ -622,7 +622,7 @@
   }
 
   .nav-item:focus-visible {
-    outline: 2px solid var(--probex-primary);
+    outline: 2px solid var(--synatra-primary);
     outline-offset: -2px;
   }
 
@@ -631,15 +631,15 @@
      signals agree: a brighter fill, a lit border, a semibold label, and an
      accent bar with a glow. */
   .nav-item-active {
-    background-color: color-mix(in srgb, var(--probex-primary) 14%, transparent);
-    color: var(--probex-text-primary);
-    border: 1px solid color-mix(in srgb, var(--probex-primary) 30%, transparent);
+    background-color: color-mix(in srgb, var(--synatra-primary) 14%, transparent);
+    color: var(--synatra-text-primary);
+    border: 1px solid color-mix(in srgb, var(--synatra-primary) 30%, transparent);
     font-weight: 600;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
   .nav-item-active:hover {
-    background-color: color-mix(in srgb, var(--probex-primary) 18%, transparent);
+    background-color: color-mix(in srgb, var(--synatra-primary) 18%, transparent);
   }
 
   /* Active-item accent bar — communicates "you are here" by position, not just
@@ -654,8 +654,8 @@
     width: 3px;
     height: 60%;
     border-radius: 0 3px 3px 0;
-    background: var(--probex-primary);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--probex-primary) 60%, transparent);
+    background: var(--synatra-primary);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--synatra-primary) 60%, transparent);
   }
   .nav-item-active.justify-center::before {
     display: none;
@@ -663,7 +663,7 @@
 
   /* ── Shared keyboard focus ring (shell interactive elements) ── */
   .focus-ring:focus-visible {
-    outline: 2px solid var(--probex-primary);
+    outline: 2px solid var(--synatra-primary);
     outline-offset: 2px;
     border-radius: inherit;
   }
@@ -679,12 +679,12 @@
 
   .section-title {
     @apply text-sm font-semibold;
-    color: var(--probex-text-primary);
+    color: var(--synatra-text-primary);
   }
 
   .section-link {
     @apply text-xs cursor-pointer transition-opacity duration-150;
-    color: var(--probex-primary);
+    color: var(--synatra-primary);
     opacity: 0.8;
   }
 
@@ -697,17 +697,17 @@
 
   .consensus-label {
     @apply text-xs;
-    color: var(--probex-text-muted);
+    color: var(--synatra-text-muted);
   }
 
   .consensus-bar {
     @apply h-1 rounded-full overflow-hidden mt-1;
-    background-color: var(--probex-border-default);
+    background-color: var(--synatra-border-default);
   }
 
   .consensus-bar-fill {
     @apply h-full rounded-full;
-    background: var(--probex-gradient-brand);
+    background: var(--synatra-gradient-brand);
   }
 }
 
@@ -744,9 +744,9 @@
 :root[data-text-size="lg"] { font-size: 112.5%; }
 
 :root[data-high-contrast] {
-  --probex-text-secondary: var(--probex-text-primary);
-  --probex-border:         var(--probex-border-strong);
-  --probex-border-default: var(--probex-border-strong);
+  --synatra-text-secondary: var(--synatra-text-primary);
+  --synatra-border:         var(--synatra-border-strong);
+  --synatra-border-default: var(--synatra-border-strong);
 }
 
 :root[data-underline-links] a {
@@ -793,39 +793,39 @@
   /* ── Structure ── */
   .t-page-title {
     @apply text-2xl font-bold tracking-tight leading-tight;
-    color: var(--probex-text-primary);
+    color: var(--synatra-text-primary);
   }
   .t-page-subtitle {
     @apply text-sm leading-relaxed;
-    color: var(--probex-text-muted);
+    color: var(--synatra-text-muted);
   }
   .t-section-title {
     @apply text-sm font-semibold tracking-tight;
-    color: var(--probex-text-primary);
+    color: var(--synatra-text-primary);
   }
   .t-card-title {
     @apply text-2xs font-bold uppercase;
     letter-spacing: 0.08em;
-    color: var(--probex-text-secondary);
+    color: var(--synatra-text-secondary);
   }
 
   /* ── Metrics — the loudest thing on any surface ── */
   .t-metric {
     @apply text-2xl font-bold tabular-nums;
     letter-spacing: -0.02em;
-    color: var(--probex-text-primary);
+    color: var(--synatra-text-primary);
     font-feature-settings: "tnum" 1;   /* cv01 dropped: Inter-only digit variant */
   }
   .t-metric-lg {
     @apply text-4xl font-bold tabular-nums;
     letter-spacing: -0.03em;
-    color: var(--probex-text-primary);
+    color: var(--synatra-text-primary);
     font-feature-settings: "tnum" 1;   /* cv01 dropped: Inter-only digit variant */
   }
   .t-metric-sm {
     @apply text-base font-semibold tabular-nums;
     letter-spacing: -0.01em;
-    color: var(--probex-text-primary);
+    color: var(--synatra-text-primary);
     font-feature-settings: "tnum" 1;
   }
 
@@ -844,7 +844,7 @@
     @apply font-bold tabular-nums leading-none;
     font-size: clamp(2.25rem, 1.6rem + 2.6vw, 3.25rem);
     letter-spacing: -0.035em;
-    color: var(--probex-text-primary);
+    color: var(--synatra-text-primary);
     font-feature-settings: "tnum" 1;
   }
   /* Between t-metric (2xl) and t-metric-sm (base) — the register a secondary
@@ -852,7 +852,7 @@
   .t-metric-md {
     @apply text-lg font-bold tabular-nums;
     letter-spacing: -0.02em;
-    color: var(--probex-text-primary);
+    color: var(--synatra-text-primary);
     font-feature-settings: "tnum" 1;
   }
 
@@ -860,7 +860,7 @@
      "ms" never compete with the digits they qualify. */
   .t-unit {
     @apply text-sm font-medium tabular-nums;
-    color: var(--probex-text-muted);
+    color: var(--synatra-text-muted);
   }
 
   /* ── Supporting text ─────────────────────────────────────────────────────
@@ -884,21 +884,21 @@
   .t-label {
     @apply text-2xs font-semibold uppercase;
     letter-spacing: 0.07em;
-    color: var(--probex-text-muted);
+    color: var(--synatra-text-muted);
   }
   .t-value {
     @apply text-xs font-medium tabular-nums;
-    color: var(--probex-text-secondary);
+    color: var(--synatra-text-secondary);
   }
   .t-description {
     @apply text-xs leading-relaxed;
-    color: var(--probex-text-muted);
+    color: var(--synatra-text-muted);
   }
   /* D — technical. Disabled ink and tabular figures: a path or a timestamp
      should be findable and quiet, never read as prose. */
   .t-metadata {
     @apply text-2xs tabular-nums;
-    color: var(--probex-text-disabled);
+    color: var(--synatra-text-disabled);
   }
   /* B — the qualifier under a figure ("of $100.00 initial", "843ms round
      trip"). Was disabled ink, identical to t-metadata: the most-read line
@@ -907,7 +907,7 @@
      separates B from D without a new size. */
   .t-helper {
     @apply text-2xs leading-relaxed;
-    color: var(--probex-text-muted);
+    color: var(--synatra-text-muted);
   }
 
   /* ─────────────────────────────────────────────────────────────────────
@@ -974,7 +974,7 @@
      the word "derived" — explicit, unambiguous, and better for assistive tech
      than a decorative rule ever was. */
   .c-derived {
-    color: var(--probex-certainty-derived);
+    color: var(--synatra-certainty-derived);
     font-weight: 600;
   }
 
@@ -985,7 +985,7 @@
      The dotted underline is the greyscale-safe carrier: it says "this number
      is qualified" even where colour and weight are unavailable. */
   .c-stale {
-    color: var(--probex-certainty-stale);
+    color: var(--synatra-certainty-stale);
     font-weight: 500;
     text-decoration: underline dotted currentColor;
     text-underline-offset: 0.28em;
@@ -1001,18 +1001,18 @@
      is a PLACEHOLDER, not a value — the meaning is in the reason text beneath
      it, which sits at full helper contrast. */
   .c-absent {
-    color: var(--probex-certainty-absent);
+    color: var(--synatra-certainty-absent);
     font-weight: 400;
     font-variant-numeric: tabular-nums;
   }
 
   /* ── Elevation utilities ──────────────────────────────────────────────
-     Paired with the --probex-elev-* tokens. Applied to a surface that already
+     Paired with the --synatra-elev-* tokens. Applied to a surface that already
      has a background and border; these only supply depth. */
-  .elev-1 { box-shadow: var(--probex-elev-1); }
-  .elev-2 { box-shadow: var(--probex-elev-2); }
-  .elev-3 { box-shadow: var(--probex-elev-3); }
-  .elev-4 { box-shadow: var(--probex-elev-4); }
+  .elev-1 { box-shadow: var(--synatra-elev-1); }
+  .elev-2 { box-shadow: var(--synatra-elev-2); }
+  .elev-3 { box-shadow: var(--synatra-elev-3); }
+  .elev-4 { box-shadow: var(--synatra-elev-4); }
 
   /* Raise on hover. Opacity/border/shadow only — no transform, so rows in a
      dense table don't shift their neighbours as the pointer travels. */
@@ -1022,8 +1022,8 @@
                 background-color var(--motion-fast) var(--motion-ease);
   }
   .elev-hover:hover {
-    box-shadow: var(--probex-elev-3);
-    border-color: var(--probex-border-strong);
+    box-shadow: var(--synatra-elev-3);
+    border-color: var(--synatra-border-strong);
   }
 
   /* ── Row hover ────────────────────────────────────────────────────────
@@ -1033,7 +1033,7 @@
     transition: background-color var(--motion-fast) var(--motion-ease);
   }
   .row-hover:hover {
-    background-color: var(--probex-state-hover);
+    background-color: var(--synatra-state-hover);
   }
 
   /* ── Status chips ─────────────────────────────────────────────────────
@@ -1050,15 +1050,15 @@
     font-size: 0.6875rem;
     letter-spacing: 0.06em;
     line-height: 1.2;
-    color: var(--chip-color, var(--probex-text-secondary));
-    background-color: color-mix(in srgb, var(--chip-color, var(--probex-text-muted)) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--chip-color, var(--probex-text-muted)) 26%, transparent);
+    color: var(--chip-color, var(--synatra-text-secondary));
+    background-color: color-mix(in srgb, var(--chip-color, var(--synatra-text-muted)) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--chip-color, var(--synatra-text-muted)) 26%, transparent);
   }
   .chip-dot {
     @apply rounded-full shrink-0;
     width: 5px;
     height: 5px;
-    background-color: var(--chip-color, var(--probex-text-muted));
+    background-color: var(--chip-color, var(--synatra-text-muted));
   }
   /* Live statuses breathe; static ones don't. Motion is reserved for things
      that are genuinely still happening. */
@@ -1223,7 +1223,7 @@
   to   { opacity: 1; }
 }
 
-/* Brand mark breathing — splash / loading states (see ProbexLogo variant
+/* Brand mark breathing — splash / loading states (see SynatraLogo variant
    "loading"). Deliberately not a spin: the logo is the brand moment on a cold
    start, and rotating it cheapens the mark. Opacity + a fractional scale only,
    so it reads as alive rather than as a progress indicator. */

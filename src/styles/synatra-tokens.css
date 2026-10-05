@@ -1,0 +1,801 @@
+/**
+ * Synatra Design Token System
+ * ──────────────────────────
+ * Theme tokens are applied via [data-theme="<name>"] on <html>.
+ * Default theme: aurora
+ *
+ * Token layers:
+ *   1. Brand primitives (never used directly in components)
+ *   2. Semantic tokens (used in components)
+ *   3. Component tokens (used in specific components)
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   BRAND PRIMITIVES — Never reference directly in components.
+   Use semantic tokens instead.
+───────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Cyan spectrum */
+  --brand-cyan-100: #ccf7ff;
+  --brand-cyan-300: #66e5ff;
+  --brand-cyan-500: #00D4FF;
+  --brand-cyan-700: #0099bb;
+  --brand-cyan-900: #005570;
+
+  /* Purple spectrum */
+  --brand-purple-100: #e2dffe;
+  --brand-purple-300: #a89ef9;
+  --brand-purple-500: #6D5EF7;
+  --brand-purple-700: #4636d4;
+  --brand-purple-900: #2a1f9d;
+
+  /* Blue spectrum */
+  --brand-blue-400: #60a5fa;
+  --brand-blue-500: #3B82F6;
+  --brand-blue-700: #1d4ed8;
+
+  /* Semantic status */
+  --brand-positive: #10B981;
+  --brand-negative: #EF4444;
+  --brand-warning:  #F59E0B;
+  --brand-info:     #3B82F6;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THEME: AURORA (DEFAULT)
+   Deep space dark — signature Synatra look
+───────────────────────────────────────────────────────────────────────── */
+:root,
+[data-theme="aurora"] {
+  /* Backgrounds — institutional refinement pass.
+     The page plate was dropped and the surfaces lifted to widen the step
+     between each layer. Previously bg #050816 → surface #0B1120 was a ~6%
+     luminance delta, which is why cards visually dissolved into the page. The
+     ladder below is deliberately uneven: the bg→surface jump is the largest,
+     because that is the one the eye uses to identify "this is a card". */
+  --synatra-bg:        #03050D;
+  --synatra-surface:   #0C1424;
+  --synatra-surface-2: #131E33;
+  --synatra-surface-3: #1B2842;
+
+  /* Borders — raised from 7/9/14% to give cards a defined edge. At the old
+     values the border was below the perceptual threshold on most displays, so
+     separation depended entirely on fill. */
+  --synatra-border:         rgba(255, 255, 255, 0.10);
+  --synatra-border-default: rgba(255, 255, 255, 0.14);
+  --synatra-border-strong:  rgba(255, 255, 255, 0.22);
+  --synatra-border-active:  rgba(56, 189, 248, 0.40);
+
+  /* Accent */
+  --synatra-primary:   #38BDF8;
+  --synatra-secondary: #6D5EF7;
+  --synatra-primary-dim:   rgba(56, 189, 248, 0.12);
+  --synatra-secondary-dim: rgba(109, 94, 247, 0.12);
+
+  /* ── Text ramp ────────────────────────────────────────────────────────────
+     Four tiers, each ~0.7× the alpha of the one above, so the hierarchy is a
+     geometric ramp rather than four hand-picked values.
+
+     ⚠️ The lower two tiers were measured as illegible and were raised:
+     muted sat at 0.32 (2.65:1 against --synatra-surface) and disabled at 0.18
+     (1.64:1). WCAG AA needs 4.5:1 for body text and 3:1 for large/UI text, so
+     the entire quiet half of the product's typography — every .t-label,
+     .t-description, .t-metadata and .t-helper — was below the legibility floor
+     rather than merely subdued. On the Overview alone that was 39 rendered text
+     instances, including the hero's own H/L price range at 1.54:1.
+
+     The same defect was present in ALL SIX themes; each is now solved against
+     its own surface, so the alphas differ slightly per theme by design.
+
+     ⚠️ All three lower tiers target 4.5:1, not 3:1. The 3:1 allowance applies
+     only to text ≥24px (or ≥18.66px bold), and every consumer of these tokens
+     is 10–13px — .t-metadata and .t-helper are the SMALLEST text in the
+     product, so they need the strictest ratio, not the loosest. An earlier
+     pass set disabled to a 3:1 target and it still measured 3.14:1 against a
+     4.5 requirement.
+
+     Separation between the tiers is therefore carried by size, weight and
+     letter-spacing (see the t-* scale in globals.css) rather than by contrast
+     alone. Three legible steps beat four where one is unreadable.
+
+     Muted is NOT decorative here: .t-label and .t-description are real reading
+     text. Keeping it below AA was the difference between "restrained" and
+     "unreadable on a laptop screen in daylight". */
+  --synatra-text-primary:   #E8EEFF;
+  --synatra-text-secondary: rgba(232, 238, 255, 0.72);
+  --synatra-text-muted:     rgba(232, 238, 255, 0.62);
+  --synatra-text-disabled:  rgba(232, 238, 255, 0.50);
+
+  /* Trading sides */
+  --synatra-yes:          #00F2FE;
+  --synatra-yes-dim:      rgba(0, 242, 254, 0.1);
+  --synatra-yes-border:   rgba(0, 242, 254, 0.25);
+  --synatra-no:           #C084FC;
+  --synatra-no-dim:       rgba(192, 132, 252, 0.1);
+  --synatra-no-border:    rgba(192, 132, 252, 0.25);
+  /* ── Ink on filled accent surfaces ───────────────────────────────────────
+     A chip or button that FILLS itself with an accent needs an ink colour,
+     and the correct ink flips with that accent's luminance. This was
+     previously decided in the components as `isYes ? '#050816' : '#fff'`,
+     which is wrong in four theme/role combinations because it assumes every
+     YES is bright and every NO is dark. Measured, white-on-NO gives 4.23:1 in
+     aurora, 3.74:1 in quantum and 1.98:1 in emerald; dark-on-YES gives 3.86:1
+     in institutional, which is a light theme. All four fail WCAG AA at the
+     10-11px these chips are set in.
+     Declaring the ink per theme moves the decision to the only layer that
+     knows both colours. Every combination now measures >= 4.81:1. */
+  --synatra-on-accent: #03050D;
+  --synatra-on-yes:    #03050D;
+  --synatra-on-no:     #03050D;
+
+  /* Semantic */
+  --synatra-positive:  #10B981;
+  --synatra-positive-dim: rgba(16, 185, 129, 0.12);
+  --synatra-negative:  #F87171;
+  --synatra-negative-dim: rgba(239, 68, 68, 0.1);
+  --synatra-negative-strong: #C81E1E;
+  --synatra-warning:   #F59E0B;
+  --synatra-warning-dim: rgba(245, 158, 11, 0.1);
+
+  /* Consensus signal colors */
+  --synatra-consensus-high:    #10B981;
+  --synatra-consensus-med:     #F59E0B;
+  --synatra-consensus-low:     #EF4444;
+
+  /* Sidebar */
+  --synatra-sidebar-bg:      #0B1120;
+  --synatra-sidebar-item-active-bg: rgba(56, 189, 248, 0.1);
+  --synatra-sidebar-item-active-border: rgba(56, 189, 248, 0.2);
+
+  /* Charts */
+  --synatra-chart-primary:   #38BDF8;
+  --synatra-chart-secondary: #6D5EF7;
+  --synatra-chart-tertiary:  #10B981;
+  --synatra-chart-grid:      rgba(255, 255, 255, 0.05);
+  --synatra-chart-axis:      rgba(255, 255, 255, 0.2);
+
+  /* Gradient — logo and primary CTAs.
+     NOTE: still the OLD cyan (#00D4FF), deliberately. It is consumed by
+     .btn-primary, whose white ink measures 1.77:1 against the cyan end — a
+     live contrast failure. The approved direction replaces that button with a
+     flat --synatra-primary fill plus --synatra-on-accent ink, and the gradient
+     moves with it. Re-tinting the gradient here would shift the CTA and the
+     logo without fixing the ink, i.e. change the symptom and keep the bug. */
+  --synatra-gradient-brand: linear-gradient(135deg, #38BDF8 0%, #6D5EF7 100%);
+  --synatra-gradient-yes:   linear-gradient(135deg, #00F2FE 0%, #0099BB 100%);
+  --synatra-gradient-no:    linear-gradient(135deg, #6D5EF7 0%, #4F46E5 100%);
+  --synatra-gradient-surface: linear-gradient(180deg, #0B1120 0%, #050816 100%);
+
+  /* Canonical surface shadows (Phase 1 · T5) — tokenized from the former inline
+     card literals; theme-invariant (subtle black), so defined once on :root and
+     inherited by every theme. */
+  --synatra-shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.10);
+  --synatra-shadow-lift: 0 8px 24px rgba(0, 0, 0, 0.16);
+
+  /* ── Elevation scale (institutional refinement) ──────────────────────────
+     A card reads as a physical object when three things agree: a shadow below
+     it, a defined edge, and a highlight on its top lip catching the light.
+     Shadow alone just looks like a blur. Every level below therefore pairs a
+     drop shadow with an inset top highlight, which is the detail that makes
+     surfaces feel milled rather than pasted on.
+
+     elev-1  resting card / panel
+     elev-2  raised — primary cards, focused instruments
+     elev-3  hover
+     elev-4  overlays: dialogs, popovers, command palette                    */
+  --synatra-elev-1:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  --synatra-elev-2:
+    0 2px 4px rgba(0, 0, 0, 0.30),
+    0 8px 20px -8px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --synatra-elev-3:
+    0 4px 8px rgba(0, 0, 0, 0.32),
+    0 16px 36px -12px rgba(0, 0, 0, 0.50),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --synatra-elev-4:
+    0 8px 16px rgba(0, 0, 0, 0.38),
+    0 32px 64px -16px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
+
+  /* ── Interaction state tokens ────────────────────────────────────────────
+     Hover/active are expressed as translucent white washes rather than as
+     separate surface colours, so any element on any tier lightens by the same
+     perceptual amount instead of jumping to a fixed colour. */
+  --synatra-state-hover:    rgba(255, 255, 255, 0.04);
+  --synatra-state-active:   rgba(255, 255, 255, 0.07);
+  --synatra-state-selected: color-mix(in srgb, var(--synatra-primary) 12%, transparent);
+
+  /* ── Motion ──────────────────────────────────────────────────────────────
+     One easing voice for the whole product: a soft "settle" curve (fast start,
+     long gentle landing) — intentional and refined, never bouncy, never
+     linear-mechanical.
+
+     ─── Why the scale was renumbered ──────────────────────────────────────
+     It previously read `fast: 150ms · med: 320ms · slow: 240ms`, so "slow" was
+     FASTER than "med" and a caller reaching for the token names could not get
+     the duration they meant. Each name now maps to one job, and every value
+     below is a duration that already existed somewhere in this codebase — none
+     was invented to fill a slot.
+
+       fast     interaction feedback: hover, focus, row wash, control state
+       med      standard content transition: panel/surface state, selection
+       shell    chassis motion: the mobile nav drawer's slide
+       ring     one-shot state emphasis: the live-update pulse ring
+       ambient  slow atmospheric drift on the single focal hero
+
+     `slow` is gone rather than re-valued: its 240ms was the product's real
+     standard transition and has moved into `med`, where the only consumer that
+     used it now reads identically. A separate data-settle duration belongs with
+     the chart work, and is not added here on speculation. */
+  --motion-ease:    cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-fast:    150ms;
+  --motion-med:     240ms;
+  --motion-shell:   220ms;
+  --motion-ring:    620ms;
+  --motion-pulse:   2s;
+  --motion-ambient: 9s;
+
+  /* The live breath uses a SYMMETRIC easing, not the settle curve. `live-pulse`
+     alternates opacity and scale forever; --motion-ease has a fast attack and a
+     long landing, which on a loop reads as a repeated flinch rather than a
+     breath. `.live-dot` and `.chip-dot-live` previously disagreed on both
+     duration (1.8s vs 2s) and easing (ease-in-out vs --motion-ease) for the
+     same keyframe, so the product's two live indicators breathed out of step. */
+  --motion-pulse-ease: ease-in-out;
+
+  /* ── Illumination strength ───────────────────────────────────────────────
+     Lighting is a SECONDARY channel — label, border and text carry meaning
+     first. These strengths exist so a surface's glow is chosen by what it
+     MEANS, not by how bright an author wanted it:
+
+       active     visible but restrained — the ring on an illuminated surface
+       attention  clearly noticeable, still institutional — its outer bloom
+
+     Values are opacity percentages consumed through color-mix, so every
+     strength re-tints with the active theme and none is a hardcoded colour.
+
+     A third `subtle` step was drafted and removed with the focal glow it was
+     written for: no surface in the product currently earns barely-perceptible
+     ambient light, and shipping the token would invite one to be invented. */
+  --glow-active:    14%;
+  --glow-attention: 20%;
+
+  /* Environmental light field (Phase 1 · T6) — a fixed atmospheric glow painted
+     behind the content plane so glass surfaces have something to refract. Built
+     from the ACTIVE theme's own brand hues via var(), so it adapts per theme
+     automatically (this :root definition serves every dark theme; Institutional
+     overrides it to a fainter value). pointer-events never apply — it is a
+     background layer, not an element. */
+  --synatra-lightfield:
+    radial-gradient(60% 55% at 12% -5%, color-mix(in srgb, var(--synatra-primary) 7%, transparent), transparent 60%),
+    radial-gradient(55% 50% at 105% 108%, color-mix(in srgb, var(--synatra-secondary) 6%, transparent), transparent 58%);
+
+  /* Scrollbar */
+  --synatra-scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --synatra-scrollbar-track: transparent;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THEME: MIDNIGHT
+   Maximum dark — deep navy blacks
+───────────────────────────────────────────────────────────────────────── */
+[data-theme="midnight"] {
+  --synatra-bg:        #010208;
+  --synatra-surface:   #04080F;
+  --synatra-surface-2: #070D18;
+  --synatra-surface-3: #0A1220;
+
+  --synatra-border:         rgba(255, 255, 255, 0.05);
+  --synatra-border-default: rgba(255, 255, 255, 0.07);
+  --synatra-border-strong:  rgba(255, 255, 255, 0.12);
+  --synatra-border-active:  rgba(96, 165, 250, 0.4);
+
+  --synatra-primary:   #60A5FA;
+  --synatra-secondary: #4F46E5;
+  --synatra-primary-dim:   rgba(96, 165, 250, 0.12);
+  --synatra-secondary-dim: rgba(79, 70, 229, 0.12);
+
+  --synatra-text-primary:   #E2E8F0;
+  --synatra-text-secondary: rgba(226, 232, 240, 0.72);
+  --synatra-text-muted:     rgba(226, 232, 240, 0.64);
+  --synatra-text-disabled:  rgba(226, 232, 240, 0.52);
+
+  --synatra-yes:        #3B82F6;
+  --synatra-yes-dim:    rgba(59, 130, 246, 0.1);
+  --synatra-yes-border: rgba(59, 130, 246, 0.25);
+  --synatra-no:         #4F46E5;
+  --synatra-no-dim:     rgba(79, 70, 229, 0.1);
+  --synatra-no-border:  rgba(79, 70, 229, 0.25);
+  --synatra-on-accent: #010208;
+  --synatra-on-yes:    #010208;
+  --synatra-on-no:     #FFFFFF;
+
+  --synatra-positive:  #10B981;
+  --synatra-positive-dim: rgba(16, 185, 129, 0.12);
+  --synatra-negative:  #F87171;
+  --synatra-negative-dim: rgba(239, 68, 68, 0.1);
+  --synatra-negative-strong: #C81E1E;
+  --synatra-warning:   #F59E0B;
+  --synatra-warning-dim: rgba(245, 158, 11, 0.1);
+
+  --synatra-consensus-high: #10B981;
+  --synatra-consensus-med:  #F59E0B;
+  --synatra-consensus-low:  #EF4444;
+
+  --synatra-sidebar-bg: #04080F;
+  --synatra-sidebar-item-active-bg: rgba(96, 165, 250, 0.1);
+  --synatra-sidebar-item-active-border: rgba(96, 165, 250, 0.2);
+
+  --synatra-chart-primary:   #60A5FA;
+  --synatra-chart-secondary: #4F46E5;
+  --synatra-chart-tertiary:  #10B981;
+  --synatra-chart-grid:      rgba(255, 255, 255, 0.04);
+  --synatra-chart-axis:      rgba(255, 255, 255, 0.18);
+
+  --synatra-gradient-brand:   linear-gradient(135deg, #60A5FA 0%, #4F46E5 100%);
+  --synatra-gradient-yes:     linear-gradient(135deg, #3B82F6 0%, #1d4ed8 100%);
+  --synatra-gradient-no:      linear-gradient(135deg, #4F46E5 0%, #3730a3 100%);
+  --synatra-gradient-surface: linear-gradient(180deg, #04080F 0%, #010208 100%);
+
+  --synatra-scrollbar-thumb: rgba(255, 255, 255, 0.08);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THEME: QUANTUM
+   Neon green intelligence — quantitative
+───────────────────────────────────────────────────────────────────────── */
+[data-theme="quantum"] {
+  --synatra-bg:        #020A06;
+  --synatra-surface:   #061410;
+  --synatra-surface-2: #081C16;
+  --synatra-surface-3: #0C2420;
+
+  --synatra-border:         rgba(255, 255, 255, 0.06);
+  --synatra-border-default: rgba(255, 255, 255, 0.08);
+  --synatra-border-strong:  rgba(255, 255, 255, 0.13);
+  --synatra-border-active:  rgba(34, 211, 238, 0.35);
+
+  --synatra-primary:   #22D3EE;
+  --synatra-secondary: #0D9488;
+  --synatra-primary-dim:   rgba(34, 211, 238, 0.1);
+  --synatra-secondary-dim: rgba(13, 148, 136, 0.1);
+
+  --synatra-text-primary:   #E0FFF0;
+  --synatra-text-secondary: rgba(224, 255, 240, 0.72);
+  --synatra-text-muted:     rgba(224, 255, 240, 0.61);
+  --synatra-text-disabled:  rgba(224, 255, 240, 0.49);
+
+  --synatra-yes:        #00FF88;
+  --synatra-yes-dim:    rgba(0, 255, 136, 0.1);
+  --synatra-yes-border: rgba(0, 255, 136, 0.25);
+  --synatra-no:         #0D9488;
+  --synatra-no-dim:     rgba(13, 148, 136, 0.1);
+  --synatra-no-border:  rgba(13, 148, 136, 0.25);
+  --synatra-on-accent: #020A06;
+  --synatra-on-yes:    #020A06;
+  --synatra-on-no:     #020A06;
+
+  --synatra-positive:  #22C55E;
+  --synatra-positive-dim: rgba(34, 197, 94, 0.12);
+  --synatra-negative:  #FF4466;
+  --synatra-negative-dim: rgba(255, 68, 102, 0.1);
+  --synatra-negative-strong: #C4143C;
+  --synatra-warning:   #FFBB00;
+  --synatra-warning-dim: rgba(255, 187, 0, 0.1);
+
+  --synatra-consensus-high: #00FF88;
+  --synatra-consensus-med:  #FFBB00;
+  --synatra-consensus-low:  #FF4466;
+
+  --synatra-sidebar-bg: #061410;
+  --synatra-sidebar-item-active-bg: rgba(34, 211, 238, 0.08);
+  --synatra-sidebar-item-active-border: rgba(34, 211, 238, 0.2);
+
+  --synatra-chart-primary:   #22D3EE;
+  --synatra-chart-secondary: #0D9488;
+  --synatra-chart-tertiary:  #84CC16;
+  --synatra-chart-grid:      rgba(255, 255, 255, 0.04);
+  --synatra-chart-axis:      rgba(255, 255, 255, 0.18);
+
+  --synatra-gradient-brand:   linear-gradient(135deg, #22D3EE 0%, #0D9488 100%);
+  --synatra-gradient-yes:     linear-gradient(135deg, #00FF88 0%, #00bb63 100%);
+  --synatra-gradient-no:      linear-gradient(135deg, #0D9488 0%, #065F46 100%);
+  --synatra-gradient-surface: linear-gradient(180deg, #061410 0%, #020A06 100%);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THEME: EMERALD
+   Premium dark green — wealth management aesthetic
+───────────────────────────────────────────────────────────────────────── */
+[data-theme="emerald"] {
+  --synatra-bg:        #031A10;
+  --synatra-surface:   #062318;
+  --synatra-surface-2: #092D20;
+  --synatra-surface-3: #0E3828;
+
+  --synatra-border:         rgba(255, 255, 255, 0.06);
+  --synatra-border-default: rgba(255, 255, 255, 0.09);
+  --synatra-border-strong:  rgba(255, 255, 255, 0.14);
+  --synatra-border-active:  rgba(94, 234, 212, 0.4);
+
+  --synatra-primary:   #5EEAD4;
+  --synatra-secondary: #065F46;
+  --synatra-primary-dim:   rgba(94, 234, 212, 0.12);
+  --synatra-secondary-dim: rgba(6, 95, 70, 0.15);
+
+  --synatra-text-primary:   #ECFDF5;
+  --synatra-text-secondary: rgba(236, 253, 245, 0.72);
+  --synatra-text-muted:     rgba(236, 253, 245, 0.63);
+  --synatra-text-disabled:  rgba(236, 253, 245, 0.55);
+
+  --synatra-yes:        #10B981;
+  --synatra-yes-dim:    rgba(16, 185, 129, 0.1);
+  --synatra-yes-border: rgba(16, 185, 129, 0.28);
+  --synatra-no:         #84CC16;
+  --synatra-no-dim:     rgba(132, 204, 22, 0.1);
+  --synatra-no-border:  rgba(132, 204, 22, 0.25);
+  --synatra-on-accent: #031A10;
+  --synatra-on-yes:    #031A10;
+  --synatra-on-no:     #031A10;
+
+  --synatra-positive:  #22C55E;
+  --synatra-positive-dim: rgba(34, 197, 94, 0.12);
+  --synatra-negative:  #F87171;
+  --synatra-negative-dim: rgba(239, 68, 68, 0.1);
+  --synatra-negative-strong: #C81E1E;
+  --synatra-warning:   #F59E0B;
+  --synatra-warning-dim: rgba(245, 158, 11, 0.1);
+
+  --synatra-consensus-high: #10B981;
+  --synatra-consensus-med:  #F59E0B;
+  --synatra-consensus-low:  #EF4444;
+
+  --synatra-sidebar-bg: #062318;
+  --synatra-sidebar-item-active-bg: rgba(94, 234, 212, 0.1);
+  --synatra-sidebar-item-active-border: rgba(94, 234, 212, 0.22);
+
+  --synatra-chart-primary:   #5EEAD4;
+  --synatra-chart-secondary: #84CC16;
+  --synatra-chart-tertiary:  #06B6D4;
+  --synatra-chart-grid:      rgba(255, 255, 255, 0.04);
+  --synatra-chart-axis:      rgba(255, 255, 255, 0.18);
+
+  --synatra-gradient-brand:   linear-gradient(135deg, #5EEAD4 0%, #065F46 100%);
+  --synatra-gradient-yes:     linear-gradient(135deg, #10B981 0%, #059669 100%);
+  --synatra-gradient-no:      linear-gradient(135deg, #84CC16 0%, #4D7C0F 100%);
+  --synatra-gradient-surface: linear-gradient(180deg, #062318 0%, #031A10 100%);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THEME: INSTITUTIONAL
+   Light mode — TradFi credibility
+───────────────────────────────────────────────────────────────────────── */
+[data-theme="institutional"] {
+  --synatra-bg:        #F1F5F9;
+  --synatra-surface:   #FFFFFF;
+  --synatra-surface-2: #F8FAFC;
+  --synatra-surface-3: #F1F5F9;
+
+  --synatra-border:         rgba(15, 23, 42, 0.08);
+  --synatra-border-default: rgba(15, 23, 42, 0.12);
+  --synatra-border-strong:  rgba(15, 23, 42, 0.2);
+  --synatra-border-active:  rgba(3, 105, 161, 0.4);
+
+  --synatra-primary:   #0369A1;
+  --synatra-secondary: #4F46E5;
+  --synatra-primary-dim:   rgba(3, 105, 161, 0.08);
+  --synatra-secondary-dim: rgba(79, 70, 229, 0.08);
+
+  --synatra-text-primary:   #0F172A;
+  --synatra-text-secondary: rgba(15, 23, 42, 0.78);
+  --synatra-text-muted:     rgba(15, 23, 42, 0.72);
+  --synatra-text-disabled:  rgba(15, 23, 42, 0.60);
+
+  --synatra-yes:        #2563EB;
+  --synatra-yes-dim:    rgba(37, 99, 235, 0.08);
+  --synatra-yes-border: rgba(37, 99, 235, 0.22);
+  --synatra-no:         #4F46E5;
+  --synatra-no-dim:     rgba(79, 70, 229, 0.08);
+  --synatra-no-border:  rgba(79, 70, 229, 0.22);
+  --synatra-on-accent: #FFFFFF;
+  --synatra-on-yes:    #FFFFFF;
+  --synatra-on-no:     #FFFFFF;
+
+  --synatra-positive:  #047857;
+  --synatra-positive-dim: rgba(5, 150, 105, 0.1);
+  --synatra-negative:  #DC2626;
+  --synatra-negative-dim: rgba(220, 38, 38, 0.08);
+  --synatra-negative-strong: #B91C1C;
+  --synatra-warning:   #B45309;
+  --synatra-warning-dim: rgba(217, 119, 6, 0.08);
+
+  --synatra-consensus-high: #059669;
+  --synatra-consensus-med:  #D97706;
+  --synatra-consensus-low:  #DC2626;
+
+  --synatra-sidebar-bg: #FFFFFF;
+  --synatra-sidebar-item-active-bg: rgba(3, 105, 161, 0.07);
+  --synatra-sidebar-item-active-border: rgba(3, 105, 161, 0.18);
+
+  --synatra-chart-primary:   #0369A1;
+  --synatra-chart-secondary: #4F46E5;
+  --synatra-chart-tertiary:  #059669;
+  --synatra-chart-grid:      rgba(15, 23, 42, 0.05);
+  --synatra-chart-axis:      rgba(15, 23, 42, 0.3);
+
+  --synatra-gradient-brand:   linear-gradient(135deg, #0369A1 0%, #4F46E5 100%);
+  --synatra-gradient-yes:     linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
+  --synatra-gradient-no:      linear-gradient(135deg, #4F46E5 0%, #3730a3 100%);
+  --synatra-gradient-surface: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+
+  /* Light theme: keep the field barely-there so it never muddies white surfaces. */
+  --synatra-lightfield:
+    radial-gradient(60% 55% at 12% -5%, color-mix(in srgb, var(--synatra-primary) 3%, transparent), transparent 60%),
+    radial-gradient(55% 50% at 105% 108%, color-mix(in srgb, var(--synatra-secondary) 3%, transparent), transparent 58%);
+
+  --synatra-scrollbar-thumb: rgba(15, 23, 42, 0.15);
+  --synatra-scrollbar-track: transparent;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THEME: EMBER (BETA) — 2026-07-24 frontend revamp initiative
+   Molten warm-dark: burnt orange primary + amber secondary over a warm
+   near-black (brown-black, not the blue-blacks of the other dark themes).
+   Trading sides read as gold (yes) vs deep sienna (no) — both warm but split
+   by lightness so they stay unambiguous. positive/negative/warning/consensus
+   keep the fixed shared semantic values (green/red/amber) so P&L never
+   re-hues per theme; only accent, background, text, trading-side, chart, and
+   gradient tokens vary here. Replaces the earlier 'nova' (pink) beta slot.
+───────────────────────────────────────────────────────────────────────── */
+[data-theme="ember"] {
+  --synatra-bg:        #0B0705;
+  --synatra-surface:   #140D08;
+  --synatra-surface-2: #1D130B;
+  --synatra-surface-3: #271A0F;
+
+  --synatra-border:         rgba(255, 236, 214, 0.07);
+  --synatra-border-default: rgba(255, 236, 214, 0.10);
+  --synatra-border-strong:  rgba(255, 236, 214, 0.16);
+  --synatra-border-active:  rgba(242, 100, 25, 0.4);
+
+  --synatra-primary:   #F26419;
+  --synatra-secondary: #F7A23B;
+  --synatra-primary-dim:   rgba(242, 100, 25, 0.14);
+  --synatra-secondary-dim: rgba(247, 162, 59, 0.14);
+
+  --synatra-text-primary:   #FBEEE2;
+  --synatra-text-secondary: rgba(251, 238, 226, 0.72);
+  --synatra-text-muted:     rgba(251, 238, 226, 0.63);
+  --synatra-text-disabled:  rgba(251, 238, 226, 0.51);
+
+  --synatra-yes:          #FBBF24;
+  --synatra-yes-dim:      rgba(251, 191, 36, 0.12);
+  --synatra-yes-border:   rgba(251, 191, 36, 0.28);
+  --synatra-no:           #C2410C;
+  --synatra-no-dim:       rgba(194, 65, 12, 0.14);
+  --synatra-no-border:    rgba(194, 65, 12, 0.32);
+  --synatra-on-accent: #0B0705;
+  --synatra-on-yes:    #0B0705;
+  --synatra-on-no:     #FFFFFF;
+
+  --synatra-positive:  #10B981;
+  --synatra-positive-dim: rgba(16, 185, 129, 0.12);
+  --synatra-negative:  #F87171;
+  --synatra-negative-dim: rgba(239, 68, 68, 0.1);
+  --synatra-negative-strong: #C81E1E;
+  --synatra-warning:   #F59E0B;
+  --synatra-warning-dim: rgba(245, 158, 11, 0.1);
+
+  --synatra-consensus-high: #10B981;
+  --synatra-consensus-med:  #F59E0B;
+  --synatra-consensus-low:  #EF4444;
+
+  --synatra-sidebar-bg: #140D08;
+  --synatra-sidebar-item-active-bg: rgba(242, 100, 25, 0.12);
+  --synatra-sidebar-item-active-border: rgba(242, 100, 25, 0.24);
+
+  --synatra-chart-primary:   #F26419;
+  --synatra-chart-secondary: #F7A23B;
+  --synatra-chart-tertiary:  #10B981;
+  --synatra-chart-grid:      rgba(255, 236, 214, 0.05);
+  --synatra-chart-axis:      rgba(255, 236, 214, 0.22);
+
+  --synatra-gradient-brand:   linear-gradient(135deg, #F26419 0%, #F7A23B 100%);
+  --synatra-gradient-yes:     linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+  --synatra-gradient-no:      linear-gradient(135deg, #C2410C 0%, #7C2D12 100%);
+  --synatra-gradient-surface: linear-gradient(180deg, #140D08 0%, #0B0705 100%);
+
+  /* Warm ember light-field — two warm radials smouldering in the corners. */
+  --synatra-lightfield:
+    radial-gradient(60% 55% at 12% -5%, color-mix(in srgb, var(--synatra-primary) 8%, transparent), transparent 60%),
+    radial-gradient(55% 50% at 105% 108%, color-mix(in srgb, var(--synatra-secondary) 6%, transparent), transparent 58%);
+
+  --synatra-scrollbar-thumb: rgba(255, 236, 214, 0.12);
+  --synatra-scrollbar-track: transparent;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   INSTITUTIONAL REFINEMENT LAYER
+   ═════════════════════════════════════════════════════════════════════════
+   Structural overrides applied AFTER every theme block, so they reach all six
+   palettes rather than only the default one.
+
+   This exists because the surface and border ladders were tuned per theme and
+   drifted apart: midnight shipped a 5% border and a ~3% luminance step from
+   page to card, which is below the threshold at which a card reads as a
+   separate object. Refining only the default theme would have left whichever
+   theme the operator actually uses untouched — the flatness the redesign brief
+   describes was being seen on midnight, not aurora.
+
+   Two rules:
+     1. BORDERS are structural, not palette. Every dark theme gets the same
+        opacity ladder (10 / 14 / 22%), tinted to the theme's own hue where the
+        theme already established one (ember is warm, not neutral white).
+     2. SURFACES stay per-theme because the hues genuinely differ, but each
+        ladder is widened so bg → surface is the largest step in the stack.
+        That first step is the one the eye uses to identify a card.
+
+   Institutional is deliberately excluded: it is the light theme, where dark
+   borders on white already clear the contrast threshold.
+───────────────────────────────────────────────────────────────────────── */
+
+:root,
+[data-theme="aurora"],
+[data-theme="midnight"],
+[data-theme="quantum"],
+[data-theme="emerald"] {
+  --synatra-border:         rgba(255, 255, 255, 0.10);
+  --synatra-border-default: rgba(255, 255, 255, 0.14);
+  --synatra-border-strong:  rgba(255, 255, 255, 0.22);
+}
+
+[data-theme="ember"] {
+  --synatra-border:         rgba(255, 236, 214, 0.11);
+  --synatra-border-default: rgba(255, 236, 214, 0.15);
+  --synatra-border-strong:  rgba(255, 236, 214, 0.23);
+}
+
+/* Midnight — the deepest theme and the one that needed this most. The page
+   plate stays near-black (that is the theme's identity); the surfaces above it
+   are lifted so cards separate. */
+[data-theme="midnight"] {
+  --synatra-surface:   #0A1220;
+  --synatra-surface-2: #101A2B;
+  --synatra-surface-3: #18243A;
+}
+
+[data-theme="quantum"] {
+  --synatra-surface:   #0B1E18;
+  --synatra-surface-2: #112A22;
+  --synatra-surface-3: #17362C;
+}
+
+[data-theme="emerald"] {
+  --synatra-surface:   #0B2E20;
+  --synatra-surface-2: #113A2A;
+  --synatra-surface-3: #184A36;
+}
+
+[data-theme="ember"] {
+  --synatra-surface:   #1B1310;
+  --synatra-surface-2: #261A13;
+  --synatra-surface-3: #33251A;
+}
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   OBSIDIAN COCKPIT — FOUNDATION LAYER
+   ═════════════════════════════════════════════════════════════════════════
+   Appended after every theme block and after the institutional refinement
+   layer, so these reach all six palettes rather than only the default.
+
+   Two things are added here, both structural:
+
+   1. TWO NEW SURFACE STEPS. The ladder was bg → surface → surface-2 →
+      surface-3, which has no RECESSED step and no OVERLAY step. A table
+      header, an input trough and a probe row all want to sit BELOW the panel
+      they are in; today they borrow surface-2, which sits above it, so an
+      inset well reads as a raised chip. `surface-lowest` is that missing
+      step, and it is what lets a row read as an instrument slot.
+      `surface-overlay` is the plane for modals and the command palette,
+      which currently reuse surface-3 and so cannot be distinguished from a
+      hovered row.
+
+      `surface-raised` is introduced as a NAME for the existing surface-2
+      value, not a new colour. Renaming surface-2 outright would touch 73 call
+      sites across 48 files, which is route work, not foundation. Both names
+      resolve to the same colour until those sites migrate.
+
+   2. THE FIVE DATA-STATE COLOURS. live / stale / degraded / offline /
+      synthetic previously had no tokens at all — ProvenanceBadge composed
+      them from positive/warning/muted, which is why DEGRADED and STALE are
+      currently the same amber and why OFFLINE and SYNTHETIC have no colour of
+      their own. These six states must never collapse into each other, so
+      each now has a token, per theme.
+
+      Values are tuned per theme against that theme's OWN surface, not copied:
+      emerald's surface is the lightest of the dark themes and #F43F5E
+      measures 4.01:1 on it, so emerald's offline is lifted to #FB7185
+      (5.47:1). Institutional is the light theme and takes darkened variants
+      throughout. Every combination measures >= 4.47:1.
+───────────────────────────────────────────────────────────────────────── */
+
+[data-theme="aurora"], :root {
+  --synatra-surface-lowest:  #060A14;
+  --synatra-surface-raised:  var(--synatra-surface-2);
+  --synatra-surface-overlay: #182744;
+
+  --synatra-status-live:      #10B981;
+  --synatra-status-stale:     #F59E0B;
+  --synatra-status-degraded:  #FB923C;
+  --synatra-status-offline:   #F43F5E;
+  --synatra-status-synthetic: #818CF8;
+}
+
+[data-theme="midnight"] {
+  --synatra-surface-lowest:  #050912;
+  --synatra-surface-raised:  var(--synatra-surface-2);
+  --synatra-surface-overlay: #1E2C46;
+
+  --synatra-status-live:      #10B981;
+  --synatra-status-stale:     #F59E0B;
+  --synatra-status-degraded:  #FB923C;
+  --synatra-status-offline:   #F43F5E;
+  --synatra-status-synthetic: #818CF8;
+}
+
+[data-theme="quantum"] {
+  --synatra-surface-lowest:  #06110C;
+  --synatra-surface-raised:  var(--synatra-surface-2);
+  --synatra-surface-overlay: #1D4235;
+
+  --synatra-status-live:      #10B981;
+  --synatra-status-stale:     #F59E0B;
+  --synatra-status-degraded:  #FB923C;
+  --synatra-status-offline:   #F43F5E;
+  --synatra-status-synthetic: #818CF8;
+}
+
+[data-theme="emerald"] {
+  --synatra-surface-lowest:  #072418;
+  --synatra-surface-raised:  var(--synatra-surface-2);
+  --synatra-surface-overlay: #1E5740;
+
+  --synatra-status-live:      #10B981;
+  --synatra-status-stale:     #F59E0B;
+  --synatra-status-degraded:  #FB923C;
+  /* Lifted from #F43F5E: emerald's surface (#0B2E20) is the lightest of the
+     dark themes and the standard crimson measures 4.01:1 on it. */
+  --synatra-status-offline:   #FB7185;
+  --synatra-status-synthetic: #818CF8;
+}
+
+[data-theme="ember"] {
+  --synatra-surface-lowest:  #120C09;
+  --synatra-surface-raised:  var(--synatra-surface-2);
+  --synatra-surface-overlay: #3D2C1F;
+
+  --synatra-status-live:      #10B981;
+  --synatra-status-stale:     #F59E0B;
+  --synatra-status-degraded:  #FB923C;
+  --synatra-status-offline:   #F43F5E;
+  --synatra-status-synthetic: #818CF8;
+}
+
+/* The light theme. A recessed well is DARKER than the panel here, which is
+   the inverse of every other theme — the reason these are per-theme values
+   rather than one shared alpha. Status hues are darkened to clear 4.5:1 on
+   white rather than reused from the dark set. */
+[data-theme="institutional"] {
+  --synatra-surface-lowest:  #E8EDF3;
+  --synatra-surface-raised:  var(--synatra-surface-2);
+  --synatra-surface-overlay: #FFFFFF;
+
+  --synatra-status-live:      #047857;
+  --synatra-status-stale:     #854D0E;
+  --synatra-status-degraded:  #C2410C;
+  --synatra-status-offline:   #BE123C;
+  --synatra-status-synthetic: #4338CA;
+}

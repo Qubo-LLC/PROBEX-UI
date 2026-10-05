@@ -58,6 +58,13 @@ export type SystemState =
   | 'data-stale'
   /** Configured for a real engine, cannot reach it, policy forbids substitution. */
   | 'unreachable'
+  /**
+   * The page-render engine check got no answer inside its window, and the
+   * client's own first requests have not resolved yet. Not "unreachable" — the
+   * check's window is shorter than a request's — and not "connecting" either,
+   * because one attempt has already gone unanswered.
+   */
+  | 'slow'
   /** Explicitly synthetic. Legitimate locally, catastrophic if mistaken for real. */
   | 'synthetic'
   /** Nothing has resolved yet. */
@@ -171,7 +178,9 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
       state: 'unreachable',
       label: 'Engine unreachable',
       shortLabel: 'No feed',
-      detail: 'The engine answered at startup but is not responding to polling.',
+      detail: runtime.startupProbe === 'timeout'
+        ? 'The engine did not answer the startup check and is not responding to polling.'
+        : 'The engine answered at startup but is not responding to polling.',
       tone: 'danger',
       dataIsLive: false,
       dataIsSynthetic: false,
@@ -181,6 +190,20 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
 
   // 4 · Still establishing. Explicitly not "healthy" — an unresolved cockpit
   //     must never render as a good one, even for a few hundred milliseconds.
+  //     When the startup check already went unanswered, say so: the wait is
+  //     the engine's latency, not ours.
+  if (isLoading && runtime.startupProbe === 'timeout') {
+    return {
+      state: 'slow',
+      label: 'Engine slow',
+      shortLabel: 'Slow',
+      detail: 'The engine did not answer the startup check in time — waiting for its first response.',
+      tone: 'warning',
+      dataIsLive: false,
+      dataIsSynthetic: false,
+      pulse: true,
+    }
+  }
   if (isLoading) {
     return {
       state: 'loading',
@@ -317,11 +340,11 @@ export function deriveSystemStatus(input: SystemStatusInput): SystemStatus {
 // ─── Presentation helpers ─────────────────────────────────────────────────────
 
 const TONE_VAR: Record<StatusTone, string> = {
-  positive: 'var(--probex-positive)',
-  warning: 'var(--probex-warning)',
-  danger: 'var(--probex-negative)',
-  info: 'var(--probex-primary)',
-  neutral: 'var(--probex-text-muted)',
+  positive: 'var(--synatra-positive)',
+  warning: 'var(--synatra-warning)',
+  danger: 'var(--synatra-negative)',
+  info: 'var(--synatra-primary)',
+  neutral: 'var(--synatra-text-muted)',
 }
 
 export function statusColor(tone: StatusTone): string {

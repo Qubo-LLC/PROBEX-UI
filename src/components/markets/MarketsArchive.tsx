@@ -63,7 +63,7 @@ export function MarketsArchive() {
   }, [data, sortBy])
 
   if (loading) {
-    return <p className="text-xs py-2" style={{ color: 'var(--probex-text-disabled)' }}>Loading market archive…</p>
+    return <p className="text-xs py-2" style={{ color: 'var(--synatra-text-disabled)' }}>Loading market archive…</p>
   }
   if (error) {
     return <ErrorState title="Archive unavailable" description={error} fullPage={false} />
@@ -80,12 +80,12 @@ export function MarketsArchive() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-xs" style={{ color: 'var(--probex-text-muted)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-text-muted)' }}>
           {rows.length} recorded market{rows.length === 1 ? '' : 's'} — price ranges across each market&apos;s observed lifetime
           {newest !== null && <span className="t-metadata"> · newest record {stamp(newest)} · records, not current markets</span>}
         </p>
         <div className="flex items-center gap-3">
-          <div className="inline-flex rounded-md overflow-hidden" style={{ border: '1px solid var(--probex-border-default)' }} role="group" aria-label="Sort archive">
+          <div className="inline-flex rounded-md overflow-hidden" style={{ border: '1px solid var(--synatra-border-default)' }} role="group" aria-label="Sort archive">
             {([['recent', 'Recent'], ['volume', 'Volume'], ['range', 'Swing']] as const).map(([key, label]) => (
               <button
                 key={key}
@@ -93,8 +93,8 @@ export function MarketsArchive() {
                 aria-pressed={sortBy === key}
                 className="px-3 py-1 text-2xs font-semibold cursor-pointer transition-colors duration-150 focus-ring"
                 style={sortBy === key
-                  ? { background: 'var(--probex-primary)', color: 'var(--probex-bg)' }
-                  : { background: 'transparent', color: 'var(--probex-text-muted)' }}
+                  ? { background: 'var(--synatra-primary)', color: 'var(--synatra-bg)' }
+                  : { background: 'transparent', color: 'var(--synatra-text-muted)' }}
               >
                 {label}
               </button>
@@ -121,10 +121,10 @@ export function MarketsArchive() {
           {rows.slice(0, 100).map((m) => (
             <Tr key={m.marketId}>
               <Td align="left" dense grow>
-                <Link href={MARKET_DETAIL_PATH(m.marketId)} className="focus-ring rounded-sm font-semibold block truncate" style={{ color: 'var(--probex-text-primary)' }} title={m.question}>
+                <Link href={MARKET_DETAIL_PATH(m.marketId)} className="focus-ring rounded-sm font-semibold block truncate" style={{ color: 'var(--synatra-text-primary)' }} title={m.question}>
                   {m.question}
                 </Link>
-                <span className="lg:hidden flex items-center gap-x-2 gap-y-0.5 flex-wrap mt-0.5 font-mono text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+                <span className="lg:hidden flex items-center gap-x-2 gap-y-0.5 flex-wrap mt-0.5 font-mono text-2xs tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>
                   <span className="sm:hidden">last record {stamp(m.lastSnapshot)}</span>
                   <span className="md:hidden">YES {m.yesPrice.min.toFixed(1)}–{m.yesPrice.max.toFixed(1)}¢</span>
                   <span>BTC ${m.btcPrice.min.toFixed(0)}–${m.btcPrice.max.toFixed(0)}</span>
@@ -133,24 +133,24 @@ export function MarketsArchive() {
                 </span>
               </Td>
               <Td align="right" dense>
-                <span className="tabular-nums font-semibold" style={{ color: 'var(--probex-text-primary)' }} title="The archive’s last snapshot of yes_price">
+                <span className="tabular-nums font-semibold" style={{ color: 'var(--synatra-text-primary)' }} title="The archive’s last snapshot of yes_price">
                   {m.yesPrice.current.toFixed(1)}¢
                 </span>
               </Td>
               <Td align="right" dense hideBelow="md">
-                <span className="tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+                <span className="tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>
                   {m.yesPrice.min.toFixed(1)}–{m.yesPrice.max.toFixed(1)}¢
                 </span>
               </Td>
               <Td align="right" dense hideBelow="lg">
-                <span className="tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+                <span className="tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>
                   ${m.btcPrice.min.toFixed(0)}–${m.btcPrice.max.toFixed(0)}
                 </span>
               </Td>
               <Td align="right" dense hideBelow="sm"><span className="tabular-nums">{formatCurrency(m.volume.total)}</span></Td>
-              <Td align="right" dense hideBelow="lg"><span className="tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{m.snapshotCount}</span></Td>
+              <Td align="right" dense hideBelow="lg"><span className="tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>{m.snapshotCount}</span></Td>
               <Td align="right" dense hideBelow="sm">
-                <span className="tabular-nums text-2xs" style={{ color: 'var(--probex-text-muted)' }} title={new Date(m.lastSnapshot).toLocaleString()}>
+                <span className="tabular-nums text-2xs" style={{ color: 'var(--synatra-text-muted)' }} title={new Date(m.lastSnapshot).toLocaleString()}>
                   {stamp(m.lastSnapshot)}
                 </span>
               </Td>
@@ -160,7 +160,7 @@ export function MarketsArchive() {
       </TableShell>
 
       {rows.length > 100 && (
-        <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
+        <p className="text-2xs" style={{ color: 'var(--synatra-text-disabled)' }}>
           Showing the first 100 of {rows.length}.
         </p>
       )}

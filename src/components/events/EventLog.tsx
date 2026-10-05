@@ -117,7 +117,7 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
           actions={
             <span className="flex items-center gap-3">
               {slice.data && slice.data.count > 0 && (
-                <span className="text-xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+                <span className="text-xs tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>
                   {slice.data.count} event{slice.data.count === 1 ? '' : 's'} · limit {slice.data.limit}
                 </span>
               )}
@@ -148,7 +148,7 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
           leaving no way back to "All" without a page reload. */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Filter events by type">
-          <span className="text-2xs uppercase tracking-wider font-semibold mr-1" style={{ color: 'var(--probex-text-disabled)' }}>Type</span>
+          <span className="text-2xs uppercase tracking-wider font-semibold mr-1" style={{ color: 'var(--synatra-text-disabled)' }}>Type</span>
           <FilterChip label="All" active={typeFilter === null} onClick={() => setTypeFilter(null)} />
           {EVENT_TYPES.map((t) => (
             <FilterChip key={t} label={t} active={typeFilter === t} onClick={() => setTypeFilter(t)} />
@@ -156,7 +156,7 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
         </div>
         {presentSeverities.length > 1 && (
           <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="Filter events by severity">
-            <span className="text-2xs uppercase tracking-wider font-semibold mr-1" style={{ color: 'var(--probex-text-disabled)' }}>Severity</span>
+            <span className="text-2xs uppercase tracking-wider font-semibold mr-1" style={{ color: 'var(--synatra-text-disabled)' }}>Severity</span>
             <FilterChip label="All" active={severityFilter === null} onClick={() => setSeverityFilter(null)} />
             {presentSeverities.map((s) => (
               <FilterChip key={s} label={s} active={severityFilter === s} onClick={() => setSeverityFilter(s)} dotColor={severityColor(s)} />
@@ -171,7 +171,7 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
       </div>
 
       {filterLoading && (
-        <p className="text-xs py-2" style={{ color: 'var(--probex-text-disabled)' }}>Loading {typeFilter} events…</p>
+        <p className="text-xs py-2" style={{ color: 'var(--synatra-text-disabled)' }}>Loading {typeFilter} events…</p>
       )}
 
       {filterError !== null && (
@@ -190,7 +190,7 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
           end — say so plainly rather than showing a generic empty state. */}
       {emptyForType && (
         <Card>
-          <p className="text-xs" style={{ color: 'var(--probex-text-secondary)' }}>
+          <p className="text-xs" style={{ color: 'var(--synatra-text-secondary)' }}>
             The engine has not emitted any <strong>{typeFilter}</strong> events. This type is
             documented by the API, but the engine only produces a subset of the documented types —
             which types are live changes as the engine evolves, so try another filter to see what
@@ -208,7 +208,7 @@ export function EventLog({ embedded = false }: EmbeddableProps = {}) {
 
       {parsed?.kind === 'unrecognized' && (
         <Card>
-          <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+          <p className="text-xs" style={{ color: 'var(--synatra-warning)' }}>
             The engine reports {parsed.count} event{parsed.count === 1 ? '' : 's'}, but the
             item format doesn’t match the agreed schema yet — entries are not displayed
             to avoid showing wrong values.
@@ -241,9 +241,9 @@ function FilterChip({ label, active, onClick, dotColor }: { label: string; activ
       aria-pressed={active}
       className="focus-ring text-2xs font-semibold rounded px-2 py-1 cursor-pointer transition-colors duration-100 inline-flex items-center gap-1"
       style={{
-        color:      active ? 'var(--probex-primary)' : 'var(--probex-text-muted)',
-        background: 'var(--probex-surface-2)',
-        border:     `1px solid ${active ? 'var(--probex-primary)' : 'var(--probex-border)'}`,
+        color:      active ? 'var(--synatra-primary)' : 'var(--synatra-text-muted)',
+        background: 'var(--synatra-surface-2)',
+        border:     `1px solid ${active ? 'var(--synatra-primary)' : 'var(--synatra-border)'}`,
       }}
     >
       {dotColor && <span className="w-1.5 h-1.5 rounded-full" style={{ background: dotColor }} aria-hidden="true" />}

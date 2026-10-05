@@ -36,7 +36,7 @@ export function ConsensusHistoryChart() {
       source="/api/consensus/history"
       data={data}
       variant="line"
-      color="var(--probex-primary)"
+      color="var(--synatra-primary)"
       yTickFormatter={(v) => v.toFixed(1)}
       valueFormatter={(v) => v.toFixed(3)}
       emptyTitle="No consensus history yet"

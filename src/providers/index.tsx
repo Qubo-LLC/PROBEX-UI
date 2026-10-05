@@ -7,7 +7,7 @@
  *
  * RealtimeProvider (the simulated WebSocket stream) was unmounted in M4 —
  * live data flows through ApplicationStateLoader polling instead
- * (PROBEX_PRODUCT_SPEC.md §5). The mock stream files are deleted in M5;
+ * (SYNATRA_PRODUCT_SPEC.md §5). The mock stream files are deleted in M5;
  * a real WebSocket client returns at this mount point with P1-04.
  */
 

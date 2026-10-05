@@ -45,7 +45,7 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    // ProbexLogo renders the brand mark at quality 100 (it is a dense render
+    // SynatraLogo renders the brand mark at quality 100 (it is a dense render
     // that visibly softens at the default 75). Next 15.5 warns when a quality
     // is used without being declared here, and Next 16 rejects it outright —
     // declaring it keeps the mark sharp and the console clean.

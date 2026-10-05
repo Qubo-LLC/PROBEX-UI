@@ -44,7 +44,7 @@ export function EdgeOrigins() {
   const stale = ledgerCert.certainty === 'stale'
 
   return (
-    <section aria-labelledby="an-origins" className="flex flex-col gap-5 py-6" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+    <section aria-labelledby="an-origins" className="flex flex-col gap-5 py-6" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <span className="flex items-center gap-1.5">
           <h2 id="an-origins" className="t-section-title">Where the results come from</h2>
@@ -66,7 +66,7 @@ export function EdgeOrigins() {
         </span>
         <span className="t-metadata">
           {trades.length} settled trade{trades.length === 1 ? '' : 's'}
-          {stale && <span className="ml-1.5" style={{ color: 'var(--probex-warning)' }}>· stale {ledgerCert.staleFor}</span>}
+          {stale && <span className="ml-1.5" style={{ color: 'var(--synatra-warning)' }}>· stale {ledgerCert.staleFor}</span>}
         </span>
       </div>
 
@@ -125,30 +125,30 @@ export function EdgeOrigins() {
             </Thead>
             <tbody>
               {patterns.map((p) => (
-                <Tr key={p.key} accent={p.isFiltered ? 'var(--probex-warning)' : undefined}>
+                <Tr key={p.key} accent={p.isFiltered ? 'var(--synatra-warning)' : undefined}>
                   <Td align="left" dense grow>
-                    <span className="block truncate font-medium" style={{ color: p.isFiltered ? 'var(--probex-text-secondary)' : 'var(--probex-text-primary)' }}>
+                    <span className="block truncate font-medium" style={{ color: p.isFiltered ? 'var(--synatra-text-secondary)' : 'var(--synatra-text-primary)' }}>
                       {String(p.hour).padStart(2, '0')}:00 · {p.marketType.replace('crypto_', '').replace('_', ' ')} · {p.edgeBucket}
                     </span>
                     {/* What the folded columns carried, below sm/md. */}
-                    <span className="md:hidden block font-mono text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)' }}>
+                    <span className="md:hidden block font-mono text-2xs mt-0.5" style={{ color: 'var(--synatra-text-muted)' }}>
                       <span className="sm:hidden">{formatSignedCurrency(p.avgPnl)} avg</span>
-                      {p.isFiltered && <span className="sm:ml-0 ml-2" style={{ color: 'var(--probex-warning)' }}>filtered</span>}
+                      {p.isFiltered && <span className="sm:ml-0 ml-2" style={{ color: 'var(--synatra-warning)' }}>filtered</span>}
                     </span>
                   </Td>
                   <Td align="right" dense><span className="font-mono">{p.totalTrades}</span></Td>
                   <Td align="right" dense>
-                    <span className="font-mono font-semibold" style={{ color: p.winRate >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-text-secondary)' }}>
+                    <span className="font-mono font-semibold" style={{ color: p.winRate >= 0.5 ? 'var(--synatra-positive)' : 'var(--synatra-text-secondary)' }}>
                       {formatPercent(p.winRate)}
                     </span>
                   </Td>
                   <Td align="right" dense hideBelow="sm">
-                    <span className="font-mono" style={{ color: p.avgPnl > 0 ? 'var(--probex-positive)' : p.avgPnl < 0 ? 'var(--probex-negative)' : 'var(--probex-text-secondary)' }}>
+                    <span className="font-mono" style={{ color: p.avgPnl > 0 ? 'var(--synatra-positive)' : p.avgPnl < 0 ? 'var(--synatra-negative)' : 'var(--synatra-text-secondary)' }}>
                       {formatSignedCurrency(p.avgPnl)}
                     </span>
                   </Td>
                   <Td align="left" dense hideBelow="md">
-                    <span className="text-2xs font-semibold" style={{ color: p.isFiltered ? 'var(--probex-warning)' : 'var(--probex-text-disabled)' }}>
+                    <span className="text-2xs font-semibold" style={{ color: p.isFiltered ? 'var(--synatra-warning)' : 'var(--synatra-text-disabled)' }}>
                       {p.isFiltered ? 'Filtered — not traded' : 'Trading'}
                     </span>
                   </Td>
@@ -159,7 +159,7 @@ export function EdgeOrigins() {
         )}
       </div>
 
-      <Link href={ROUTES.POSITIONS} className="focus-ring self-start text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>
+      <Link href={ROUTES.POSITIONS} className="focus-ring self-start text-2xs font-semibold" style={{ color: 'var(--synatra-primary)' }}>
         Every settled trade, on Positions →
       </Link>
     </section>
@@ -173,7 +173,7 @@ function GroupLedger({ label, rows, stale }: { label: string; rows: LedgerGroup[
     <div className="flex flex-col gap-2 min-w-0">
       <span className="t-label">
         {label}
-        <span className="ml-1.5 normal-case tracking-normal font-normal" style={{ color: 'var(--probex-text-disabled)' }}>· derived</span>
+        <span className="ml-1.5 normal-case tracking-normal font-normal" style={{ color: 'var(--synatra-text-disabled)' }}>· derived</span>
       </span>
       {rows.length === 0 ? (
         <p className="t-helper">Not recorded on these trades.</p>
@@ -189,16 +189,16 @@ function GroupLedger({ label, rows, stale }: { label: string; rows: LedgerGroup[
             {rows.map((r) => (
               <Tr key={r.key}>
                 <Td align="left" dense grow className={cell}>
-                  <span className="font-medium truncate block" style={{ color: 'var(--probex-text-primary)' }}>{r.key}</span>
+                  <span className="font-medium truncate block" style={{ color: 'var(--synatra-text-primary)' }}>{r.key}</span>
                 </Td>
                 <Td align="right" dense className={cell}><span className="font-mono">{r.trades}</span></Td>
                 <Td align="right" dense className={cell}>
-                  <span className="font-mono font-semibold" style={{ color: r.winRate >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-text-secondary)' }}>
+                  <span className="font-mono font-semibold" style={{ color: r.winRate >= 0.5 ? 'var(--synatra-positive)' : 'var(--synatra-text-secondary)' }}>
                     {formatPercent(r.winRate)}
                   </span>
                 </Td>
                 <Td align="right" dense className={cell}>
-                  <span className="font-mono" style={{ color: r.totalPnl > 0 ? 'var(--probex-positive)' : r.totalPnl < 0 ? 'var(--probex-negative)' : 'var(--probex-text-secondary)' }}>
+                  <span className="font-mono" style={{ color: r.totalPnl > 0 ? 'var(--synatra-positive)' : r.totalPnl < 0 ? 'var(--synatra-negative)' : 'var(--synatra-text-secondary)' }}>
                     {formatSignedCurrency(r.totalPnl, true)}
                   </span>
                 </Td>

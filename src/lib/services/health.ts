@@ -127,7 +127,7 @@ export function normalizeHealthStatus(
   if (!reported.has(key)) {
     reported.add(key)
     console.warn(
-      `[Probex] Unrecognised engine health status "${raw}". ` +
+      `[Synatra] Unrecognised engine health status "${raw}". ` +
       `Known wire values: ${Object.keys(WIRE_TO_CANONICAL).join(', ')}. ` +
       'Treating as unknown — the cockpit will not claim the engine is healthy ' +
       'on a value it cannot interpret. Extend WIRE_TO_CANONICAL in ' +

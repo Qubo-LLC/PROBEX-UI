@@ -4,7 +4,7 @@
 // unit for "one question, answered with numbers".
 //
 // ─── The problem these solve ─────────────────────────────────────────────────
-// Probex expressed nearly every metric as a StatCard: one label, one number,
+// Synatra expressed nearly every metric as a StatCard: one label, one number,
 // one optional delta, 104px tall minimum. That component is right for a KPI
 // strip, but it was doing whole pages' work and it measured badly — Overview's
 // Capital card rendered 20 characters into 670×104px, and Portfolio still
@@ -143,8 +143,8 @@ const STATE_CLASS: Record<PanelState, string> = {
 const STATE_RAIL: Record<PanelState, string | null> = {
   live:        null,
   idle:        null,
-  attention:   'var(--probex-warning)',
-  unavailable: 'var(--probex-text-disabled)',
+  attention:   'var(--synatra-warning)',
+  unavailable: 'var(--synatra-text-disabled)',
 }
 
 /** Spoken state, appended to the accessible name. `live` is omitted: it is the
@@ -286,12 +286,12 @@ export function Row({
       className="flex items-baseline justify-between gap-2"
       {...(title !== undefined ? { title } : {})}
     >
-      <span className="text-2xs whitespace-nowrap" style={{ color: 'var(--probex-text-muted)' }}>
+      <span className="text-2xs whitespace-nowrap" style={{ color: 'var(--synatra-text-muted)' }}>
         {label}
       </span>
       <span
         className="text-2xs font-semibold font-mono tabular-nums truncate"
-        style={{ color: color ?? 'var(--probex-text-secondary)' }}
+        style={{ color: color ?? 'var(--synatra-text-secondary)' }}
       >
         {value}
       </span>
@@ -330,7 +330,7 @@ export function Meter({
       {label}
       <div
         className="h-[3px] rounded-full overflow-hidden"
-        style={{ background: 'var(--probex-border-default)' }}
+        style={{ background: 'var(--synatra-border-default)' }}
         role="progressbar"
         aria-valuenow={Math.round(pct * 100)}
         aria-valuemin={0}

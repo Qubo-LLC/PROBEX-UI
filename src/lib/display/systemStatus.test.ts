@@ -16,6 +16,7 @@ const runtime = (over: Partial<RuntimeConfig> = {}): RuntimeConfig => ({
   deployment: 'production',
   environment: 'production',
   reason: 'Backend reachable.',
+  startupProbe: 'reachable',
   ...over,
 })
 
@@ -166,5 +167,41 @@ describe('data-stale', () => {
   it('outranks the healthy branch in BOTH paper and live mode', () => {
     expect(deriveSystemStatus(input({ staleEndpoints: 1, engineMode: 'paper' })).state).toBe('data-stale')
     expect(deriveSystemStatus(input({ staleEndpoints: 1, engineMode: 'live' })).state).toBe('data-stale')
+  })
+})
+
+// 'slow' (remediation phase 2): the page-render check got no answer inside its
+// window. That used to resolve the whole tab to OFFLINE; now the client
+// connects and this state covers the wait, without claiming either outcome.
+describe("the 'slow' state — startup check unanswered", () => {
+  const timedOut = runtime({ startupProbe: 'timeout', reason: 'The engine did not answer the startup check in time.' })
+
+  it('replaces "Connecting" while the first response is outstanding', () => {
+    const s = deriveSystemStatus(input({ runtime: timedOut, isLoading: true, healthStatus: null, engineMode: null }))
+    expect(s.state).toBe('slow')
+    expect(s.tone).toBe('warning')
+    expect(s.dataIsLive).toBe(false)
+    expect(statusNeedsAttention(s.state)).toBe(true)
+  })
+
+  it('is not used when the startup check was answered', () => {
+    expect(deriveSystemStatus(input({ isLoading: true, healthStatus: null, engineMode: null })).state).toBe('loading')
+  })
+
+  it('gives way to the real state once the engine answers', () => {
+    expect(deriveSystemStatus(input({ runtime: timedOut })).state).toBe('paper')
+    expect(deriveSystemStatus(input({ runtime: timedOut, healthStatus: 'degraded' })).state).toBe('degraded')
+  })
+
+  it('unreachable after a timed-out check does not claim the engine answered at startup', () => {
+    const s = deriveSystemStatus(input({ runtime: timedOut, isUnreachable: true }))
+    expect(s.state).toBe('unreachable')
+    expect(s.detail).not.toMatch(/answered at startup/)
+    expect(s.detail).toMatch(/did not answer the startup check/)
+  })
+
+  it('an offline runtime (definite failure) is still unreachable, never slow', () => {
+    const s = deriveSystemStatus(input({ runtime: runtime({ mode: 'offline', startupProbe: 'unreachable' }), isLoading: true }))
+    expect(s.state).toBe('unreachable')
   })
 })

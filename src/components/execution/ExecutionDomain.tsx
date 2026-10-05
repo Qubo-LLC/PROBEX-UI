@@ -36,11 +36,11 @@ export function ExecutionDomain() {
         paper ? (
           <span
             className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider"
-            style={{ color: paper.enabled ? 'var(--probex-positive)' : 'var(--probex-text-muted)' }}
+            style={{ color: paper.enabled ? 'var(--synatra-positive)' : 'var(--synatra-text-muted)' }}
           >
             <span
               className="w-1.5 h-1.5 rounded-full inline-block"
-              style={{ background: paper.enabled ? 'var(--probex-positive)' : 'var(--probex-text-disabled)' }}
+              style={{ background: paper.enabled ? 'var(--synatra-positive)' : 'var(--synatra-text-disabled)' }}
               aria-hidden="true"
             />
             Paper {paper.enabled ? 'enabled' : 'disabled'}

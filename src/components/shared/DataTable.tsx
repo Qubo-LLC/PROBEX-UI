@@ -28,7 +28,7 @@ export function TableShell({ label, children }: { label: string; children: React
   return (
     <div
       className="overflow-x-auto rounded-lg"
-      style={{ border: '1px solid var(--probex-border)' }}
+      style={{ border: '1px solid var(--synatra-border)' }}
     >
       <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }} aria-label={label}>
         {children}
@@ -45,8 +45,8 @@ export function Thead({ children }: { children: ReactNode }) {
     <thead>
       <tr
         style={{
-          background: 'var(--probex-surface-2)',
-          borderBottom: '1px solid var(--probex-border-default)',
+          background: 'var(--synatra-surface-2)',
+          borderBottom: '1px solid var(--synatra-border-default)',
         }}
       >
         {children}
@@ -86,7 +86,7 @@ export function Th({
 }
 
 /** Body row.
- *  Hover is a translucent wash (--probex-state-hover) rather than a surface
+ *  Hover is a translucent wash (--synatra-state-hover) rather than a surface
  *  swap: on a dense table a colour jump reads as the row changing tier, while
  *  a wash reads as "the pointer is here". Row separators are hairlines — the
  *  rhythm of the rows should carry the grid, not the lines between them. */
@@ -115,7 +115,7 @@ export function Tr({
       onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } } : undefined}
       className={`row-hover${onClick ? ' cursor-pointer' : ''}`}
       style={{
-        borderTop: '1px solid var(--probex-border)',
+        borderTop: '1px solid var(--synatra-border)',
         borderLeft: accent ? `2.5px solid ${accent}` : '2.5px solid transparent',
       }}
     >
@@ -143,7 +143,7 @@ export function ExpansionRow({
   dense?: boolean
 }) {
   return (
-    <tr id={id} hidden={hidden} style={{ background: 'var(--probex-surface-2)' }}>
+    <tr id={id} hidden={hidden} style={{ background: 'var(--synatra-surface-2)' }}>
       <td colSpan={colSpan} className={dense ? 'px-3 py-2.5' : 'px-4 py-3'}>
         {children}
       </td>

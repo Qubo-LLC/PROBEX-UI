@@ -58,7 +58,7 @@ export function EmptyState({
       {icon && (
         <div
           className={cn(styles.icon, 'opacity-30')}
-          style={{ color: 'var(--probex-text-muted)' }}
+          style={{ color: 'var(--synatra-text-muted)' }}
           aria-hidden="true"
         >
           {icon}
@@ -68,14 +68,14 @@ export function EmptyState({
       <div className="flex flex-col gap-1.5 max-w-xs">
         <p
           className={cn(styles.title, 'font-semibold')}
-          style={{ color: 'var(--probex-text-secondary)' }}
+          style={{ color: 'var(--synatra-text-secondary)' }}
         >
           {title}
         </p>
         {description && (
           <p
             className={cn(styles.desc)}
-            style={{ color: 'var(--probex-text-muted)' }}
+            style={{ color: 'var(--synatra-text-muted)' }}
           >
             {description}
           </p>

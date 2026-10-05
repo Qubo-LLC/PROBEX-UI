@@ -43,7 +43,7 @@ interface DecisionPipelineProps {
 export function DecisionPipeline({ stages, note }: DecisionPipelineProps) {
   return (
     <div className="flex flex-col">
-      <ol className="flex flex-col list-none m-0 p-0" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+      <ol className="flex flex-col list-none m-0 p-0" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
         {stages.map((s) => <StageRow key={s.step} {...s} />)}
       </ol>
       {note && <p className="t-metadata mt-2">{note}</p>}
@@ -56,14 +56,14 @@ function StageRow({ step, name, value, unit, gate, accent = false, detail, certa
     <li
       className="grid gap-x-6 gap-y-1.5 py-3 pl-2.5 items-baseline"
       style={{
-        borderTop: '1px solid var(--probex-border)',
-        borderLeft: `2.5px solid ${accent ? 'var(--probex-primary)' : 'transparent'}`,
+        borderTop: '1px solid var(--synatra-border)',
+        borderLeft: `2.5px solid ${accent ? 'var(--synatra-primary)' : 'transparent'}`,
         gridTemplateColumns: 'minmax(0, 1fr)',
       }}
     >
       <div className="grid gap-x-6 gap-y-1 items-baseline sm:grid-cols-[7.5rem_minmax(7rem,10rem)_minmax(0,1fr)]">
-        <span className="t-label" style={{ color: accent ? 'var(--probex-primary)' : undefined }}>
-          <span className="font-mono tabular-nums mr-1.5" style={{ color: 'var(--probex-text-disabled)' }}>{step}</span>
+        <span className="t-label" style={{ color: accent ? 'var(--synatra-primary)' : undefined }}>
+          <span className="font-mono tabular-nums mr-1.5" style={{ color: 'var(--synatra-text-disabled)' }}>{step}</span>
           {name}
         </span>
         <span

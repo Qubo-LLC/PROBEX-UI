@@ -48,7 +48,7 @@ export function MarketActivityFeed({ marketId }: { marketId: string }) {
   const freshness = deriveFreshness(slice, EVENTS_POLL_MS)
 
   return (
-    <section aria-labelledby="md-activity" className="flex flex-col gap-3 pt-6" style={{ borderTop: '1px solid var(--probex-border)' }}>
+    <section aria-labelledby="md-activity" className="flex flex-col gap-3 pt-6" style={{ borderTop: '1px solid var(--synatra-border)' }}>
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <span className="flex items-baseline gap-2 flex-wrap">
           <h2 id="md-activity" className="t-section-title">Activity</h2>
@@ -56,7 +56,7 @@ export function MarketActivityFeed({ marketId }: { marketId: string }) {
         </span>
         <span className="flex items-baseline gap-3">
           <span className="t-metadata">/api/events · retained window{slice.data ? ` of ${slice.data.limit}` : ''}</span>
-          <Link href={`${ROUTES.SYSTEM}?view=events`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>
+          <Link href={`${ROUTES.SYSTEM}?view=events`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--synatra-primary)' }}>
             Full log →
           </Link>
         </span>
@@ -65,13 +65,13 @@ export function MarketActivityFeed({ marketId }: { marketId: string }) {
       {slice.status === 'error' ? (
         // No data has ever arrived. Whether this market had activity is
         // unknown — not "none".
-        <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-warning)' }}>
           The event log did not answer, so whether the engine recorded anything on this market is unknown.
         </p>
       ) : rows === null ? (
         <p className="t-description">Waiting for the event log.</p>
       ) : rows === 'unrecognized' ? (
-        <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-warning)' }}>
           The engine returned events whose shape doesn’t match the agreed schema — they are withheld rather than shown with guessed fields.
         </p>
       ) : rows.length === 0 ? (
@@ -81,7 +81,7 @@ export function MarketActivityFeed({ marketId }: { marketId: string }) {
       ) : (
         <>
           {freshness.level === 'stale' && (
-            <p className="t-helper" style={{ color: 'var(--probex-warning)' }}>
+            <p className="t-helper" style={{ color: 'var(--synatra-warning)' }}>
               Retained from the last successful refresh {freshness.ageLabel ?? ''} — the latest poll of /api/events failed.
             </p>
           )}

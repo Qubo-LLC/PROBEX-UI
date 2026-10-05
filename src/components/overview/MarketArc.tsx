@@ -27,7 +27,7 @@ import { useApplicationStore } from '@/store/applicationStore'
 import { useEnginePriceChart } from '@/config/hooks/useServices'
 import { useMarketSeries } from '@/config/hooks/useMarketSeries'
 import { useSystemStatus } from '@/config/hooks/useSystemStatus'
-import { formatBtcPrice, formatPriceChangePct } from '@/lib/mappers/priceHistory'
+import { formatBtcPrice, formatPriceChangePct, withChangeWindow } from '@/lib/mappers/priceHistory'
 import { Figure, certaintyFromSlice } from '@/components/shared/Figure'
 
 // Client-only: lightweight-charts is canvas, so it never renders during SSR.
@@ -75,7 +75,7 @@ export function MarketArc() {
           <h2
             id="arc-market"
             className="t-label"
-            style={feedIsWarning ? { color: 'var(--probex-warning)' } : undefined}
+            style={feedIsWarning ? { color: 'var(--synatra-warning)' } : undefined}
           >
             BTC / USD · {feedLabel}
           </h2>
@@ -90,8 +90,11 @@ export function MarketArc() {
               <Figure
                 size="display"
                 flashOn={chart.data.currentPrice}
+                // The change carries its window (phase 2). The engine's
+                // price-history is a short tick buffer (seconds, not a day), so
+                // an unlabelled "+0.00%" read as a daily change it never was.
                 delta={{
-                  text: formatPriceChangePct(chart.data.priceChangePct),
+                  text: withChangeWindow(formatPriceChangePct(chart.data.priceChangePct), chart.data.points),
                   positive: isUp,
                 }}
                 {...certaintyFromSlice(chart, 2_000)}
@@ -131,7 +134,7 @@ export function MarketArc() {
         // the sections beneath do not jump when the feed returns.
         <div
           className="flex items-center justify-center rounded w-full"
-          style={{ height: CHART_H, border: '1px dashed var(--probex-border)' }}
+          style={{ height: CHART_H, border: '1px dashed var(--synatra-border)' }}
           role="img"
           aria-label="Price chart unavailable — the price feed did not answer"
         >
@@ -144,7 +147,7 @@ export function MarketArc() {
       {/* The rule that separates the world from the engine's reading of it. */}
       <div
         className="absolute bottom-0 left-0 right-0"
-        style={{ borderBottom: '1px solid var(--probex-border)' }}
+        style={{ borderBottom: '1px solid var(--synatra-border)' }}
         aria-hidden="true"
       />
 

@@ -20,7 +20,7 @@ export function ProbabilityValue({ probability, size = 'md', className = '' }: P
   return (
     <span
       className={`inline-flex items-center font-semibold tabular-nums ${SIZE_CLASS[size]} ${className}`}
-      style={{ color: 'var(--probex-text-primary)' }}
+      style={{ color: 'var(--synatra-text-primary)' }}
       aria-label={`Probability: ${formatPercent(probability)}`}
     >
       <ValueFlash value={probability}>{formatPercent(probability)}</ValueFlash>

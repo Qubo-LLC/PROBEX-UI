@@ -42,7 +42,7 @@ export function PositionFilters({
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px] max-w-xs">
-          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" style={{ color: 'var(--probex-text-muted)' }}>
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" style={{ color: 'var(--synatra-text-muted)' }}>
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
           </svg>
           <input
@@ -56,17 +56,17 @@ export function PositionFilters({
         </div>
 
         <PillGroup label="Side" value={side} onChange={onSideChange} options={[
-          { value: 'yes', label: 'YES', color: 'var(--probex-yes)' },
-          { value: 'no', label: 'NO', color: 'var(--probex-no)' },
+          { value: 'yes', label: 'YES', color: 'var(--synatra-yes)' },
+          { value: 'no', label: 'NO', color: 'var(--synatra-no)' },
         ]} />
 
         <PillGroup label="P&L" value={pnlState} onChange={onPnlChange} options={[
-          { value: 'profit', label: 'Profit', color: 'var(--probex-positive)' },
-          { value: 'loss', label: 'Loss', color: 'var(--probex-negative)' },
+          { value: 'profit', label: 'Profit', color: 'var(--synatra-positive)' },
+          { value: 'loss', label: 'Loss', color: 'var(--synatra-negative)' },
         ]} />
 
         {hasActiveFilter && (
-          <button onClick={reset} className="text-xs px-2.5 py-1.5 rounded-md cursor-pointer transition-colors duration-100 min-h-[24px]" style={{ background: 'var(--probex-negative-dim)', color: 'var(--probex-negative)', border: '1px solid var(--probex-negative-border)' }}>
+          <button onClick={reset} className="text-xs px-2.5 py-1.5 rounded-md cursor-pointer transition-colors duration-100 min-h-[24px]" style={{ background: 'var(--synatra-negative-dim)', color: 'var(--synatra-negative)', border: '1px solid var(--synatra-negative-border)' }}>
             Clear
           </button>
         )}
@@ -89,7 +89,7 @@ export function PositionFilters({
 function PillGroup<T extends string>({ label, value, options, onChange }: { label: string; value: T | null; options: Array<{ value: T; label: string; color: string }>; onChange: (v: T | null) => void }) {
   return (
     <div className="flex items-center gap-1">
-      <span className="text-2xs font-medium uppercase tracking-wider mr-0.5" style={{ color: 'var(--probex-text-disabled)' }}>{label}</span>
+      <span className="text-2xs font-medium uppercase tracking-wider mr-0.5" style={{ color: 'var(--synatra-text-disabled)' }}>{label}</span>
       {options.map((opt) => {
         const isActive = value === opt.value
         return (
@@ -100,7 +100,7 @@ function PillGroup<T extends string>({ label, value, options, onChange }: { labe
             className="text-xs font-semibold px-2.5 py-1 rounded-full cursor-pointer transition-all duration-100 border min-h-[24px]"
             style={isActive
               ? { background: `color-mix(in srgb, ${opt.color} 14%, transparent)`, borderColor: `color-mix(in srgb, ${opt.color} 30%, transparent)`, color: opt.color }
-              : { background: 'transparent', borderColor: 'var(--probex-border)', color: 'var(--probex-text-secondary)' }}
+              : { background: 'transparent', borderColor: 'var(--synatra-border)', color: 'var(--synatra-text-secondary)' }}
           >
             {opt.label}
           </button>
@@ -118,10 +118,10 @@ function SegmentPill({ label, isActive, onClick }: { label: string; isActive: bo
       aria-selected={isActive}
       className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap cursor-pointer transition-all duration-120 border"
       style={isActive
-        // --probex-yes-border is the MARKET-SIDE band; a segment pill is
+        // --synatra-yes-border is the MARKET-SIDE band; a segment pill is
         // interface chrome and must not borrow it (same correction as Stage 5).
-        ? { background: 'var(--probex-primary-dim)', borderColor: 'var(--probex-border-active)', color: 'var(--probex-primary)' }
-        : { background: 'transparent', borderColor: 'var(--probex-border)', color: 'var(--probex-text-secondary)' }}
+        ? { background: 'var(--synatra-primary-dim)', borderColor: 'var(--synatra-border-active)', color: 'var(--synatra-primary)' }
+        : { background: 'transparent', borderColor: 'var(--synatra-border)', color: 'var(--synatra-text-secondary)' }}
     >
       {label}
     </button>

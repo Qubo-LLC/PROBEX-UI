@@ -53,7 +53,7 @@ export function MarketFilterBar() {
           <svg
             className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
             width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-            aria-hidden="true" style={{ color: 'var(--probex-text-muted)' }}
+            aria-hidden="true" style={{ color: 'var(--synatra-text-muted)' }}
           >
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
           </svg>
@@ -70,7 +70,7 @@ export function MarketFilterBar() {
             <button
               onClick={() => setSearch('')}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer focus-ring rounded"
-              style={{ color: 'var(--probex-text-muted)' }}
+              style={{ color: 'var(--synatra-text-muted)' }}
               aria-label="Clear search"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
@@ -85,12 +85,12 @@ export function MarketFilterBar() {
             value={sortBy}
             onChange={(e) => setSort(e.target.value as MarketSortField, 'desc')}
             className="h-8 pl-2.5 pr-6 text-xs rounded-md cursor-pointer appearance-none transition-colors duration-100"
-            style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border-default)', color: 'var(--probex-text-secondary)', minWidth: 110 }}
+            style={{ background: 'var(--synatra-surface-2)', border: '1px solid var(--synatra-border-default)', color: 'var(--synatra-text-secondary)', minWidth: 110 }}
             aria-label="Sort markets by"
           >
             {SORT_OPTIONS.map((opt) => <option key={opt.field} value={opt.field}>{opt.label}</option>)}
           </select>
-          <svg className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true" style={{ color: 'var(--probex-text-muted)' }}>
+          <svg className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true" style={{ color: 'var(--synatra-text-muted)' }}>
             <path d="m6 9 6 6 6-6" />
           </svg>
         </div>
@@ -99,7 +99,7 @@ export function MarketFilterBar() {
           <button
             onClick={resetFilters}
             className="text-xs px-2.5 py-1.5 rounded-md cursor-pointer transition-colors duration-100 focus-ring"
-            style={{ background: 'var(--probex-negative-dim)', color: 'var(--probex-negative)', border: '1px solid var(--probex-negative-border)' }}
+            style={{ background: 'var(--synatra-negative-dim)', color: 'var(--synatra-negative)', border: '1px solid var(--synatra-negative-border)' }}
           >
             Clear
           </button>
@@ -127,8 +127,8 @@ function SegmentPill({ label, isActive, onClick }: { label: string; isActive: bo
       aria-selected={isActive}
       className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap cursor-pointer transition-all duration-100 border focus-ring"
       style={isActive
-        ? { background: 'var(--probex-primary-dim)', borderColor: 'var(--probex-yes-border)', color: 'var(--probex-primary)' }
-        : { background: 'transparent', borderColor: 'var(--probex-border)', color: 'var(--probex-text-secondary)' }
+        ? { background: 'var(--synatra-primary-dim)', borderColor: 'var(--synatra-yes-border)', color: 'var(--synatra-primary)' }
+        : { background: 'transparent', borderColor: 'var(--synatra-border)', color: 'var(--synatra-text-secondary)' }
       }
     >
       {label}

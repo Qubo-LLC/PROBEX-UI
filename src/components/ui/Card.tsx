@@ -22,7 +22,7 @@ const variantStyles: Record<CardVariant, string> = {
  * Card
  * ────
  * Base card container. Applies the correct surface color, border, and
- * border-radius from the active Probex theme.
+ * border-radius from the active Synatra theme.
  *
  * Usage:
  *   <Card>content</Card>

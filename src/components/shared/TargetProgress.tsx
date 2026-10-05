@@ -33,7 +33,7 @@ export function TargetProgress({ capital }: TargetProgressProps) {
           Profit Targets
         </h3>
         {(overrides.daily !== null || overrides.weekly !== null) && (
-          <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>custom</span>
+          <span className="text-2xs" style={{ color: 'var(--synatra-text-disabled)' }}>custom</span>
         )}
       </div>
       <TargetRow
@@ -75,7 +75,7 @@ function TargetRow({
   const pct       = Math.max(0, Math.min(1, rawPct))   // bar fill, clamped
   const met       = hasTarget && pnl >= target
   const negative  = pnl < 0
-  const barColor  = negative ? 'var(--probex-negative)' : met ? 'var(--probex-positive)' : 'var(--probex-primary)'
+  const barColor  = negative ? 'var(--synatra-negative)' : met ? 'var(--synatra-positive)' : 'var(--synatra-primary)'
   const pctLabel  = hasTarget ? `${Math.round(rawPct * 100)}%` : '—'
 
   const commit = () => {
@@ -87,10 +87,10 @@ function TargetRow({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between text-xs gap-2">
-        <span className="flex items-center gap-1.5" style={{ color: 'var(--probex-text-secondary)' }}>
+        <span className="flex items-center gap-1.5" style={{ color: 'var(--synatra-text-secondary)' }}>
           {label}
           {met && (
-            <span className="text-2xs font-bold px-1.5 py-0.5 rounded" style={{ color: 'var(--probex-positive)', background: 'var(--probex-positive-dim)' }}>
+            <span className="text-2xs font-bold px-1.5 py-0.5 rounded" style={{ color: 'var(--synatra-positive)', background: 'var(--synatra-positive-dim)' }}>
               ✓ met
             </span>
           )}
@@ -98,7 +98,7 @@ function TargetRow({
 
         {editing ? (
           <span className="flex items-center gap-1">
-            <span style={{ color: 'var(--probex-text-muted)' }}>$</span>
+            <span style={{ color: 'var(--synatra-text-muted)' }}>$</span>
             <input
               autoFocus
               type="number"
@@ -114,16 +114,16 @@ function TargetRow({
           </span>
         ) : (
           <span className="flex items-center gap-2">
-            <span className="tabular-nums font-semibold" style={{ color: 'var(--probex-text-primary)' }}>
+            <span className="tabular-nums font-semibold" style={{ color: 'var(--synatra-text-primary)' }}>
               {formatCurrency(pnl)}{' '}
-              <span style={{ color: 'var(--probex-text-muted)', fontWeight: 400 }}>/ {formatCurrency(target)}</span>
+              <span style={{ color: 'var(--synatra-text-muted)', fontWeight: 400 }}>/ {formatCurrency(target)}</span>
             </span>
             <span className="tabular-nums text-2xs font-bold" style={{ color: barColor }}>{pctLabel}</span>
             <button
               type="button"
               onClick={() => { setDraft(override !== null ? String(override) : ''); setEditing(true) }}
               className="text-2xs cursor-pointer focus-ring rounded px-1 inline-flex items-center justify-center min-h-[24px] min-w-[24px]"
-              style={{ color: 'var(--probex-text-muted)' }}
+              style={{ color: 'var(--synatra-text-muted)' }}
               aria-label={`Edit ${label.toLowerCase()} target`}
               title="Set a personal target"
             >
@@ -135,7 +135,7 @@ function TargetRow({
 
       <div
         className="h-1.5 rounded-full overflow-hidden"
-        style={{ background: 'var(--probex-surface-2)' }}
+        style={{ background: 'var(--synatra-surface-2)' }}
         role="progressbar"
         aria-valuenow={Math.round(pct * 100)}
         aria-valuemin={0}
@@ -149,7 +149,7 @@ function TargetRow({
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
+        <span className="text-2xs" style={{ color: 'var(--synatra-text-disabled)' }}>
           {override !== null ? 'personal target' : `engine target · ${formatCurrency(engineTarget)}`}
         </span>
         {override !== null && (
@@ -157,7 +157,7 @@ function TargetRow({
             type="button"
             onClick={() => onSet(period, null)}
             className="text-2xs cursor-pointer focus-ring rounded px-1"
-            style={{ color: 'var(--probex-text-disabled)' }}
+            style={{ color: 'var(--synatra-text-disabled)' }}
           >
             reset to engine
           </button>

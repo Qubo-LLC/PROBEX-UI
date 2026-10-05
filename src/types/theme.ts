@@ -42,7 +42,7 @@ export interface ThemeMeta {
 export const THEME_META = {
   aurora: {
     name: 'aurora' as const,
-    label: 'Probex Aurora',
+    label: 'Synatra Aurora',
     description: 'Signature dark — cyan & purple on deep space',
     primaryColor: '#00D4FF',
     secondaryColor: '#6D5EF7',

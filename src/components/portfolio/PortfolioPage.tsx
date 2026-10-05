@@ -60,7 +60,7 @@ export function PortfolioPage({ embedded = false }: EmbeddableProps = {}) {
       </div>
 
       {/* ── B · Evidence ─────────────────────────────────────────────────── */}
-      <section aria-labelledby="pf-evidence" className="flex flex-col gap-5 py-6" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+      <section aria-labelledby="pf-evidence" className="flex flex-col gap-5 py-6" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <span className="flex items-center gap-1.5">
             <h2 id="pf-evidence" className="t-section-title">Equity over the retained window</h2>
@@ -85,7 +85,7 @@ export function PortfolioPage({ embedded = false }: EmbeddableProps = {}) {
           </div>
         </div>
 
-        <div className="pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+        <div className="pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
           <PerformanceWindow />
         </div>
       </section>

@@ -46,8 +46,8 @@ import { ConfidenceEvolution } from './ConfidenceEvolution'
 import { ConsensusHistoryChart } from './ConsensusHistoryChart'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
-const YES = 'var(--probex-yes)'
-const NO  = 'var(--probex-no)'
+const YES = 'var(--synatra-yes)'
+const NO  = 'var(--synatra-no)'
 
 const stamp = (ts: number) =>
   new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -85,7 +85,7 @@ export function ConsensusPage({ embedded = false }: EmbeddableProps = {}) {
   const readingCert = fresh?.stale
     ? { certainty: 'stale' as const, staleFor: `snapshot ${fresh.ageLabel}` }
     : pollCert
-  const scoreTone = reading ? (Math.abs(reading.score) < 0.05 ? 'var(--probex-text-secondary)' : reading.score > 0 ? YES : NO) : undefined
+  const scoreTone = reading ? (Math.abs(reading.score) < 0.05 ? 'var(--synatra-text-secondary)' : reading.score > 0 ? YES : NO) : undefined
 
   return (
     <div className={pageShell(embedded, 'gap-5')}>
@@ -107,7 +107,7 @@ export function ConsensusPage({ embedded = false }: EmbeddableProps = {}) {
         ) : reading === null ? (
           // The engine answered and said it has nothing computed. Its own
           // words, not a zero.
-          <p className="text-sm font-medium leading-relaxed m-0" style={{ color: 'var(--probex-text-secondary)' }}>
+          <p className="text-sm font-medium leading-relaxed m-0" style={{ color: 'var(--synatra-text-secondary)' }}>
             No reading — the engine reports: “{consensus.data.message ?? 'No consensus calculated yet'}”.
           </p>
         ) : (
@@ -115,7 +115,7 @@ export function ConsensusPage({ embedded = false }: EmbeddableProps = {}) {
             {/* Freshness first, in the warning register when stale. This is
                 the one line the page must not let a reader skip. */}
             {fresh !== null && (
-              <p className="text-sm font-medium leading-relaxed m-0" style={{ color: fresh.stale ? 'var(--probex-warning)' : 'var(--probex-text-primary)' }}>
+              <p className="text-sm font-medium leading-relaxed m-0" style={{ color: fresh.stale ? 'var(--synatra-warning)' : 'var(--synatra-text-primary)' }}>
                 {fresh.stale ? 'Stale snapshot — ' : 'Snapshot '}
                 computed {fresh.ageLabel} ({stamp(reading.scoreTimestamp)})
                 {matchesEdgeEvent === true && ', on the last edge-detection cycle in the log'}
@@ -170,7 +170,7 @@ export function ConsensusPage({ embedded = false }: EmbeddableProps = {}) {
       </section>
 
       {/* ── B · the signals ─────────────────────────────────────────────── */}
-      <section aria-labelledby="cs-signals" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <section aria-labelledby="cs-signals" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <span className="flex items-center gap-1.5 flex-wrap">
             <h2 id="cs-signals" className="t-section-title">The signals</h2>
@@ -207,15 +207,15 @@ export function ConsensusPage({ embedded = false }: EmbeddableProps = {}) {
             </Thead>
             <tbody>
               {signals.map((s) => {
-                const tone = s.sign === 'positive' ? YES : s.sign === 'negative' ? NO : 'var(--probex-text-muted)'
+                const tone = s.sign === 'positive' ? YES : s.sign === 'negative' ? NO : 'var(--synatra-text-muted)'
                 return (
                   <Tr key={s.key} accent={s.sign === 'zero' ? undefined : tone}>
                     <Td align="left" dense grow>
-                      <span className={`block font-medium truncate ${fresh?.stale ? 'c-stale' : ''}`} style={{ color: 'var(--probex-text-primary)' }}>{s.label}</span>
-                      <span className="md:hidden block font-mono text-2xs mt-0.5 truncate" style={{ color: 'var(--probex-text-muted)' }}>{s.key}</span>
+                      <span className={`block font-medium truncate ${fresh?.stale ? 'c-stale' : ''}`} style={{ color: 'var(--synatra-text-primary)' }}>{s.label}</span>
+                      <span className="md:hidden block font-mono text-2xs mt-0.5 truncate" style={{ color: 'var(--synatra-text-muted)' }}>{s.key}</span>
                     </Td>
                     <Td align="right" dense>
-                      <span className={`font-mono font-semibold tabular-nums ${fresh?.stale ? 'c-stale' : ''}`} style={{ color: 'var(--probex-text-primary)' }}>
+                      <span className={`font-mono font-semibold tabular-nums ${fresh?.stale ? 'c-stale' : ''}`} style={{ color: 'var(--synatra-text-primary)' }}>
                         {s.sign === 'positive' ? '+' : ''}{s.value}
                       </span>
                     </Td>
@@ -225,7 +225,7 @@ export function ConsensusPage({ embedded = false }: EmbeddableProps = {}) {
                       </span>
                     </Td>
                     <Td align="left" dense hideBelow="md">
-                      <span className="font-mono text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>{s.key}</span>
+                      <span className="font-mono text-2xs" style={{ color: 'var(--synatra-text-disabled)' }}>{s.key}</span>
                     </Td>
                   </Tr>
                 )
@@ -236,7 +236,7 @@ export function ConsensusPage({ embedded = false }: EmbeddableProps = {}) {
       </section>
 
       {/* ── C · context ─────────────────────────────────────────────────── */}
-      <section aria-labelledby="cs-context" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <section aria-labelledby="cs-context" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <span className="flex items-baseline gap-2 flex-wrap">
             <h2 id="cs-context" className="t-section-title">Context</h2>
@@ -259,11 +259,11 @@ export function ConsensusPage({ embedded = false }: EmbeddableProps = {}) {
 
         <div className="flex flex-col gap-2">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
-            <span className="t-label">Current candidates <span className="normal-case tracking-normal font-normal" style={{ color: 'var(--probex-text-disabled)' }}>· ranked by edge, observed alongside the reading — not produced by it</span></span>
-            <Link href={`${ROUTES.STRATEGY}?view=pipeline`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>The cycle, on Mechanism →</Link>
+            <span className="t-label">Current candidates <span className="normal-case tracking-normal font-normal" style={{ color: 'var(--synatra-text-disabled)' }}>· ranked by edge, observed alongside the reading — not produced by it</span></span>
+            <Link href={`${ROUTES.STRATEGY}?view=pipeline`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--synatra-primary)' }}>The cycle, on Mechanism →</Link>
           </div>
           {edges.status === 'error' ? (
-            <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>The edge detector did not answer.</p>
+            <p className="text-xs" style={{ color: 'var(--synatra-warning)' }}>The edge detector did not answer.</p>
           ) : ranked === null ? (
             <p className="t-description">Waiting for /api/edges.</p>
           ) : (
@@ -277,7 +277,7 @@ export function ConsensusPage({ embedded = false }: EmbeddableProps = {}) {
       </section>
 
       {/* ── C · trajectory ──────────────────────────────────────────────── */}
-      <section aria-labelledby="cs-history" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <section aria-labelledby="cs-history" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <span className="flex items-baseline gap-2 flex-wrap">
             <h2 id="cs-history" className="t-section-title">Recorded readings</h2>
@@ -316,7 +316,7 @@ function RecordButton(props: PopoverTriggerProps) {
     <button
       type="button"
       className="focus-ring inline-flex items-center gap-1 rounded-sm text-2xs font-mono cursor-pointer"
-      style={{ color: 'var(--probex-text-disabled)' }}
+      style={{ color: 'var(--synatra-text-disabled)' }}
       title="Reading record — timestamps and raw signal values"
       {...props}
     >
@@ -330,7 +330,7 @@ function Line({ label, value, mono = true }: { label: string; value: string; mon
   return (
     <div className="flex flex-col gap-0.5 min-w-0">
       <span className="t-label">{label}</span>
-      <span className={`text-2xs break-words ${mono ? 'font-mono' : ''}`} style={{ color: 'var(--probex-text-secondary)' }}>{value}</span>
+      <span className={`text-2xs break-words ${mono ? 'font-mono' : ''}`} style={{ color: 'var(--synatra-text-secondary)' }}>{value}</span>
     </div>
   )
 }

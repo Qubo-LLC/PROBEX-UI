@@ -20,7 +20,7 @@ export default function AppError({
   }, [error])
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--probex-bg)' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--synatra-bg)' }}>
       <ErrorState
         fullPage={false}
         title="Something went wrong"

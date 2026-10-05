@@ -79,7 +79,7 @@ export function RuntimePanel() {
           <h2 className="t-section-title">Engine runtime</h2>
           <span className="t-metadata">awaiting /api/runtime</span>
         </div>
-        <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-text-disabled)' }}>
           Reading the component matrix… this endpoint is polled every 30 seconds.
         </p>
       </section>
@@ -98,7 +98,7 @@ export function RuntimePanel() {
           <h2 className="t-section-title">Engine runtime</h2>
           <span
             className="t-value"
-            style={activeCount < keys.length ? { color: 'var(--probex-warning)' } : undefined}
+            style={activeCount < keys.length ? { color: 'var(--synatra-warning)' } : undefined}
           >
             {activeCount}/{keys.length} components active
           </span>
@@ -153,7 +153,7 @@ export function RuntimePanel() {
                     greyscale as well as colour. */}
                 <span
                   className="text-2xs font-semibold tabular-nums"
-                  style={{ color: complete ? 'var(--probex-text-disabled)' : 'var(--probex-warning)' }}
+                  style={{ color: complete ? 'var(--synatra-text-disabled)' : 'var(--synatra-warning)' }}
                 >
                   {liveInCluster}/{cluster.keys.length}
                 </span>
@@ -174,7 +174,7 @@ export function RuntimePanel() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-0.5">
                 {cluster.keys.map((key) => {
                   const active = runtime.components[key]
-          const tone = active ? 'var(--probex-positive)' : 'var(--probex-text-disabled)'
+          const tone = active ? 'var(--synatra-positive)' : 'var(--synatra-text-disabled)'
           return (
             // De-boxed. These were fourteen bordered, elevated tiles — the
             // page's densest concentration of containers, for fourteen
@@ -209,18 +209,18 @@ export function RuntimePanel() {
                   directly beside its own state. */}
               <span
                 className="truncate font-medium"
-                style={{ color: active ? 'var(--probex-text-secondary)' : 'var(--probex-text-muted)' }}
+                style={{ color: active ? 'var(--synatra-text-secondary)' : 'var(--synatra-text-muted)' }}
               >
                 {COMPONENT_LABELS[key]}
               </span>
               <span
                 className="text-2xs font-bold uppercase tracking-wider flex-shrink-0 tabular-nums"
-                // Was color-mix(… var(--probex-positive) 80%, transparent),
+                // Was color-mix(… var(--synatra-positive) 80%, transparent),
                 // which softens by dropping ALPHA to 0.8 rather than by mixing
                 // toward the surface. Green at 0.8 over this tile's own green
                 // tint measured 1.17:1 — the ON readout, the one thing this row
                 // exists to state, was the least legible text in the product.
-                style={{ color: active ? 'var(--probex-positive)' : 'var(--probex-text-disabled)' }}
+                style={{ color: active ? 'var(--synatra-positive)' : 'var(--synatra-text-disabled)' }}
               >
                 {active ? 'on' : 'off'}
               </span>
@@ -244,7 +244,7 @@ export function RuntimePanel() {
           these numbers are, and a reader must not need a click to learn that a
           P&L figure is not the account's P&L. The two-sentence explanation of
           why (the write path, where the real ledger lives) is the disclosure. */}
-      <div className="flex flex-col gap-1.5 pt-1" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <div className="flex flex-col gap-1.5 pt-1" style={{ borderTop: '1px solid var(--synatra-border)' }}>
         <span className="flex items-center gap-1.5">
           <span className="t-label">Bot-reported counters · not accounting</span>
           <Popover
@@ -262,12 +262,12 @@ export function RuntimePanel() {
             </PopoverText>
           </Popover>
         </span>
-        <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>
+        <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs tabular-nums" style={{ color: 'var(--synatra-text-secondary)' }}>
           <span>{runtime.stats.edgesDetected} edges detected</span>
           <span>{runtime.stats.ordersExecuted} orders executed</span>
           <span>
             {formatSignedCurrency(runtime.stats.totalPnl)}{' '}
-            <span style={{ color: 'var(--probex-text-disabled)' }}>P&amp;L as reported</span>
+            <span style={{ color: 'var(--synatra-text-disabled)' }}>P&amp;L as reported</span>
           </span>
           <span className="t-metadata">since {new Date(runtime.stats.startedAt).toLocaleString()}</span>
         </div>

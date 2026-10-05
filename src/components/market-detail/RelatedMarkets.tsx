@@ -62,8 +62,8 @@ export function RelatedMarkets({ currentMarketId, segment, onSelect }: RelatedMa
   }, [tab, allRows, currentMarketId, segment])
 
   return (
-    <div className="mt-2 rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
-      <div style={{ borderBottom: '1px solid var(--probex-border)' }}>
+    <div className="mt-2 rounded-lg overflow-hidden" style={{ background: 'var(--synatra-surface)', border: '1px solid var(--synatra-border)' }}>
+      <div style={{ borderBottom: '1px solid var(--synatra-border)' }}>
         <div className="px-4 pt-3">
           <span className="flex items-baseline gap-2 flex-wrap mb-2">
             <h2 className="t-section-title">Other markets</h2>
@@ -77,7 +77,7 @@ export function RelatedMarkets({ currentMarketId, segment, onSelect }: RelatedMa
                 aria-selected={tab === t.id}
                 onClick={() => setTab(t.id)}
                 className="text-xs font-medium px-3 py-2 cursor-pointer transition-colors duration-100 whitespace-nowrap focus-ring"
-                style={{ color: tab === t.id ? 'var(--probex-primary)' : 'var(--probex-text-muted)', borderBottom: tab === t.id ? '2px solid var(--probex-primary)' : '2px solid transparent', marginBottom: -1 }}
+                style={{ color: tab === t.id ? 'var(--synatra-primary)' : 'var(--synatra-text-muted)', borderBottom: tab === t.id ? '2px solid var(--synatra-primary)' : '2px solid transparent', marginBottom: -1 }}
               >
                 {t.label}
               </button>

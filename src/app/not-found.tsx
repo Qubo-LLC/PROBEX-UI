@@ -8,18 +8,18 @@ export default function NotFound() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center gap-6 text-center px-4"
-      style={{ background: 'var(--probex-bg)' }}
+      style={{ background: 'var(--synatra-bg)' }}
     >
       <div
         className="w-16 h-16 rounded-2xl flex items-center justify-center"
-        style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}
+        style={{ background: 'var(--synatra-surface)', border: '1px solid var(--synatra-border)' }}
         aria-hidden="true"
       >
         <span className="text-2xl font-black text-gradient-brand">404</span>
       </div>
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-bold" style={{ color: 'var(--probex-text-primary)' }}>Page not found</h1>
-        <p className="text-sm max-w-sm" style={{ color: 'var(--probex-text-muted)' }}>
+        <h1 className="text-xl font-bold" style={{ color: 'var(--synatra-text-primary)' }}>Page not found</h1>
+        <p className="text-sm max-w-sm" style={{ color: 'var(--synatra-text-muted)' }}>
           The page you&apos;re looking for doesn&apos;t exist or has moved.
         </p>
       </div>

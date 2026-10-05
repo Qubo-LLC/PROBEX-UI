@@ -7,7 +7,7 @@
 // Consumed by:
 //   • System console → Diagnostics panel (production observability)
 //
-// Recording is unconditional: the panel is production UI (PROBEX_PRODUCT_SPEC.md
+// Recording is unconditional: the panel is production UI (SYNATRA_PRODUCT_SPEC.md
 // §4 System). Cost is one small object write per HTTP response.
 
 export interface RequestRecord {

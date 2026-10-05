@@ -67,9 +67,9 @@ export function SystemStatusIndicator() {
           // An attention state gets a tinted plate; the normal case gets a bare
           // chip that sits in the nav at the same weight as the figures beside
           // it. A healthy cockpit should not decorate itself.
-          color: attention ? color : 'var(--probex-text-secondary)',
+          color: attention ? color : 'var(--synatra-text-secondary)',
           background: attention ? `color-mix(in srgb, ${color} 10%, transparent)` : 'transparent',
-          border: `1px solid ${attention ? `color-mix(in srgb, ${color} 28%, transparent)` : 'var(--probex-border-default)'}`,
+          border: `1px solid ${attention ? `color-mix(in srgb, ${color} 28%, transparent)` : 'var(--synatra-border-default)'}`,
         }}
       >
         <span
@@ -111,7 +111,7 @@ export function SystemStatusIndicator() {
               <span className="text-sm font-semibold leading-tight" style={{ color }}>
                 {status.label}
               </span>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--probex-text-secondary)' }}>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--synatra-text-secondary)' }}>
                 {status.detail}
               </p>
             </div>
@@ -124,9 +124,9 @@ export function SystemStatusIndicator() {
             <p
               className="text-xs leading-relaxed rounded-md px-2.5 py-2"
               style={{
-                color: 'var(--probex-warning)',
-                background: 'var(--probex-warning-dim)',
-                border: '1px solid color-mix(in srgb, var(--probex-warning) 24%, transparent)',
+                color: 'var(--synatra-warning)',
+                background: 'var(--synatra-warning-dim)',
+                border: '1px solid color-mix(in srgb, var(--synatra-warning) 24%, transparent)',
               }}
             >
               Every figure on screen is generated locally. Nothing here reflects real
@@ -138,9 +138,9 @@ export function SystemStatusIndicator() {
             <p
               className="text-xs leading-relaxed rounded-md px-2.5 py-2"
               style={{
-                color: 'var(--probex-negative)',
-                background: 'var(--probex-negative-dim)',
-                border: '1px solid color-mix(in srgb, var(--probex-negative) 24%, transparent)',
+                color: 'var(--synatra-negative)',
+                background: 'var(--synatra-negative-dim)',
+                border: '1px solid color-mix(in srgb, var(--synatra-negative) 24%, transparent)',
               }}
             >
               No trading data is being displayed. Values are withheld rather than
@@ -148,7 +148,7 @@ export function SystemStatusIndicator() {
             </p>
           )}
 
-          <div className="h-px" style={{ background: 'var(--probex-border)' }} aria-hidden="true" />
+          <div className="h-px" style={{ background: 'var(--synatra-border)' }} aria-hidden="true" />
 
           <dl className="flex flex-col gap-1.5 m-0">
             <DetailRow label="Deployment" value={runtime.deployment} />
@@ -190,7 +190,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       <dt className="t-label">{label}</dt>
       <dd
         className="text-2xs font-mono tabular-nums m-0 truncate"
-        style={{ color: 'var(--probex-text-secondary)' }}
+        style={{ color: 'var(--synatra-text-secondary)' }}
       >
         {value}
       </dd>

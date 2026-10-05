@@ -129,7 +129,7 @@ export function MarketsPage({ embedded = false }: EmbeddableProps = {}) {
       )}
 
       {marketRows?.kind === 'rows' && (
-        <div className="sticky top-0 z-10 -mx-5 px-5 pb-2" style={{ background: 'var(--probex-bg)', borderBottom: '1px solid var(--probex-border)' }}>
+        <div className="sticky top-0 z-10 -mx-5 px-5 pb-2" style={{ background: 'var(--synatra-bg)', borderBottom: '1px solid var(--synatra-border)' }}>
           <MarketFilterBar />
         </div>
       )}
@@ -139,7 +139,7 @@ export function MarketsPage({ embedded = false }: EmbeddableProps = {}) {
       )}
 
       {marketRows?.kind === 'unrecognized' && (
-        <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-warning)' }}>
           The engine reports {marketRows.count} market{marketRows.count === 1 ? '' : 's'} in its scan, but the item shape does not match the agreed schema — the list is withheld rather than shown with wrong values.
         </p>
       )}
@@ -158,9 +158,9 @@ export function MarketsPage({ embedded = false }: EmbeddableProps = {}) {
             {archive.status === 'error' && ' The archive did not answer.'}
           </p>
           <p className="t-description">
-            <Link href={`${ROUTES.MARKETS}?view=archive`} className="focus-ring font-semibold" style={{ color: 'var(--probex-primary)' }}>Recorded markets →</Link>
+            <Link href={`${ROUTES.MARKETS}?view=archive`} className="focus-ring font-semibold" style={{ color: 'var(--synatra-primary)' }}>Recorded markets →</Link>
             {' · '}
-            <Link href={`${ROUTES.STRATEGY}?view=pipeline`} className="focus-ring font-semibold" style={{ color: 'var(--probex-primary)' }}>What the scan looks for →</Link>
+            <Link href={`${ROUTES.STRATEGY}?view=pipeline`} className="focus-ring font-semibold" style={{ color: 'var(--synatra-primary)' }}>What the scan looks for →</Link>
           </p>
         </section>
       )}

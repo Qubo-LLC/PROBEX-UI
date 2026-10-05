@@ -60,10 +60,10 @@ function resolveServices(): ServiceRegistry {
   if (!isMockPermitted(runtime.deployment)) {
     diagnostics.setRegistry('OfflineEngineService')
     console.error(
-      `[FATAL] ServiceRegistry: mock data requested under PROBEX_DEPLOYMENT=` +
+      `[FATAL] ServiceRegistry: mock data requested under SYNATRA_DEPLOYMENT=` +
       `"${runtime.deployment}", which forbids it. Refusing to initialise ` +
       'MockEngineService; showing Engine Offline instead. This deployment is ' +
-      'misconfigured — see PROBEX_API_MODE / PROBEX_DEPLOYMENT.',
+      'misconfigured — see SYNATRA_API_MODE / SYNATRA_DEPLOYMENT.',
     )
     return {
       engine: createOfflineEngineService(

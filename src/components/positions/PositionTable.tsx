@@ -37,8 +37,8 @@ import { MARKET_DETAIL_PATH } from '@/config/constants'
 import { useClosePosition, MUTATIONS } from '@/config/hooks/useMutation'
 import { MutationButton } from '@/components/execution/MutationButton'
 
-const YES_COLOR = 'var(--probex-yes)'
-const NO_COLOR  = 'var(--probex-no)'
+const YES_COLOR = 'var(--synatra-yes)'
+const NO_COLOR  = 'var(--synatra-no)'
 
 interface PositionTableProps {
   positions:   PositionRow[]
@@ -80,10 +80,10 @@ export function PositionTable({ positions, edgeMap, closesAtByMarketId, stale = 
           const cs = positionCloseState(p.marketId, closes)
           const title = p.marketTitle ?? p.id
           const pnlTone =
-            p.unrealizedPnl === null ? 'var(--probex-text-muted)'
-            : p.unrealizedPnl > 0 ? 'var(--probex-positive)'
-            : p.unrealizedPnl < 0 ? 'var(--probex-negative)'
-            : 'var(--probex-text-primary)'
+            p.unrealizedPnl === null ? 'var(--synatra-text-muted)'
+            : p.unrealizedPnl > 0 ? 'var(--synatra-positive)'
+            : p.unrealizedPnl < 0 ? 'var(--synatra-negative)'
+            : 'var(--synatra-text-primary)'
 
           return (
             <PositionRowGroup key={p.id}>
@@ -102,7 +102,7 @@ export function PositionTable({ positions, edgeMap, closesAtByMarketId, stale = 
                       <Link
                         href={MARKET_DETAIL_PATH(p.marketId)}
                         className="focus-ring font-semibold block truncate min-w-0"
-                        style={{ color: 'var(--probex-text-primary)' }}
+                        style={{ color: 'var(--synatra-text-primary)' }}
                         title={title}
                       >
                         <span className="sm:hidden">{compactWindowTitle(title)}</span>
@@ -113,7 +113,7 @@ export function PositionTable({ positions, edgeMap, closesAtByMarketId, stale = 
                     )}
                   </span>
                   {/* What the folded columns carried, restated beneath. */}
-                  <span className="lg:hidden block font-mono text-2xs mt-0.5 truncate" style={{ color: 'var(--probex-text-muted)' }}>
+                  <span className="lg:hidden block font-mono text-2xs mt-0.5 truncate" style={{ color: 'var(--synatra-text-muted)' }}>
                     <span className="md:hidden">
                       {p.entryPrice !== null && p.currentPrice !== null ? `${p.entryPrice.toFixed(0)}¢ → ${p.currentPrice.toFixed(0)}¢` : '—'}
                     </span>
@@ -127,7 +127,7 @@ export function PositionTable({ positions, edgeMap, closesAtByMarketId, stale = 
                   </span>
                 </Td>
                 <Td align="right" dense hideBelow="md" className={cellCert}>
-                  <span className="font-mono" style={{ color: 'var(--probex-text-secondary)' }}>
+                  <span className="font-mono" style={{ color: 'var(--synatra-text-secondary)' }}>
                     {p.entryPrice !== null && p.currentPrice !== null
                       ? <>{p.entryPrice.toFixed(0)}¢ → <span style={{ color: sideColor }}>{p.currentPrice.toFixed(0)}¢</span></>
                       : '—'}
@@ -138,7 +138,7 @@ export function PositionTable({ positions, edgeMap, closesAtByMarketId, stale = 
                     {p.unrealizedPnl !== null ? formatSignedCurrency(p.unrealizedPnl) : '—'}
                   </span>
                   {p.unrealizedPnlPct !== null && (
-                    <span className="hidden sm:inline font-mono text-2xs ml-1.5" style={{ color: 'var(--probex-text-muted)' }}>
+                    <span className="hidden sm:inline font-mono text-2xs ml-1.5" style={{ color: 'var(--synatra-text-muted)' }}>
                       {formatDelta(p.unrealizedPnlPct)}
                     </span>
                   )}
@@ -149,7 +149,7 @@ export function PositionTable({ positions, edgeMap, closesAtByMarketId, stale = 
                 <Td align="right" dense hideBelow="sm" className={cellCert}>
                   <span
                     className="font-mono"
-                    style={{ color: 'var(--probex-text-secondary)' }}
+                    style={{ color: 'var(--synatra-text-secondary)' }}
                     {...(p.openedAt !== null ? { title: `Opened ${new Date(p.openedAt).toLocaleString()}` } : {})}
                   >
                     {formatRuntime(p.timeHeldSeconds)}
@@ -157,9 +157,9 @@ export function PositionTable({ positions, edgeMap, closesAtByMarketId, stale = 
                 </Td>
                 <Td align="left" dense hideBelow="lg" className={cellCert}>
                   {cs.lifecycle === 'unknown' ? (
-                    <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }} title="Not in the engine's current market cache, so its close time is unknown.">—</span>
+                    <span className="text-2xs" style={{ color: 'var(--synatra-text-disabled)' }} title="Not in the engine's current market cache, so its close time is unknown.">—</span>
                   ) : (
-                    <span className="text-2xs font-mono whitespace-nowrap" style={{ color: cs.lifecycle === 'open' ? 'var(--probex-text-secondary)' : 'var(--probex-warning)' }} title={closeTimestamp(cs.closesAt)}>
+                    <span className="text-2xs font-mono whitespace-nowrap" style={{ color: cs.lifecycle === 'open' ? 'var(--synatra-text-secondary)' : 'var(--synatra-warning)' }} title={closeTimestamp(cs.closesAt)}>
                       {lifecycleLabel(cs.lifecycle)} · {formatCloseTime(cs.closesAt)}
                     </span>
                   )}
@@ -172,7 +172,7 @@ export function PositionTable({ positions, edgeMap, closesAtByMarketId, stale = 
                     aria-controls={panelId}
                     aria-label={`${isOpen ? 'Hide' : 'Show'} evidence for ${title}`}
                     className="focus-ring inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer"
-                    style={{ color: 'var(--probex-text-muted)' }}
+                    style={{ color: 'var(--synatra-text-muted)' }}
                   >
                     <span aria-hidden="true" style={{ display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▸</span>
                   </button>
@@ -217,9 +217,9 @@ function PositionEvidence({
   const alignment: 'aligned' | 'contrarian' | 'no-signal' =
     !edge ? 'no-signal' : edge.direction === p.side ? 'aligned' : 'contrarian'
   const alignmentMeta = {
-    aligned:     { label: 'Aligned — the engine still sees this edge', color: 'var(--probex-positive)' },
-    contrarian:  { label: 'Contrary — the engine’s current edge is on the other side', color: 'var(--probex-warning)' },
-    'no-signal': { label: 'No active edge on this market this cycle', color: 'var(--probex-text-muted)' },
+    aligned:     { label: 'Aligned — the engine still sees this edge', color: 'var(--synatra-positive)' },
+    contrarian:  { label: 'Contrary — the engine’s current edge is on the other side', color: 'var(--synatra-warning)' },
+    'no-signal': { label: 'No active edge on this market this cycle', color: 'var(--synatra-text-muted)' },
   }[alignment]
 
   return (
@@ -234,7 +234,7 @@ function PositionEvidence({
         <Fact
           label="BTC since entry"
           value={btcMove !== null ? `${btcMove >= 0 ? '+' : ''}${(btcMove * 100).toFixed(2)}%` : '—'}
-          tone={btcMove === null ? undefined : btcMove >= 0 ? 'var(--probex-positive)' : 'var(--probex-negative)'}
+          tone={btcMove === null ? undefined : btcMove >= 0 ? 'var(--synatra-positive)' : 'var(--synatra-negative)'}
           title={p.entryBtcPrice !== null && p.currentBtcPrice !== null ? `${formatCurrency(p.entryBtcPrice)} at entry → ${formatCurrency(p.currentBtcPrice)} now` : undefined}
         />
       </dl>
@@ -244,11 +244,11 @@ function PositionEvidence({
       {p.entryPrice !== null && p.currentPrice !== null && (
         <div className="flex items-center gap-3">
           <span className="t-label whitespace-nowrap">{p.side} price</span>
-          <div className="relative h-1.5 flex-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }}>
+          <div className="relative h-1.5 flex-1 rounded-full overflow-hidden" style={{ background: 'var(--synatra-border-default)' }}>
             <div className="absolute h-full rounded-full" style={{ width: `${Math.max(p.entryPrice, p.currentPrice)}%`, background: `color-mix(in srgb, ${sideColor} 30%, transparent)` }} />
             <div className="absolute h-full rounded-full" style={{ width: `${Math.min(p.entryPrice, p.currentPrice)}%`, background: sideColor }} />
           </div>
-          <span className="font-mono text-2xs tabular-nums whitespace-nowrap" style={{ color: 'var(--probex-text-secondary)' }}>
+          <span className="font-mono text-2xs tabular-nums whitespace-nowrap" style={{ color: 'var(--synatra-text-secondary)' }}>
             {p.entryPrice.toFixed(0)}¢ → <span style={{ color: sideColor }}>{p.currentPrice.toFixed(0)}¢</span>
           </span>
         </div>
@@ -262,16 +262,16 @@ function PositionEvidence({
           {edge && <span className="font-mono">· {formatEdgePct(edge.edgePct)} now</span>}
         </span>
         {closeState.lifecycle !== 'unknown' && (
-          <span className="font-mono" style={{ color: closeState.lifecycle === 'open' ? 'var(--probex-text-muted)' : 'var(--probex-warning)' }} title={closeTimestamp(closeState.closesAt)}>
+          <span className="font-mono" style={{ color: closeState.lifecycle === 'open' ? 'var(--synatra-text-muted)' : 'var(--synatra-warning)' }} title={closeTimestamp(closeState.closesAt)}>
             Market {lifecycleLabel(closeState.lifecycle).toLowerCase()} · {formatCloseTime(closeState.closesAt)}
             {closeState.lifecycle === 'closed' && ' — still open against a market whose close has passed'}
           </span>
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-3 flex-wrap pt-2.5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <div className="flex items-center justify-between gap-3 flex-wrap pt-2.5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
         {p.marketId ? (
-          <Link href={MARKET_DETAIL_PATH(p.marketId)} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>
+          <Link href={MARKET_DETAIL_PATH(p.marketId)} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--synatra-primary)' }}>
             Market detail →
           </Link>
         ) : <span />}
@@ -299,7 +299,7 @@ function Fact({ label, value, tone, title }: { label: string; value: string; ton
   return (
     <div className="flex flex-col gap-0.5 min-w-0" {...(title !== undefined ? { title } : {})}>
       <dt className="t-label truncate">{label}</dt>
-      <dd className="m-0 font-mono text-xs font-semibold tabular-nums truncate" style={{ color: tone ?? 'var(--probex-text-primary)' }}>{value}</dd>
+      <dd className="m-0 font-mono text-xs font-semibold tabular-nums truncate" style={{ color: tone ?? 'var(--synatra-text-primary)' }}>{value}</dd>
     </div>
   )
 }

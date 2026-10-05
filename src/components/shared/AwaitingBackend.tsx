@@ -1,6 +1,6 @@
 'use client'
 
-// AwaitingBackend — the V3 fifth data-state (PROBEX_V3_RESTORATION_PLAN §2).
+// AwaitingBackend — the V3 fifth data-state (SYNATRA_V3_RESTORATION_PLAN §2).
 //
 // The four-state contract is loading · error · empty · data. V3 adds a fifth:
 // AWAITING BACKEND, for widgets whose backing capability does not exist yet.
@@ -64,7 +64,7 @@ export function AwaitingBackend({
           {title}
         </h3>
         {badge}
-        <p className="text-2xs leading-relaxed min-w-0" style={{ color: 'var(--probex-text-disabled)' }}>
+        <p className="text-2xs leading-relaxed min-w-0" style={{ color: 'var(--synatra-text-disabled)' }}>
           {description}
         </p>
       </div>
@@ -75,7 +75,7 @@ export function AwaitingBackend({
             <h3 className="t-card-title">
               {title}
             </h3>
-            <p className="text-xs leading-relaxed" style={{ color: 'var(--probex-text-disabled)' }}>
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--synatra-text-disabled)' }}>
               {description}
             </p>
           </div>

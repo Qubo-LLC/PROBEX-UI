@@ -25,7 +25,7 @@ export function WatchlistButton({ marketId, size = 'sm', variant = 'icon', class
     toggle(marketId)
   }
 
-  const starColor = isWatching ? 'var(--probex-warning)' : 'var(--probex-text-muted)'
+  const starColor = isWatching ? 'var(--synatra-warning)' : 'var(--synatra-text-muted)'
   const iconSize  = size === 'sm' ? 13 : 15
 
   if (variant === 'pill') {
@@ -40,8 +40,8 @@ export function WatchlistButton({ marketId, size = 'sm', variant = 'icon', class
           className,
         )}
         style={isWatching
-          ? { background: 'var(--probex-warning-dim)', color: 'var(--probex-warning)', border: '1px solid var(--probex-warning-border)' }
-          : { background: 'var(--probex-surface-2)', color: 'var(--probex-text-secondary)', border: '1px solid var(--probex-border)' }
+          ? { background: 'var(--synatra-warning-dim)', color: 'var(--synatra-warning)', border: '1px solid var(--synatra-warning-border)' }
+          : { background: 'var(--synatra-surface-2)', color: 'var(--synatra-text-secondary)', border: '1px solid var(--synatra-border)' }
         }
       >
         <StarIcon size={iconSize} filled={isWatching} color={starColor} />
@@ -61,7 +61,7 @@ export function WatchlistButton({ marketId, size = 'sm', variant = 'icon', class
         size === 'sm' ? 'w-6 h-6' : 'w-7 h-7',
         className,
       )}
-      style={{ background: isWatching ? 'var(--probex-warning-dim)' : 'transparent' }}
+      style={{ background: isWatching ? 'var(--synatra-warning-dim)' : 'transparent' }}
     >
       <StarIcon size={iconSize} filled={isWatching} color={starColor} />
     </button>

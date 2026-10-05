@@ -158,7 +158,7 @@ export function MarketField() {
                   comes from one slice, so one textual statement of its
                   staleness covers them all; the cells dim to match. */}
               {fieldCertainty.certainty === 'stale' && (
-                <span className="ml-1.5" style={{ color: 'var(--probex-warning)' }}>· stale {fieldCertainty.staleFor}</span>
+                <span className="ml-1.5" style={{ color: 'var(--synatra-warning)' }}>· stale {fieldCertainty.staleFor}</span>
               )}
             </span>
           </div>
@@ -197,11 +197,11 @@ export function MarketField() {
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <h3 className="t-label">
               Observed markets
-              <span className="ml-2 normal-case tracking-normal font-normal" style={{ color: 'var(--probex-text-disabled)' }}>
+              <span className="ml-2 normal-case tracking-normal font-normal" style={{ color: 'var(--synatra-text-disabled)' }}>
                 {total} open · showing the {Math.min(BOARD_ROWS, observed.length)} busiest
               </span>
             </h3>
-            <Link href={ROUTES.MARKETS} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>
+            <Link href={ROUTES.MARKETS} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--synatra-primary)' }}>
               View all →
             </Link>
           </div>
@@ -253,8 +253,8 @@ export function MarketField() {
 // its own cell; the row itself carries no interactive role, so nothing nests
 // inside an interactive element.
 
-const YES_COLOR = 'var(--probex-yes)'
-const NO_COLOR  = 'var(--probex-no)'
+const YES_COLOR = 'var(--synatra-yes)'
+const NO_COLOR  = 'var(--synatra-no)'
 
 export function EngineLedger({
   windows, edgeMap, btcNow, btcBaselines, stale,
@@ -338,7 +338,7 @@ export function EngineLedger({
                     <Link
                       href={MARKET_DETAIL_PATH(m.id)}
                       className="focus-ring font-semibold block truncate"
-                      style={{ color: closed ? 'var(--probex-text-muted)' : 'var(--probex-text-primary)' }}
+                      style={{ color: closed ? 'var(--synatra-text-muted)' : 'var(--synatra-text-primary)' }}
                       title={m.title}
                     >
                       {/* Below sm the full question truncates to the same
@@ -357,7 +357,7 @@ export function EngineLedger({
                         Only below sm — above it these are real columns. */}
                     <span
                       className={`sm:hidden block font-mono text-2xs mt-0.5 truncate ${cellCert}`}
-                      style={{ color: closed ? 'var(--probex-text-disabled)' : 'var(--probex-text-muted)' }}
+                      style={{ color: closed ? 'var(--synatra-text-disabled)' : 'var(--synatra-text-muted)' }}
                       title={closeTimestamp(m.closesAt)}
                     >
                       {formatCloseTime(m.closesAt)}
@@ -373,7 +373,7 @@ export function EngineLedger({
                     {/* Between sm and md the NO column is hidden and the
                         sub-line is gone, so the pair shows here as "44 · 56¢". */}
                     {m.noPrice !== null && (
-                      <span className="hidden sm:inline md:hidden font-mono" style={{ color: 'var(--probex-text-muted)' }}>
+                      <span className="hidden sm:inline md:hidden font-mono" style={{ color: 'var(--synatra-text-muted)' }}>
                         {' · '}<span style={{ color: NO_COLOR }}>{Math.round(m.noPrice)}¢</span>
                       </span>
                     )}
@@ -389,13 +389,13 @@ export function EngineLedger({
                         {edge.direction.toUpperCase()} · {edge.edgePct.toFixed(1)}%
                       </span>
                     ) : (
-                      <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }} aria-label="No active edge">—</span>
+                      <span className="text-2xs" style={{ color: 'var(--synatra-text-disabled)' }} aria-label="No active edge">—</span>
                     )}
                   </Td>
                   <Td align="right" dense hideBelow="sm" className={cellCert}>
                     <span
                       className="font-mono text-2xs"
-                      style={{ color: closed ? 'var(--probex-text-disabled)' : 'var(--probex-text-secondary)' }}
+                      style={{ color: closed ? 'var(--synatra-text-disabled)' : 'var(--synatra-text-secondary)' }}
                       title={closeTimestamp(m.closesAt)}
                     >
                       {formatCloseTime(m.closesAt)}
@@ -409,7 +409,7 @@ export function EngineLedger({
                       aria-controls={panelId}
                       aria-label={`${open ? 'Hide' : 'Show'} details for ${m.title}`}
                       className="focus-ring inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer"
-                      style={{ color: 'var(--probex-text-muted)' }}
+                      style={{ color: 'var(--synatra-text-muted)' }}
                     >
                       <span aria-hidden="true" className="text-xs">{open ? '▾' : '▸'}</span>
                     </button>
@@ -427,37 +427,37 @@ export function EngineLedger({
                           className="text-2xs font-black uppercase tracking-widest px-2 py-0.5 rounded-sm"
                           style={{
                             background: accent,
-                            color: edge.direction.toLowerCase() === 'yes' ? 'var(--probex-on-yes)' : 'var(--probex-on-no)',
+                            color: edge.direction.toLowerCase() === 'yes' ? 'var(--synatra-on-yes)' : 'var(--synatra-on-no)',
                           }}
                         >
                           {edge.direction}
                         </span>
-                        <span className="font-mono tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>
+                        <span className="font-mono tabular-nums" style={{ color: 'var(--synatra-text-primary)' }}>
                           {edge.edgePct.toFixed(1)}% edge
                         </span>
                         {edge.confidence !== null && (
-                          <span className="font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+                          <span className="font-mono tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>
                             {formatPercent(edge.confidence)} confidence
                           </span>
                         )}
                         {edge.kellySize !== null && (
-                          <span className="font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+                          <span className="font-mono tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>
                             {(edge.kellySize * 100).toFixed(0)}% Kelly
                           </span>
                         )}
                       </div>
                     ) : (
-                      <span style={{ color: 'var(--probex-text-muted)' }}>
+                      <span style={{ color: 'var(--synatra-text-muted)' }}>
                         Tracked — no edge on this window.
                       </span>
                     )}
 
                     <BaselineReference market={m} btcNow={btcNow} btcBaselines={btcBaselines} />
 
-                    <div className="flex items-center justify-between gap-3 flex-wrap text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
+                    <div className="flex items-center justify-between gap-3 flex-wrap text-2xs" style={{ color: 'var(--synatra-text-muted)' }}>
                       <span>
                         {m.volume24h !== null
-                          ? <>Vol <strong className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>${formatCompact(m.volume24h)}</strong></>
+                          ? <>Vol <strong className="font-mono tabular-nums" style={{ color: 'var(--synatra-text-secondary)' }}>${formatCompact(m.volume24h)}</strong></>
                           : 'Volume not reported'}
                       </span>
                       <WatchlistButton marketId={m.id} />
@@ -528,12 +528,12 @@ function BaselineReference({
       return (
         <ReferenceLine>
           Baseline <Mono>{formatBtcPrice(baseline)}</Mono>
-          <span style={{ color: 'var(--probex-text-disabled)' }}> · live price unavailable</span>
+          <span style={{ color: 'var(--synatra-text-disabled)' }}> · live price unavailable</span>
         </ReferenceLine>
       )
     }
     const above = btcNow >= baseline
-    const tone  = above ? 'var(--probex-yes)' : 'var(--probex-no)'
+    const tone  = above ? 'var(--synatra-yes)' : 'var(--synatra-no)'
     return (
       <ReferenceLine
         // The relationship is computed client-side from two confirmed values;
@@ -542,12 +542,12 @@ function BaselineReference({
         title="Above/below is derived on this screen from the reported baseline and the live BTC price — not a value the engine sent"
       >
         Baseline <Mono>{formatBtcPrice(baseline)}</Mono>
-        <span style={{ color: 'var(--probex-text-disabled)' }}> · now </span>
+        <span style={{ color: 'var(--synatra-text-disabled)' }}> · now </span>
         <Mono>{formatBtcPrice(btcNow)}</Mono>
         <span className="font-semibold ml-1.5" style={{ color: tone }}>
           {above ? '▲ above' : '▼ below'}
         </span>
-        <span className="ml-1" style={{ color: 'var(--probex-text-disabled)' }}>· derived</span>
+        <span className="ml-1" style={{ color: 'var(--synatra-text-disabled)' }}>· derived</span>
       </ReferenceLine>
     )
   }
@@ -571,7 +571,7 @@ function BaselineReference({
   return (
     <ReferenceLine>
       Baseline <Mono>{formatBtcPrice(baseline)}</Mono>
-      <span style={{ color: 'var(--probex-text-disabled)' }}> · no live price for this asset</span>
+      <span style={{ color: 'var(--synatra-text-disabled)' }}> · no live price for this asset</span>
     </ReferenceLine>
   )
 }
@@ -580,7 +580,7 @@ function ReferenceLine({ children, muted = false, title }: { children: React.Rea
   return (
     <p
       className="text-2xs leading-relaxed"
-      style={{ color: muted ? 'var(--probex-text-disabled)' : 'var(--probex-text-secondary)' }}
+      style={{ color: muted ? 'var(--synatra-text-disabled)' : 'var(--synatra-text-secondary)' }}
       {...(title !== undefined && { title })}
     >
       {children}
@@ -589,5 +589,5 @@ function ReferenceLine({ children, muted = false, title }: { children: React.Rea
 }
 
 function Mono({ children }: { children: React.ReactNode }) {
-  return <span className="font-mono tabular-nums font-semibold" style={{ color: 'var(--probex-text-primary)' }}>{children}</span>
+  return <span className="font-mono tabular-nums font-semibold" style={{ color: 'var(--synatra-text-primary)' }}>{children}</span>
 }

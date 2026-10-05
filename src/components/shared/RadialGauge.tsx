@@ -2,7 +2,7 @@
 
 // RadialGauge — the signature premium primitive, extracted from the V1
 // the former ConsensusScoreCard's 270° arc gauge (git 0e3833a4) into a reusable,
-// parameterized shared component (PROBEX_V3_IMPLEMENTATION_BLUEPRINT §3).
+// parameterized shared component (SYNATRA_V3_IMPLEMENTATION_BLUEPRINT §3).
 //
 // In V3 this one gauge powers multiple lenses on the engine's reasoning:
 //   • Edge Strength (Consensus flagship) — real /api/edges magnitude
@@ -42,8 +42,8 @@ export function RadialGauge({
   color,
   size        = 160,
   strokeWidth = 10,
-  trackColor  = 'var(--probex-border-default)',
-  overflowColor = 'var(--probex-warning)',
+  trackColor  = 'var(--synatra-border-default)',
+  overflowColor = 'var(--synatra-warning)',
   children,
   ariaLabel,
   className = '',

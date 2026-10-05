@@ -37,7 +37,7 @@ export function ConfidenceEvolution() {
       source="/api/consensus/history"
       data={data}
       variant="area"
-      color="var(--probex-primary)"
+      color="var(--synatra-primary)"
       yTickFormatter={(v) => `${Math.round(v * 100)}%`}
       valueFormatter={(v) => `${(v * 100).toFixed(1)}%`}
       emptyTitle="No confidence history yet"

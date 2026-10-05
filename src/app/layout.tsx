@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   description:     APP_DESCRIPTION,
   applicationName: APP_NAME,
   keywords: [
-    'probex',
+    'Synatra',
     'autonomous trading',
     'bitcoin trading bot',
     'quantitative trading',
@@ -134,7 +134,7 @@ export const viewport: Viewport = {
 
 // ─── Theme SSR resolution ─────────────────────────────────────────────────
 
-// Reads a "probex-theme" cookie, if one is present, so the server can set
+// Reads a "synatra-theme" cookie, if one is present, so the server can set
 // data-theme before first paint. NOTE (verified 2026-09-16): nothing in the
 // app writes that cookie — themeStore persists to localStorage only — so this
 // resolves to DEFAULT_THEME on every request, and the inline <head> script
@@ -162,7 +162,7 @@ async function resolveRequestOrigin(): Promise<string | null> {
 async function resolveInitialTheme(): Promise<ThemeName> {
   try {
     const cookieStore = await cookies()
-    const themeCookie = cookieStore.get('probex-theme')
+    const themeCookie = cookieStore.get('synatra-theme')
     if (!themeCookie?.value) return DEFAULT_THEME
 
     const parsed = JSON.parse(themeCookie.value) as { state?: { theme?: string } }
@@ -213,7 +213,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       <head>
         {/*
           Runtime engine config. MUST come before the app bundle executes —
-          services/index.ts reads window.__PROBEX_RUNTIME__ at module scope to
+          services/index.ts reads window.__SYNATRA_RUNTIME__ at module scope to
           pick live / mock / offline. An inline <head> script is evaluated
           during HTML parse, so it always wins that race.
         */}
@@ -235,7 +235,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                var stored = JSON.parse(localStorage.getItem('probex-theme') || '{}');
+                var stored = JSON.parse(localStorage.getItem('synatra-theme') || '{}');
                 var theme  = stored?.state?.theme;
                 var valid  = ${JSON.stringify(THEME_NAMES)};
                 if (theme && valid.includes(theme)) {

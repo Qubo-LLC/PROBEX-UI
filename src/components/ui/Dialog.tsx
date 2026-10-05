@@ -63,19 +63,19 @@ export function Dialog({
         ref={panelRef}
         tabIndex={-1}
         className={cn('relative w-full rounded-xl overflow-hidden animate-fade-in-up outline-none', SIZES[size])}
-        style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border-default)' }}
+        style={{ background: 'var(--synatra-surface)', border: '1px solid var(--synatra-border-default)' }}
       >
         {(title || dismissable) && (
-          <div className="flex items-start justify-between gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+          <div className="flex items-start justify-between gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
             <div className="flex flex-col gap-0.5 min-w-0">
               {title && <h2 className="t-section-title">{title}</h2>}
-              {description && <p className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{description}</p>}
+              {description && <p className="text-2xs" style={{ color: 'var(--synatra-text-muted)' }}>{description}</p>}
             </div>
             {dismissable && (
               <button
                 onClick={onClose}
                 className="w-6 h-6 rounded flex items-center justify-center cursor-pointer flex-shrink-0 focus-ring"
-                style={{ color: 'var(--probex-text-muted)' }}
+                style={{ color: 'var(--synatra-text-muted)' }}
                 aria-label="Close dialog"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
@@ -87,7 +87,7 @@ export function Dialog({
         {children && <div className="p-4">{children}</div>}
 
         {footer && (
-          <div className="flex items-center justify-end gap-2 px-4 py-3" style={{ borderTop: '1px solid var(--probex-border)', background: 'var(--probex-surface-2)' }}>
+          <div className="flex items-center justify-end gap-2 px-4 py-3" style={{ borderTop: '1px solid var(--synatra-border)', background: 'var(--synatra-surface-2)' }}>
             {footer}
           </div>
         )}
@@ -135,7 +135,7 @@ export function ConfirmDialog({
             'px-4 py-2 text-sm font-semibold rounded-md cursor-pointer transition-all duration-150 flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed',
             tone === 'danger' ? 'hover:opacity-90 active:opacity-80' : 'btn-primary',
           )}
-          style={tone === 'danger' ? { background: 'var(--probex-negative)', color: '#fff' } : undefined}
+          style={tone === 'danger' ? { background: 'var(--synatra-negative)', color: '#fff' } : undefined}
         >
           {loading && (
             <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">

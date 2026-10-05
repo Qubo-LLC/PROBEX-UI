@@ -5,6 +5,7 @@
 // available (the mock returns data; the live impl returns null → drives loading).
 
 import type { ApiResult } from './response'
+import type { LedgerPage, LedgerPageQuery } from '@/types/ledger'
 
 import type {
   EngineHealth, EngineRuntime, EngineStats, EngineConfig,
@@ -90,6 +91,13 @@ export interface IEngineService {
   getPaperStatus(signal?: AbortSignal): Promise<ApiResult<PaperStatus>>
   getSystemMetrics(signal?: AbortSignal): Promise<ApiResult<SystemMetrics>>
   getTradesLedger(limit?: number, direction?: 'YES' | 'NO', signal?: AbortSignal): Promise<ApiResult<TradesLedger>>
+  /**
+   * One page of trade records, for the Trade Ledger and position history
+   * views (remediation phase 2). Sends `before_seq` / `status` only when the
+   * caller asks; the deployed engine ignores them and returns a capped page,
+   * which `LedgerPage.paging.kind === 'capped'` reports.
+   */
+  getLedgerPage(source: 'ledger' | 'history', query: LedgerPageQuery, signal?: AbortSignal): Promise<ApiResult<LedgerPage>>
   getExecutionOrders(status?: 'active' | 'closed', signal?: AbortSignal): Promise<ApiResult<ExecutionOrders>>
   /** Order lookup by id. `scope` picks the active/closed variant of the route. */
   getOrderById(orderId: string, scope?: 'any' | 'active' | 'closed', signal?: AbortSignal): Promise<ApiResult<unknown>>

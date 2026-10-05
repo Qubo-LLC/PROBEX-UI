@@ -46,8 +46,8 @@ import { TableShell, Thead, Th, Tr, Td } from '@/components/shared/DataTable'
 import { Popover, InfoButton, PopoverText, PopoverTitle } from '@/components/ui/Popover'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 
-const YES = 'var(--probex-yes)'
-const NO  = 'var(--probex-no)'
+const YES = 'var(--synatra-yes)'
+const NO  = 'var(--synatra-no)'
 const MAX_ROWS = 30
 
 
@@ -167,7 +167,7 @@ export function WalletPage({ embedded = false }: EmbeddableProps = {}) {
             <Figure label="Net since start" size="md" certainty="absent" absentReason="needs the balance and the initial capital">—</Figure>
           )}
           {pf && (
-            <Figure label="Unrealized" size="md" tone={pf.pnl.unrealized > 0 ? 'var(--probex-positive)' : pf.pnl.unrealized < 0 ? 'var(--probex-negative)' : undefined} title="pnl.unrealized from /api/portfolio" footnote={<span className="t-helper">on open positions</span>} {...pfCert}>
+            <Figure label="Unrealized" size="md" tone={pf.pnl.unrealized > 0 ? 'var(--synatra-positive)' : pf.pnl.unrealized < 0 ? 'var(--synatra-negative)' : undefined} title="pnl.unrealized from /api/portfolio" footnote={<span className="t-helper">on open positions</span>} {...pfCert}>
               {formatSignedCurrency(pf.pnl.unrealized)}
             </Figure>
           )}
@@ -175,7 +175,7 @@ export function WalletPage({ embedded = false }: EmbeddableProps = {}) {
       </section>
 
       {/* ── B · movements ───────────────────────────────────────────────── */}
-      <section aria-labelledby="wl-movements" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <section aria-labelledby="wl-movements" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <span className="flex items-baseline gap-2 flex-wrap">
             <h2 id="wl-movements" className="t-section-title">Movements</h2>
@@ -186,7 +186,7 @@ export function WalletPage({ embedded = false }: EmbeddableProps = {}) {
               /api/trades/ledger{ledger ? ` · ${ledger.count} settled` : ''}
               {certaintyFromSlice(ledgerSlice, 5_000).certainty === 'stale' && ' · stale'}
             </span>
-            <Link href={ROUTES.POSITIONS} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>Positions →</Link>
+            <Link href={ROUTES.POSITIONS} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--synatra-primary)' }}>Positions →</Link>
           </span>
         </div>
 
@@ -195,9 +195,9 @@ export function WalletPage({ embedded = false }: EmbeddableProps = {}) {
             number — and if it cannot, the reader must be told, not shown a
             column that quietly disagrees with the figure above it. */}
         {check !== null && (
-          <p className="t-helper m-0" style={check.kind === 'differs' ? { color: 'var(--probex-warning)' } : undefined}>
+          <p className="t-helper m-0" style={check.kind === 'differs' ? { color: 'var(--synatra-warning)' } : undefined}>
             {check.kind === 'reconciles' && (
-              <>Started with {formatCurrency(initial!)}, {ledger!.count} settlement{ledger!.count === 1 ? '' : 's'} totalling {formatSignedCurrency(check.sumPnl)} → {formatCurrency(check.endsAt)} — <span style={{ color: 'var(--probex-positive)' }}>matches the reported balance</span>. <span className="t-metadata">Balance-after column is derived.</span></>
+              <>Started with {formatCurrency(initial!)}, {ledger!.count} settlement{ledger!.count === 1 ? '' : 's'} totalling {formatSignedCurrency(check.sumPnl)} → {formatCurrency(check.endsAt)} — <span style={{ color: 'var(--synatra-positive)' }}>matches the reported balance</span>. <span className="t-metadata">Balance-after column is derived.</span></>
             )}
             {check.kind === 'differs' && (
               <>Started with {formatCurrency(initial!)} plus {formatSignedCurrency(check.sumPnl)} of settlements is {formatCurrency(check.endsAt)}, but the ledger reports {formatCurrency(check.reported)} — a {formatSignedCurrency(check.gap)} gap this page cannot explain. The balance-after column is derived and carries that gap.</>
@@ -209,7 +209,7 @@ export function WalletPage({ embedded = false }: EmbeddableProps = {}) {
         )}
 
         {ledgerSlice.status === 'error' && !ledger ? (
-          <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>The settled-trade ledger did not answer — what has moved the balance is unknown.</p>
+          <p className="text-xs" style={{ color: 'var(--synatra-warning)' }}>The settled-trade ledger did not answer — what has moved the balance is unknown.</p>
         ) : movements === null ? (
           <p className="t-description">{ledger === null ? 'Waiting for the settled-trade ledger.' : 'Waiting for the initial capital.'}</p>
         ) : movements.length === 0 ? (
@@ -227,19 +227,19 @@ export function WalletPage({ embedded = false }: EmbeddableProps = {}) {
             </Thead>
             <tbody>
               {movements.slice(0, MAX_ROWS).map(({ trade: t, balanceAfter }) => {
-                const tone = t.won ? 'var(--probex-positive)' : 'var(--probex-negative)'
+                const tone = t.won ? 'var(--synatra-positive)' : 'var(--synatra-negative)'
                 const isYes = t.direction === 'yes'
                 return (
                   <Tr key={`${t.marketId}-${t.closedAt}`} accent={tone}>
                     <Td align="left" dense grow>
                       <span className="flex items-baseline gap-2 min-w-0">
                         <span className="text-2xs font-black uppercase tracking-widest flex-shrink-0" style={{ color: isYes ? YES : NO }}>{t.direction}</span>
-                        <Link href={MARKET_DETAIL_PATH(t.marketId)} className="focus-ring rounded-sm font-semibold truncate min-w-0" style={{ color: 'var(--probex-text-primary)' }} title={t.marketId}>
+                        <Link href={MARKET_DETAIL_PATH(t.marketId)} className="focus-ring rounded-sm font-semibold truncate min-w-0" style={{ color: 'var(--synatra-text-primary)' }} title={t.marketId}>
                           {marketIdentity(t.assetSymbol, t.durationMinutes, t.marketId)}
                         </Link>
                         <span className="text-2xs font-semibold flex-shrink-0" style={{ color: tone }}>{t.won ? 'won' : 'lost'}</span>
                       </span>
-                      <span className="md:hidden block font-mono text-2xs mt-0.5 truncate" style={{ color: 'var(--probex-text-muted)' }}>
+                      <span className="md:hidden block font-mono text-2xs mt-0.5 truncate" style={{ color: 'var(--synatra-text-muted)' }}>
                         {stamp(t.closedAt)}<span className="sm:hidden"> · {formatCurrency(t.size)} staked</span>
                       </span>
                     </Td>
@@ -249,10 +249,10 @@ export function WalletPage({ embedded = false }: EmbeddableProps = {}) {
                     <Td align="right" dense>
                       <span className="font-mono tabular-nums c-derived" title="Derived — initial capital plus every settlement up to this one">{formatCurrency(balanceAfter)}</span>
                     </Td>
-                    <Td align="right" dense hideBelow="sm"><span className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>{formatCurrency(t.size)}</span></Td>
-                    <Td align="right" dense hideBelow="lg"><span className="font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{formatEdgePct(t.edgePct)}</span></Td>
-                    <Td align="right" dense hideBelow="md"><span className="font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>{formatHold(t.holdTimeSeconds)}</span></Td>
-                    <Td align="right" dense hideBelow="md"><span className="font-mono tabular-nums text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{stamp(t.closedAt)}</span></Td>
+                    <Td align="right" dense hideBelow="sm"><span className="font-mono tabular-nums" style={{ color: 'var(--synatra-text-secondary)' }}>{formatCurrency(t.size)}</span></Td>
+                    <Td align="right" dense hideBelow="lg"><span className="font-mono tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>{formatEdgePct(t.edgePct)}</span></Td>
+                    <Td align="right" dense hideBelow="md"><span className="font-mono tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>{formatHold(t.holdTimeSeconds)}</span></Td>
+                    <Td align="right" dense hideBelow="md"><span className="font-mono tabular-nums text-2xs" style={{ color: 'var(--synatra-text-muted)' }}>{stamp(t.closedAt)}</span></Td>
                   </Tr>
                 )
               })}
@@ -265,7 +265,7 @@ export function WalletPage({ embedded = false }: EmbeddableProps = {}) {
       </section>
 
       {/* ── C · exposure ────────────────────────────────────────────────── */}
-      <section aria-labelledby="wl-exposure" className="flex flex-col gap-2 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <section aria-labelledby="wl-exposure" className="flex flex-col gap-2 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <span className="flex items-baseline gap-2 flex-wrap">
             <h2 id="wl-exposure" className="t-section-title">Exposure</h2>
@@ -281,13 +281,13 @@ export function WalletPage({ embedded = false }: EmbeddableProps = {}) {
           <p className="t-description">
             {open.length} open position{open.length === 1 ? '' : 's'} holding {formatCurrency(inPositions ?? 0)} at cost
             {cash !== null && inPositions !== null && cash + inPositions > 0 && ` — ${Math.round((inPositions / (cash + inPositions)) * 100)}% of cash plus positions, derived`}.
-            {' '}<Link href={ROUTES.POSITIONS} className="focus-ring font-semibold" style={{ color: 'var(--probex-primary)' }}>Each position and its evidence →</Link>
+            {' '}<Link href={ROUTES.POSITIONS} className="focus-ring font-semibold" style={{ color: 'var(--synatra-primary)' }}>Each position and its evidence →</Link>
           </p>
         )}
       </section>
 
       {/* ── D · the other records ───────────────────────────────────────── */}
-      <section aria-labelledby="wl-records" className="flex flex-col gap-2 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <section aria-labelledby="wl-records" className="flex flex-col gap-2 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
         <div className="flex items-center gap-1.5 flex-wrap">
           <h2 id="wl-records" className="t-section-title">Other balance records</h2>
           <span className="t-description">what the engine’s other endpoints report, and why they differ</span>
@@ -319,7 +319,7 @@ function Record({ label, value, note }: { label: string; value: string; note: st
     <div className="flex flex-col gap-0.5 min-w-0">
       <dt className="t-metadata truncate">{label}</dt>
       <dd className="m-0 flex flex-col min-w-0">
-        <span className="font-mono text-xs font-semibold tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>{value}</span>
+        <span className="font-mono text-xs font-semibold tabular-nums" style={{ color: 'var(--synatra-text-secondary)' }}>{value}</span>
         <span className="t-helper">{note}</span>
       </dd>
     </div>

@@ -188,7 +188,7 @@ export const ENDPOINTS = {
   // DISCOVERED 2026-08-20. Present in the attached postman_collection.json
   // (folder "5 Mathematical Layers") but ABSENT from the collection published to
   // the Postman workspace — which is why they had no registry entry until now.
-  // All six verified live against qubo-probex.duckdns.org, sub-2.5s, with rich
+  // All six verified live against qubo-synatra.duckdns.org, sub-2.5s, with rich
   // payloads (status alone is ~3.9KB). See types/quant.ts for captured shapes.
   //
   // ⚠️ These endpoints answer with complete numbers even when the engine has

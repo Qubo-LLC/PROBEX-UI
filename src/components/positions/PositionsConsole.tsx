@@ -39,6 +39,7 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { PositionFilters, type Side, type PnlState } from './PositionFilters'
 import { PositionTable } from './PositionTable'
 import { SettledPositions } from './SettledPositions'
+import { readFinancialTrust, suppressesTone } from '@/lib/display/financialTrust'
 
 export function PositionsConsole() {
   const positions      = useApplicationStore((s) => s.engine.positions)
@@ -46,6 +47,8 @@ export function PositionsConsole() {
   const edgesSlice     = useApplicationStore((s) => s.engine.edges)
   const portfolioSlice = useApplicationStore((s) => s.engine.portfolio)
   const marketsSlice   = useApplicationStore((s) => s.engine.markets)
+  const historySlice   = useApplicationStore((s) => s.engine.positionsHistory)
+  const paperStats     = useApplicationStore((s) => s.engine.paperStats)
 
   const [search, setSearch]   = useState('')
   const [side, setSide]       = useState<Side | null>(null)
@@ -98,6 +101,10 @@ export function PositionsConsole() {
   const deployed = rows?.kind === 'rows' ? rows.rows.reduce((s, p) => s + (p.costBasis ?? 0), 0) : null
   const filtersActive = side !== null || segment !== null || pnlState !== null || search.trim() !== ''
   const posCert = certaintyFromSlice(positions, 5_000)
+  // Same trust reading as Settled positions below, so the page tells one story:
+  // the persisted Realized figure is built on the records that section flags.
+  const trust = readFinancialTrust({ trades: historySlice.data?.history ?? null, sourceStatus: historySlice.status, engineIntegrity: paperStats.data?.integrity ?? null })
+  const realizedNeutral = suppressesTone(trust) || historySlice.data === null
 
   // The live-execution tracker: real, process-scoped, and at zero in paper
   // mode. Mentioned only when it has something to say.
@@ -111,6 +118,19 @@ export function PositionsConsole() {
         subtitle="What the engine currently owns, why, and how its closed positions have gone"
       />
 
+      {/* The settled record sits below the book and the open table, and was
+          reported as missing ("I cannot see past positions") while it was on
+          the page. Two in-page links make both halves reachable from the top;
+          no data is added or restructured. */}
+      <nav aria-label="Positions sections" className="flex items-baseline gap-4 mt-2 text-2xs font-semibold">
+        <a href="#pos-open" className="focus-ring" style={{ color: 'var(--synatra-primary)' }}>
+          Open positions{pos ? ` (${openCount})` : ''}
+        </a>
+        <a href="#pos-settled" className="focus-ring" style={{ color: 'var(--synatra-primary)' }}>
+          Settled positions ↓
+        </a>
+      </nav>
+
       {positions.status === 'error' && (
         <div className="mt-5">
           <ErrorState
@@ -122,7 +142,7 @@ export function PositionsConsole() {
       )}
 
       {/* ── A · The book ─────────────────────────────────────────────────── */}
-      <section aria-labelledby="pos-book" className="flex flex-col gap-4 mt-5 pb-6" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+      <section aria-labelledby="pos-book" className="flex flex-col gap-4 mt-5 pb-6" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <span className="flex items-center gap-1.5">
             <h2 id="pos-book" className="t-section-title">The book</h2>
@@ -150,7 +170,7 @@ export function PositionsConsole() {
             <Figure
               label="Unrealized"
               size="lg"
-              tone={pos.totalUnrealizedPnl > 0 ? 'var(--probex-positive)' : pos.totalUnrealizedPnl < 0 ? 'var(--probex-negative)' : undefined}
+              tone={pos.totalUnrealizedPnl > 0 ? 'var(--synatra-positive)' : pos.totalUnrealizedPnl < 0 ? 'var(--synatra-negative)' : undefined}
               title="/api/positions"
               {...posCert}
               footnote={openCount === 0 ? 'flat — no capital deployed right now' : deployed !== null ? `on ${formatCurrency(deployed)} deployed` : undefined}
@@ -173,10 +193,10 @@ export function PositionsConsole() {
             <Figure
               label="Realized"
               size="md"
-              tone={pf.pnl.realized > 0 ? 'var(--probex-positive)' : pf.pnl.realized < 0 ? 'var(--probex-negative)' : undefined}
+              tone={realizedNeutral ? undefined : pf.pnl.realized > 0 ? 'var(--synatra-positive)' : pf.pnl.realized < 0 ? 'var(--synatra-negative)' : undefined}
               title="/api/portfolio"
               {...certaintyFromSlice(portfolioSlice, 5_000)}
-              footnote={`${pf.performance.totalTrades} settled trade${pf.performance.totalTrades === 1 ? '' : 's'}`}
+              footnote={`${pf.performance.totalTrades} settled trade${pf.performance.totalTrades === 1 ? '' : 's'}${trust && suppressesTone(trust) ? ` · ${trust.headline.toLowerCase()} — see Settled positions` : ''}`}
             >
               {formatSignedCurrency(pf.pnl.realized)}
             </Figure>
@@ -213,7 +233,7 @@ export function PositionsConsole() {
           <h2 id="pos-open" className="t-section-title">
             Open positions
             {rows?.kind === 'rows' && rows.rows.length > 0 && (
-              <span className="ml-2 font-mono text-2xs font-normal" style={{ color: 'var(--probex-text-muted)' }}>{rows.rows.length}</span>
+              <span className="ml-2 font-mono text-2xs font-normal" style={{ color: 'var(--synatra-text-muted)' }}>{rows.rows.length}</span>
             )}
           </h2>
           {rows?.kind === 'rows' && rows.rows.length > 0 && (
@@ -228,12 +248,12 @@ export function PositionsConsole() {
         {rows?.kind === 'empty' && (
           <p className="t-description">
             No open positions — the engine has no capital deployed right now. A position opens
-            when a candidate clears the survival brain&rsquo;s current edge threshold.
+            when a candidate clears the engine&rsquo;s entry requirements.
           </p>
         )}
 
         {rows?.kind === 'unrecognized' && (
-          <p className="t-description" style={{ color: 'var(--probex-warning)' }}>
+          <p className="t-description" style={{ color: 'var(--synatra-warning)' }}>
             The engine reports {rows.count} open position{rows.count === 1 ? '' : 's'}, but the item
             format doesn&rsquo;t match the agreed schema — rows are withheld rather than shown
             with wrong values. (Backend contract P0-01.)

@@ -1,6 +1,6 @@
 'use client'
 
-// ValueFlash — the V3 liveness primitive (PROBEX_V3_RESTORATION_PLAN §0,
+// ValueFlash — the V3 liveness primitive (SYNATRA_V3_RESTORATION_PLAN §0,
 // system 4). Wraps any live value and gives it a brief tinted flash whenever it
 // changes, so the operator *feels* the 2s polling cadence — the Bloomberg
 // flashing-cell idiom, on the engine's real data.
@@ -26,9 +26,9 @@ interface ValueFlashProps {
 }
 
 const TONE_BG: Record<FlashTone, string> = {
-  positive: 'var(--probex-positive-dim)',
-  negative: 'var(--probex-negative-dim)',
-  neutral:  'var(--probex-primary-dim)',
+  positive: 'var(--synatra-positive-dim)',
+  negative: 'var(--synatra-negative-dim)',
+  neutral:  'var(--synatra-primary-dim)',
 }
 
 export function ValueFlash({ value, children, tone, durationMs = 550, className = '' }: ValueFlashProps) {

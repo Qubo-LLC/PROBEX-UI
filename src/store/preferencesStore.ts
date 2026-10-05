@@ -1,7 +1,7 @@
 'use client'
 
 // preferencesStore — real user preferences, persisted to localStorage
-// (PROBEX_V3_RESTORATION_PLAN §2). First real consumer: Markets/Live/Detail's
+// (SYNATRA_V3_RESTORATION_PLAN §2). First real consumer: Markets/Live/Detail's
 // restored WatchlistButton. This is genuine local persistence (not fake
 // data) — an improvement over V1's sessionStorage-only implementation,
 // which lost the watchlist on every browser restart. Documents P3-02
@@ -10,7 +10,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
-const STORAGE_KEY = 'probex-preferences'
+const STORAGE_KEY = 'synatra-preferences'
 
 /** User-set profit-target overrides (USD). `null` = fall back to the engine's
  *  own daily/weekly target from /api/survival. The engine's targets are

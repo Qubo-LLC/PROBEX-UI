@@ -10,7 +10,7 @@
 // developer convenience and behaved as a trap: a local setup pointing at a
 // backend that had stopped existing rendered a fully populated, apparently
 // healthy cockpit, and the only signal was one line in a terminal nobody was
-// watching. A stale PROBEX_API_BASE_URL survived weeks that way — the app
+// watching. A stale SYNATRA_API_BASE_URL survived weeks that way — the app
 // "worked", so nobody looked at it.
 //
 // An unreachable engine now resolves to `offline` in every deployment. Mock is
@@ -33,7 +33,7 @@ function engine(reachable: boolean, contentType = 'application/json') {
 }
 
 const ENV_KEYS = [
-  'PROBEX_API_MODE', 'PROBEX_API_BASE_URL', 'PROBEX_API_PROBE_URL', 'PROBEX_DEPLOYMENT',
+  'SYNATRA_API_MODE', 'SYNATRA_API_BASE_URL', 'SYNATRA_API_PROBE_URL', 'SYNATRA_DEPLOYMENT',
   'NEXT_PUBLIC_API_MODE', 'NEXT_PUBLIC_API_BASE_URL',
 ] as const
 
@@ -58,9 +58,9 @@ afterEach(() => {
 describe('LIVE — a configured, reachable backend', () => {
   it('resolves to live when the probe succeeds', async () => {
     vi.stubGlobal('fetch', engine(true))
-    process.env.PROBEX_DEPLOYMENT  = 'development'
-    process.env.PROBEX_API_MODE    = 'auto'
-    process.env.PROBEX_API_BASE_URL = 'https://engine.example/api'
+    process.env.SYNATRA_DEPLOYMENT  = 'development'
+    process.env.SYNATRA_API_MODE    = 'auto'
+    process.env.SYNATRA_API_BASE_URL = 'https://engine.example/api'
 
     const c = await resolveRuntimeConfig(ORIGIN)
     expect(c.mode).toBe('live')
@@ -71,8 +71,8 @@ describe('LIVE — a configured, reachable backend', () => {
   it('honours an explicit live mode without probing at all', async () => {
     const fetchSpy = engine(false)
     vi.stubGlobal('fetch', fetchSpy)
-    process.env.PROBEX_DEPLOYMENT = 'development'
-    process.env.PROBEX_API_MODE   = 'live'
+    process.env.SYNATRA_DEPLOYMENT = 'development'
+    process.env.SYNATRA_API_MODE   = 'live'
 
     const c = await resolveRuntimeConfig(ORIGIN)
     expect(c.mode).toBe('live')
@@ -81,9 +81,9 @@ describe('LIVE — a configured, reachable backend', () => {
 
   it('rejects a 200 that is not JSON — a proxy falling through to HTML is not the engine', async () => {
     vi.stubGlobal('fetch', engine(true, 'text/html'))
-    process.env.PROBEX_DEPLOYMENT   = 'development'
-    process.env.PROBEX_API_MODE     = 'auto'
-    process.env.PROBEX_API_BASE_URL = 'https://engine.example/api'
+    process.env.SYNATRA_DEPLOYMENT   = 'development'
+    process.env.SYNATRA_API_MODE     = 'auto'
+    process.env.SYNATRA_API_BASE_URL = 'https://engine.example/api'
 
     const c = await resolveRuntimeConfig(ORIGIN)
     expect(c.mode).toBe('offline')
@@ -93,8 +93,8 @@ describe('LIVE — a configured, reachable backend', () => {
 describe('MOCK — explicit opt-in only', () => {
   it('resolves to mock when asked for, under a permitting policy', async () => {
     vi.stubGlobal('fetch', engine(true))
-    process.env.PROBEX_DEPLOYMENT = 'development'
-    process.env.PROBEX_API_MODE   = 'mock'
+    process.env.SYNATRA_DEPLOYMENT = 'development'
+    process.env.SYNATRA_API_MODE   = 'mock'
 
     const c = await resolveRuntimeConfig(ORIGIN)
     expect(c.mode).toBe('mock')
@@ -102,14 +102,14 @@ describe('MOCK — explicit opt-in only', () => {
   })
 
   it('is FATAL under a policy that forbids it', () => {
-    process.env.PROBEX_DEPLOYMENT = 'production'
-    process.env.PROBEX_API_MODE   = 'mock'
+    process.env.SYNATRA_DEPLOYMENT = 'production'
+    process.env.SYNATRA_API_MODE   = 'mock'
     expect(() => assertDeploymentPolicy()).toThrow(InvalidDeploymentConfigError)
   })
 
   it('is forbidden in staging as strictly as in production', () => {
-    process.env.PROBEX_DEPLOYMENT = 'staging'
-    process.env.PROBEX_API_MODE   = 'mock'
+    process.env.SYNATRA_DEPLOYMENT = 'staging'
+    process.env.SYNATRA_API_MODE   = 'mock'
     expect(() => assertDeploymentPolicy()).toThrow(InvalidDeploymentConfigError)
   })
 })
@@ -118,9 +118,9 @@ describe('OFFLINE — no automatic mock fallback', () => {
   // The regression this whole change exists to prevent.
   it('resolves an unreachable backend to offline IN DEVELOPMENT', async () => {
     vi.stubGlobal('fetch', engine(false))
-    process.env.PROBEX_DEPLOYMENT   = 'development'
-    process.env.PROBEX_API_MODE     = 'auto'
-    process.env.PROBEX_API_BASE_URL = 'http://127.0.0.1:9/api'
+    process.env.SYNATRA_DEPLOYMENT   = 'development'
+    process.env.SYNATRA_API_MODE     = 'auto'
+    process.env.SYNATRA_API_BASE_URL = 'http://127.0.0.1:9/api'
 
     const c = await resolveRuntimeConfig(ORIGIN)
     expect(c.mode).toBe('offline')
@@ -131,9 +131,9 @@ describe('OFFLINE — no automatic mock fallback', () => {
     for (const deployment of ['test', 'staging', 'production'] as const) {
       clearRuntimeConfigCache()
       vi.stubGlobal('fetch', engine(false))
-      process.env.PROBEX_DEPLOYMENT   = deployment
-      process.env.PROBEX_API_MODE     = 'auto'
-      process.env.PROBEX_API_BASE_URL = 'http://127.0.0.1:9/api'
+      process.env.SYNATRA_DEPLOYMENT   = deployment
+      process.env.SYNATRA_API_MODE     = 'auto'
+      process.env.SYNATRA_API_BASE_URL = 'http://127.0.0.1:9/api'
 
       expect((await resolveRuntimeConfig(ORIGIN)).mode).toBe('offline')
     }
@@ -144,13 +144,103 @@ describe('OFFLINE — no automatic mock fallback', () => {
     // reason must not promise one. Retention is the freshness layer's claim to
     // make, per-slice, and only when something was actually retained.
     vi.stubGlobal('fetch', engine(false))
-    process.env.PROBEX_DEPLOYMENT   = 'development'
-    process.env.PROBEX_API_MODE     = 'auto'
-    process.env.PROBEX_API_BASE_URL = 'http://127.0.0.1:9/api'
+    process.env.SYNATRA_DEPLOYMENT   = 'development'
+    process.env.SYNATRA_API_MODE     = 'auto'
+    process.env.SYNATRA_API_BASE_URL = 'http://127.0.0.1:9/api'
 
     const c = await resolveRuntimeConfig(ORIGIN)
     expect(c.reason).not.toMatch(/last known/i)
     expect(c.reason).toMatch(/no synthetic data/i)
+  })
+})
+
+// ─── Startup-check outcome (remediation phase 2) ──────────────────────────────
+// A timeout used to be indistinguishable from a refused connection: both froze
+// the tab as OFFLINE. The check's window (4 s / 5 s) is far shorter than a
+// normal request's (15 s), and the engine answered in 2.9–4.9 s on 2026-09-25,
+// so a working engine was declared unreachable. Timeouts now resolve to live
+// with the outcome recorded; definite failures still resolve to offline.
+
+/** An engine that never answers: rejects only when the probe aborts. */
+function silentEngine() {
+  return vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+    init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
+  }))
+}
+
+describe('startup check — a timeout is not "unreachable"', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    process.env.SYNATRA_DEPLOYMENT   = 'production'
+    process.env.SYNATRA_API_MODE     = 'auto'
+    process.env.SYNATRA_API_BASE_URL = 'https://engine.example/api'
+  })
+  afterEach(() => { vi.useRealTimers() })
+
+  async function resolveAfter(ms: number) {
+    const pending = resolveRuntimeConfig(ORIGIN)
+    await vi.advanceTimersByTimeAsync(ms)
+    return pending
+  }
+
+  it('resolves live with startupProbe "timeout" when the engine does not answer in time', async () => {
+    vi.stubGlobal('fetch', silentEngine())
+    const c = await resolveAfter(10_000)
+    expect(c.mode).toBe('live')
+    expect(c.startupProbe).toBe('timeout')
+    expect(c.reason).toMatch(/did not answer the startup check/)
+    expect(c.reason).not.toMatch(/reachable\./i)
+  })
+
+  it('a slow primary with an HTML host-root fallback is still a timeout, not unreachable', async () => {
+    vi.stubGlobal('fetch', vi.fn((url: string, init?: RequestInit) =>
+      url.endsWith('/api/health')
+        ? silentEngine()(url, init)
+        : Promise.resolve({ ok: true, headers: { get: () => 'text/html' } } as unknown as Response)))
+    const c = await resolveAfter(10_000)
+    expect(c.startupProbe).toBe('timeout')
+    expect(c.mode).toBe('live')
+  })
+
+  it('a timed-out result is cached only briefly, so the check runs again soon', async () => {
+    const fetchSpy = silentEngine()
+    vi.stubGlobal('fetch', fetchSpy)
+    await resolveAfter(10_000)
+    const callsAfterFirst = fetchSpy.mock.calls.length
+    await vi.advanceTimersByTimeAsync(6_000)          // past the failed-result TTL
+    void resolveRuntimeConfig(ORIGIN)                 // stale → background re-probe
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(fetchSpy.mock.calls.length).toBeGreaterThan(callsAfterFirst)
+  })
+})
+
+describe('startup check — definite failures still resolve offline', () => {
+  beforeEach(() => {
+    process.env.SYNATRA_DEPLOYMENT   = 'production'
+    process.env.SYNATRA_API_MODE     = 'auto'
+    process.env.SYNATRA_API_BASE_URL = 'https://engine.example/api'
+  })
+
+  it('refused connection → offline, startupProbe "unreachable"', async () => {
+    vi.stubGlobal('fetch', engine(false))
+    const c = await resolveRuntimeConfig(ORIGIN)
+    expect(c.mode).toBe('offline')
+    expect(c.startupProbe).toBe('unreachable')
+  })
+
+  it('an HTTP error (e.g. the proxy answering 502) → offline', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 502, headers: { get: () => 'text/html' } }) as unknown as Response))
+    const c = await resolveRuntimeConfig(ORIGIN)
+    expect(c.mode).toBe('offline')
+    expect(c.startupProbe).toBe('unreachable')
+  })
+
+  it('records "reachable" on success and "not-probed" for an explicit mode', async () => {
+    vi.stubGlobal('fetch', engine(true))
+    expect((await resolveRuntimeConfig(ORIGIN)).startupProbe).toBe('reachable')
+    clearRuntimeConfigCache()
+    process.env.SYNATRA_API_MODE = 'live'
+    expect((await resolveRuntimeConfig(ORIGIN)).startupProbe).toBe('not-probed')
   })
 })
 
@@ -159,9 +249,9 @@ describe('the runtime always initialises', () => {
   // branch below has to produce a usable, frozen config.
   it('returns a complete config even when the probe fails', async () => {
     vi.stubGlobal('fetch', engine(false))
-    process.env.PROBEX_DEPLOYMENT   = 'development'
-    process.env.PROBEX_API_MODE     = 'auto'
-    process.env.PROBEX_API_BASE_URL = 'https://engine.example/api'
+    process.env.SYNATRA_DEPLOYMENT   = 'development'
+    process.env.SYNATRA_API_MODE     = 'auto'
+    process.env.SYNATRA_API_BASE_URL = 'https://engine.example/api'
 
     const c = await resolveRuntimeConfig(ORIGIN)
     expect(c).toBeDefined()
@@ -174,8 +264,8 @@ describe('the runtime always initialises', () => {
   it('does not throw when the probe target cannot even be derived', async () => {
     // Relative base and no origin: nothing to probe. Must still resolve.
     vi.stubGlobal('fetch', engine(false))
-    process.env.PROBEX_DEPLOYMENT = 'development'
-    process.env.PROBEX_API_MODE   = 'auto'
+    process.env.SYNATRA_DEPLOYMENT = 'development'
+    process.env.SYNATRA_API_MODE   = 'auto'
 
     const c = await resolveRuntimeConfig(null)
     expect(c.mode).toBe('offline')
@@ -184,9 +274,9 @@ describe('the runtime always initialises', () => {
 
   it('falls back to the default base when the configured one is malformed', async () => {
     vi.stubGlobal('fetch', engine(false))
-    process.env.PROBEX_DEPLOYMENT   = 'development'
-    process.env.PROBEX_API_MODE     = 'auto'
-    process.env.PROBEX_API_BASE_URL = 'C:/Program Files/Git/api'
+    process.env.SYNATRA_DEPLOYMENT   = 'development'
+    process.env.SYNATRA_API_MODE     = 'auto'
+    process.env.SYNATRA_API_BASE_URL = 'C:/Program Files/Git/api'
 
     const c = await resolveRuntimeConfig(ORIGIN)
     expect(c.baseUrl).toBe('/api')
@@ -195,17 +285,17 @@ describe('the runtime always initialises', () => {
   it('surfaces the failure rather than swallowing it', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     vi.stubGlobal('fetch', engine(false))
-    process.env.PROBEX_DEPLOYMENT   = 'development'
-    process.env.PROBEX_API_MODE     = 'auto'
-    process.env.PROBEX_API_BASE_URL = 'https://engine.example/api'
+    process.env.SYNATRA_DEPLOYMENT   = 'development'
+    process.env.SYNATRA_API_MODE     = 'auto'
+    process.env.SYNATRA_API_BASE_URL = 'https://engine.example/api'
 
     await resolveRuntimeConfig(ORIGIN)
 
     const logged = errorSpy.mock.calls.flat().join(' ')
     expect(logged).toMatch(/probe failed/i)
     // And it must name the two escape hatches, or "offline" reads as a dead end.
-    expect(logged).toMatch(/PROBEX_API_BASE_URL/)
-    expect(logged).toMatch(/PROBEX_API_MODE=mock/)
+    expect(logged).toMatch(/SYNATRA_API_BASE_URL/)
+    expect(logged).toMatch(/SYNATRA_API_MODE=mock/)
   })
 })
 
@@ -213,22 +303,22 @@ describe('probe target derivation', () => {
   it('tries <base>/health then host-root /health, covering both topologies', async () => {
     const seen: string[] = []
     vi.stubGlobal('fetch', vi.fn(async (url: string) => { seen.push(url); throw new Error('down') }))
-    process.env.PROBEX_DEPLOYMENT   = 'development'
-    process.env.PROBEX_API_MODE     = 'auto'
-    process.env.PROBEX_API_BASE_URL = 'https://engine.example/api'
+    process.env.SYNATRA_DEPLOYMENT   = 'development'
+    process.env.SYNATRA_API_MODE     = 'auto'
+    process.env.SYNATRA_API_BASE_URL = 'https://engine.example/api'
 
     await resolveRuntimeConfig(ORIGIN)
     expect(seen).toContain('https://engine.example/api/health')
     expect(seen).toContain('https://engine.example/health')
   })
 
-  it('an explicit PROBEX_API_PROBE_URL wins outright', async () => {
+  it('an explicit SYNATRA_API_PROBE_URL wins outright', async () => {
     const seen: string[] = []
     vi.stubGlobal('fetch', vi.fn(async (url: string) => { seen.push(url); throw new Error('down') }))
-    process.env.PROBEX_DEPLOYMENT    = 'development'
-    process.env.PROBEX_API_MODE      = 'auto'
-    process.env.PROBEX_API_BASE_URL  = 'https://engine.example/api'
-    process.env.PROBEX_API_PROBE_URL = 'http://127.0.0.1:8000/health'
+    process.env.SYNATRA_DEPLOYMENT    = 'development'
+    process.env.SYNATRA_API_MODE      = 'auto'
+    process.env.SYNATRA_API_BASE_URL  = 'https://engine.example/api'
+    process.env.SYNATRA_API_PROBE_URL = 'http://127.0.0.1:8000/health'
 
     await resolveRuntimeConfig(ORIGIN)
     expect([...new Set(seen)]).toEqual(['http://127.0.0.1:8000/health'])
@@ -237,8 +327,8 @@ describe('probe target derivation', () => {
   it('resolves a relative base against the request origin', async () => {
     const seen: string[] = []
     vi.stubGlobal('fetch', vi.fn(async (url: string) => { seen.push(url); throw new Error('down') }))
-    process.env.PROBEX_DEPLOYMENT = 'development'
-    process.env.PROBEX_API_MODE   = 'auto'
+    process.env.SYNATRA_DEPLOYMENT = 'development'
+    process.env.SYNATRA_API_MODE   = 'auto'
 
     await resolveRuntimeConfig(ORIGIN)
     expect(seen).toContain(`${ORIGIN}/api/health`)

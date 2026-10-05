@@ -36,9 +36,9 @@ export function survivalStateSeverity(state: SurvivalState): SurvivalSeverity {
 }
 
 const SEVERITY_COLOR: Record<SurvivalSeverity, string> = {
-  ok:      'var(--probex-positive)',
-  caution: 'var(--probex-warning)',
-  danger:  'var(--probex-negative)',
+  ok:      'var(--synatra-positive)',
+  caution: 'var(--synatra-warning)',
+  danger:  'var(--synatra-negative)',
 }
 
 /** Survival state → CSS variable for colour coding. Never returns undefined. */

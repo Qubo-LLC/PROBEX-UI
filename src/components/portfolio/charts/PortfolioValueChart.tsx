@@ -33,7 +33,7 @@ export function PortfolioValueChart({ height = 200 }: { height?: number }) {
       data={data}
       variant="area"
       height={height}
-      color="var(--probex-primary)"
+      color="var(--synatra-primary)"
       yTickFormatter={(v) => formatCurrency(v, true)}
       valueFormatter={(v) => formatCurrency(v)}
     />

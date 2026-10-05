@@ -97,37 +97,37 @@ export function IncidentsSection() {
         </div>
         <span className="flex items-baseline gap-3">
           <span className="t-metadata">/api/events · severity ≥ warning</span>
-          <Link href={ROUTES.EVENTS} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>
+          <Link href={ROUTES.EVENTS} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--synatra-primary)' }}>
             Full log →
           </Link>
         </span>
       </div>
 
       {slice.status === 'error' ? (
-        <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-warning)' }}>
           The events endpoint is not answering, so whether anything has gone wrong
           recently is unknown — this states nothing rather than showing an empty
           list that would read as “all clear”.
         </p>
       ) : unrecognized > 0 ? (
-        <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-warning)' }}>
           The engine returned {unrecognized} event{unrecognized === 1 ? '' : 's'} whose shape
           doesn’t match the agreed schema — they are withheld rather than shown with
           guessed fields.
         </p>
       ) : rows === null ? (
-        <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-text-disabled)' }}>
           Waiting for the event log.
         </p>
       ) : rows.length === 0 ? (
         // A genuine all-clear, and it is only claimable because the endpoint
         // actually answered. This is the distinction the error branch above
         // exists to protect.
-        <p className="text-xs" style={{ color: 'var(--probex-text-muted)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-text-muted)' }}>
           No warnings or errors in the engine’s recent event history.
         </p>
       ) : (
-        <div className="flex flex-col" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+        <div className="flex flex-col" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
           {rows.map((row) => (
             <EventRowItem key={row.id} row={row} compact lookup={lookup} />
           ))}

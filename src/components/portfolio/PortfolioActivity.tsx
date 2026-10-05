@@ -56,9 +56,9 @@ export function PortfolioActivity() {
                   {summary.latest && <>, the newest {formatAge(summary.latest.ageMs)} ({stamp(summary.latest.at)})</>}.
                 </>}
         {' '}
-        <Link href={`${ROUTES.EXECUTION}?view=paper`} className="focus-ring font-semibold" style={{ color: 'var(--probex-primary)' }}>Recorded activity on Paper Trading →</Link>
+        <Link href={`${ROUTES.EXECUTION}?view=paper`} className="focus-ring font-semibold" style={{ color: 'var(--synatra-primary)' }}>Recorded activity on Paper Trading →</Link>
         {' · '}
-        <Link href={`${ROUTES.SYSTEM}?view=events&type=trade`} className="focus-ring font-semibold" style={{ color: 'var(--probex-primary)' }}>Full log →</Link>
+        <Link href={`${ROUTES.SYSTEM}?view=events&type=trade`} className="focus-ring font-semibold" style={{ color: 'var(--synatra-primary)' }}>Full log →</Link>
       </p>
     </section>
   )

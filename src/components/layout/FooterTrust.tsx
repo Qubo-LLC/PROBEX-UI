@@ -58,7 +58,7 @@ export function FooterMode() {
   return (
     <span
       className="text-2xs"
-      style={{ color: mode === 'live' && status.dataIsLive ? 'var(--probex-negative)' : 'var(--probex-text-muted)' }}
+      style={{ color: mode === 'live' && status.dataIsLive ? 'var(--synatra-negative)' : 'var(--synatra-text-muted)' }}
     >
       {text}
     </span>
@@ -70,19 +70,19 @@ export function FooterTrust() {
 
   const dataClaim =
     status.dataIsSynthetic
-      ? { k: 'Synthetic', v: 'Generated data — this session is not connected to an engine', tone: 'var(--probex-warning)' }
+      ? { k: 'Synthetic', v: 'Generated data — this session is not connected to an engine', tone: 'var(--synatra-warning)' }
       : !status.dataIsLive
-        ? { k: 'Disconnected', v: 'The engine is unreachable — values are withheld, not substituted', tone: 'var(--probex-negative)' }
-        : { k: 'Connected', v: 'Reading the engine’s API every few seconds — each figure carries its own read time', tone: 'var(--probex-positive)' }
+        ? { k: 'Disconnected', v: 'The engine is unreachable — values are withheld, not substituted', tone: 'var(--synatra-negative)' }
+        : { k: 'Connected', v: 'Reading the engine’s API every few seconds — each figure carries its own read time', tone: 'var(--synatra-positive)' }
 
   const items = [
-    { k: 'Autonomous', v: 'The engine trades without manual intervention', tone: 'var(--probex-text-muted)' },
+    { k: 'Autonomous', v: 'The engine trades without manual intervention', tone: 'var(--synatra-text-muted)' },
     dataClaim,
-    { k: 'Transparent', v: 'Every figure names the endpoint it came from, or says it is absent', tone: 'var(--probex-text-muted)' },
+    { k: 'Transparent', v: 'Every figure names the endpoint it came from, or says it is absent', tone: 'var(--synatra-text-muted)' },
   ]
 
   return (
-    <div className="mt-7 pt-4 flex gap-6 flex-wrap" style={{ borderTop: '1px solid var(--probex-border)' }}>
+    <div className="mt-7 pt-4 flex gap-6 flex-wrap" style={{ borderTop: '1px solid var(--synatra-border)' }}>
       {items.map((item) => (
         <div key={item.k} className="flex items-center gap-1.5">
           <span
@@ -90,8 +90,8 @@ export function FooterTrust() {
             style={{ background: item.tone }}
             aria-hidden="true"
           />
-          <span className="text-2xs" style={{ color: 'var(--probex-text-secondary)' }}>
-            <strong className="font-semibold" style={{ color: 'var(--probex-text-primary)' }}>{item.k}.</strong>{' '}
+          <span className="text-2xs" style={{ color: 'var(--synatra-text-secondary)' }}>
+            <strong className="font-semibold" style={{ color: 'var(--synatra-text-primary)' }}>{item.k}.</strong>{' '}
             {item.v}
           </span>
         </div>

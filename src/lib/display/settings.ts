@@ -103,7 +103,7 @@ export function policyGroups(config: EngineConfig | null, policy: ExecutionPolic
  *  runtime's own explanation and is shown alongside, never replaced. */
 export function dataModeWord(mode: 'live' | 'mock' | 'offline'): { word: string; meaning: string; tone: 'positive' | 'warning' | 'danger' } {
   switch (mode) {
-    case 'live':    return { word: 'LIVE ENGINE', meaning: 'every figure in PROBEX is read from the engine’s API', tone: 'positive' }
+    case 'live':    return { word: 'LIVE ENGINE', meaning: 'every figure in SYNATRA is read from the engine’s API', tone: 'positive' }
     case 'mock':    return { word: 'MOCK DATA', meaning: 'figures are fixtures — nothing shown is the engine', tone: 'warning' }
     case 'offline': return { word: 'OFFLINE', meaning: 'the engine could not be reached when this page was served; reload to retry', tone: 'danger' }
   }

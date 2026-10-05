@@ -9,11 +9,11 @@ import {
   THEME_NAMES,
 } from '@/types/theme'
 
-const STORAGE_KEY = 'probex-theme'
+const STORAGE_KEY = 'synatra-theme'
 
 /**
  * Applies the theme by setting the data-theme attribute on <html>.
- * This drives all CSS variable overrides in probex-tokens.css.
+ * This drives all CSS variable overrides in synatra-tokens.css.
  */
 function applyThemeToDOM(theme: ThemeName): void {
   if (typeof document === 'undefined') return

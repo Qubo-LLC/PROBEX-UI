@@ -4,7 +4,7 @@
 // explanation anchored to the thing it explains.
 //
 // ─── The three levels ────────────────────────────────────────────────────────
-// PROBEX carries four classes of information and had residences for only two:
+// Synatra carries four classes of information and had residences for only two:
 //
 //   A  PRIMARY      the figure, the verdict, the decision   → inline, always
 //   B  CONTEXTUAL   the qualifier beside it                 → inline, quieter
@@ -150,9 +150,9 @@ export function Popover({
           <div
             className="rounded-lg p-3.5 flex flex-col gap-2.5 animate-fade-in-up"
             style={{
-              background: 'var(--probex-surface-2)',
-              border: '1px solid var(--probex-border-default)',
-              boxShadow: 'var(--probex-elev-4)',
+              background: 'var(--synatra-surface-2)',
+              border: '1px solid var(--synatra-border-default)',
+              boxShadow: 'var(--synatra-elev-4)',
             }}
           >
             {children}
@@ -179,7 +179,7 @@ export function InfoButton({
       type="button"
       aria-label={`About ${what}`}
       className={`focus-ring inline-flex items-center justify-center w-6 h-6 -my-1 rounded-full cursor-pointer align-middle ${className}`}
-      style={{ color: 'var(--probex-text-disabled)' }}
+      style={{ color: 'var(--synatra-text-disabled)' }}
       {...props}
     >
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
@@ -199,5 +199,5 @@ export function PopoverText({ children }: { children: ReactNode }) {
 
 /** Optional heading for a popover: the name of the thing being explained. */
 export function PopoverTitle({ children }: { children: ReactNode }) {
-  return <span className="t-label" style={{ color: 'var(--probex-text-secondary)' }}>{children}</span>
+  return <span className="t-label" style={{ color: 'var(--synatra-text-secondary)' }}>{children}</span>
 }

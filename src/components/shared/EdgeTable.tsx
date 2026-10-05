@@ -61,7 +61,7 @@ export function EdgeTable({
   if (result.kind === 'unrecognized') {
     return (
       <Card>
-        <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-warning)' }}>
           The engine reports {result.count} active edge{result.count === 1 ? '' : 's'},
           but the item format doesn’t match the agreed schema yet — raw rows are not
           displayed to avoid showing wrong values. (Backend contract P0-01.)
@@ -84,7 +84,7 @@ export function EdgeTable({
           const marketId = row.marketId
           const onClick = onSelectMarket && marketId ? () => onSelectMarket(marketId) : undefined
           const isYes = row.direction === 'yes'
-          const sideColor = isYes ? 'var(--probex-yes)' : 'var(--probex-no)'
+          const sideColor = isYes ? 'var(--synatra-yes)' : 'var(--synatra-no)'
           const title = row.marketTitle !== null ? compactWindowTitle(row.marketTitle) : `market ${shortMarketId(row.id)}`
           const indicators = indicatorLine(row)
           return (
@@ -98,39 +98,39 @@ export function EdgeTable({
                     <Link
                       href={MARKET_DETAIL_PATH(marketId)}
                       className="focus-ring rounded-sm font-medium truncate min-w-0"
-                      style={{ color: 'var(--probex-text-primary)' }}
+                      style={{ color: 'var(--synatra-text-primary)' }}
                       title={row.marketTitle ?? marketId}
                     >
                       {title}
                     </Link>
                   ) : (
-                    <span className="font-medium truncate min-w-0" style={{ color: 'var(--probex-text-primary)' }} title={row.marketTitle ?? row.id}>
+                    <span className="font-medium truncate min-w-0" style={{ color: 'var(--synatra-text-primary)' }} title={row.marketTitle ?? row.id}>
                       {title}
                     </span>
                   )}
                 </span>
                 {/* What the folded columns carried, below lg / md / sm. */}
-                <span className="lg:hidden block font-mono text-2xs mt-0.5 truncate" style={{ color: 'var(--probex-text-muted)' }}>
+                <span className="lg:hidden block font-mono text-2xs mt-0.5 truncate" style={{ color: 'var(--synatra-text-muted)' }}>
                   {indicators ?? 'no indicators reported'}
                   <span className="sm:hidden">{row.confidence !== null ? ` · ${formatPercent(row.confidence)} conf.` : ''}</span>
                   <span className="md:hidden">{row.detectedAt !== null ? ` · ${clockOrDate(row.detectedAt)}` : ''}</span>
                 </span>
               </Td>
               <Td align="right" dense>
-                <span className="font-mono font-semibold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>
+                <span className="font-mono font-semibold tabular-nums" style={{ color: 'var(--synatra-text-primary)' }}>
                   {formatEdgePct(row.edgePct, 2)}
                 </span>
               </Td>
               <Td align="right" dense hideBelow="sm">
-                <span className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>
+                <span className="font-mono tabular-nums" style={{ color: 'var(--synatra-text-secondary)' }}>
                   {row.confidence !== null ? formatPercent(row.confidence) : '—'}
                 </span>
               </Td>
               <Td align="left" dense hideBelow="lg">
-                <span className="font-mono text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{indicators ?? '—'}</span>
+                <span className="font-mono text-2xs" style={{ color: 'var(--synatra-text-muted)' }}>{indicators ?? '—'}</span>
               </Td>
               <Td align="right" dense hideBelow="md">
-                <span className="font-mono tabular-nums text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
+                <span className="font-mono tabular-nums text-2xs" style={{ color: 'var(--synatra-text-muted)' }}>
                   {row.detectedAt !== null ? clockOrDate(row.detectedAt, Date.now(), { seconds: true }) : '—'}
                 </span>
               </Td>

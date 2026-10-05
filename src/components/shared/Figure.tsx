@@ -211,6 +211,10 @@ export function Figure(props: FigureProps) {
         <span
           className={[
             sizeClass,
+            // A value too long for its column wraps rather than overflowing
+            // into the neighbouring figure (phase 2: a 41-digit capital ran
+            // across "Win rate" on Positions). Values that fit never break.
+            'min-w-0 [overflow-wrap:anywhere]',
             certainty === 'derived' ? 'c-derived' : '',
             certainty === 'stale' ? 'c-stale' : '',
           ].filter(Boolean).join(' ')}
@@ -243,12 +247,12 @@ export function Figure(props: FigureProps) {
               because it is a fault the operator may need to act on; derived is
               muted because it qualifies a number rather than warning about it. */}
           {certainty === 'stale' && (
-            <span className="normal-case tracking-normal whitespace-nowrap" style={{ color: 'var(--probex-warning)' }}>
+            <span className="normal-case tracking-normal whitespace-nowrap" style={{ color: 'var(--synatra-warning)' }}>
               · {props.staleFor}
             </span>
           )}
           {certainty === 'derived' && (
-            <span className="normal-case tracking-normal whitespace-nowrap" style={{ color: 'var(--probex-text-disabled)' }}>
+            <span className="normal-case tracking-normal whitespace-nowrap" style={{ color: 'var(--synatra-text-disabled)' }}>
               · derived
             </span>
           )}
@@ -270,7 +274,7 @@ export function Figure(props: FigureProps) {
         {delta !== undefined && certainty !== 'absent' && (
           <span
             className="text-xs font-semibold tabular-nums"
-            style={{ color: delta.positive ? 'var(--probex-positive)' : 'var(--probex-negative)' }}
+            style={{ color: delta.positive ? 'var(--synatra-positive)' : 'var(--synatra-negative)' }}
           >
             {delta.text}
           </span>

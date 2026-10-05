@@ -33,9 +33,10 @@ import { formatEdgePct } from '@/lib/display/engine'
 import { formatBtcPrice } from '@/lib/mappers/priceHistory'
 import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'
 import { Figure, certaintyFromSlice } from '@/components/shared/Figure'
+import { DETECTOR_THRESHOLD_UNREPORTED, SURVIVAL_FLOOR_LABEL } from '@/lib/display/thresholds'
 
-const YES = 'var(--probex-yes)'
-const NO  = 'var(--probex-no)'
+const YES = 'var(--synatra-yes)'
+const NO  = 'var(--synatra-no)'
 
 interface MarketEngineViewProps {
   market:   MarketRow | undefined
@@ -59,7 +60,7 @@ export function MarketEngineView({ market, expired, marketSlice, edge, edges, su
   const edgeTone = edge ? (edge.direction === 'yes' ? YES : NO) : undefined
 
   return (
-    <section aria-labelledby="md-engine" className="flex flex-col gap-4 pt-6" style={{ borderTop: '1px solid var(--probex-border)' }}>
+    <section aria-labelledby="md-engine" className="flex flex-col gap-4 pt-6" style={{ borderTop: '1px solid var(--synatra-border)' }}>
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <span className="flex items-baseline gap-2 flex-wrap">
           <h2 id="md-engine" className="t-section-title">Engine view</h2>
@@ -103,21 +104,22 @@ export function MarketEngineView({ market, expired, marketSlice, edge, edges, su
           </Figure>
         )}
 
-        {/* The threshold is the engine's CURRENT requirement — context for a
-            verdict on a market it is still evaluating. On an expired market
+        {/* The survival brain's CURRENT floor — context for a verdict on a
+            market it is still evaluating. Not "the" requirement: the detector's
+            own threshold is not reported (lib/display/thresholds). On an expired market
             there is no verdict for it to qualify, so it is not shown. */}
         {expired ? null : surv ? (
           <Figure
-            label="Edge required"
+            label={SURVIVAL_FLOOR_LABEL}
             size="md"
-            title="min_edge_threshold from /api/survival — the survival brain moves this as capital changes"
+            title={`min_edge_threshold from /api/survival — the survival brain moves this as capital changes; ${DETECTOR_THRESHOLD_UNREPORTED}`}
             footnote={<span className="t-helper">Kelly ×{surv.kellyModifier.toFixed(2)} · {surv.state}</span>}
             {...certaintyFromSlice(survival, 5_000)}
           >
             {formatEdgePct(surv.minEdgeThreshold)}
           </Figure>
         ) : (
-          <Figure label="Edge required" size="md" certainty="absent" absentReason="waiting for /api/survival">—</Figure>
+          <Figure label={SURVIVAL_FLOOR_LABEL} size="md" certainty="absent" absentReason="waiting for /api/survival">—</Figure>
         )}
 
         <BookFigure book={book} />
@@ -139,33 +141,39 @@ function Verdict({ focus, expired, survival, edgesState }: {
   edgesState: ServiceState<unknown>
 }) {
   let text: string
-  let tone = 'var(--probex-text-primary)'
+  let tone = 'var(--synatra-text-primary)'
 
   if (expired) {
     text = 'Closed — the engine no longer evaluates this market. What it saw and did is below.'
-    tone = 'var(--probex-text-secondary)'
+    tone = 'var(--synatra-text-secondary)'
   } else if (focus === null || focus.kind === 'unknown') {
     text = edgesState.status === 'error'
       ? 'The edge detector did not answer — whether the engine sees an edge here is unknown.'
       : 'Waiting for the edge detector.'
-    tone = 'var(--probex-text-muted)'
+    tone = 'var(--synatra-text-muted)'
   } else if (focus.kind === 'acting') {
     text = `Would act — a ${focus.edge.direction.toUpperCase()} edge of ${formatEdgePct(focus.edge.edgePct)}` +
-      (survival ? ` clears the ${formatEdgePct(survival.minEdgeThreshold)} the survival brain currently requires.` : '.')
-    tone = 'var(--probex-positive)'
+      (survival ? ` clears the survival brain’s ${formatEdgePct(survival.minEdgeThreshold)} floor.` : '.')
+    tone = 'var(--synatra-positive)'
   } else if (focus.kind === 'blocked') {
     const why = focus.reasons.map((r) =>
       r.kind === 'halted'    ? `trading is halted (survival state ${r.state})`
-      : r.kind === 'threshold' ? `${formatEdgePct(r.edgePct)} is below the ${formatEdgePct(r.minEdge)} required`
+      : r.kind === 'threshold' ? `${formatEdgePct(r.edgePct)} is below the survival brain’s ${formatEdgePct(r.minEdge)} floor`
+      : r.kind === 'stale-market-data' ? 'the engine reports its market data is stale'
       : `the Kelly modifier is ${r.kellyModifier.toFixed(2)}, so every position sizes to zero`,
     ).join('; ')
     text = `Sees a ${focus.edge.direction.toUpperCase()} edge but would not act — ${why}.`
-    tone = 'var(--probex-warning)'
+    tone = 'var(--synatra-warning)'
+  } else if (focus.kind === 'no-valid-markets') {
+    text = focus.cause === 'stale'
+      ? 'No valid market data — the engine reports its market data is stale, so nothing is being evaluated.'
+      : 'No markets in the engine’s current scan — nothing is being evaluated.'
+    tone = 'var(--synatra-warning)'
   } else {
     text = focus.halted
       ? `Holding — no edge on this market this cycle, and trading is halted (survival state ${focus.state ?? 'DEAD'}).`
       : 'Holding — the engine reports no edge on this market this cycle.'
-    tone = 'var(--probex-text-secondary)'
+    tone = 'var(--synatra-text-secondary)'
   }
 
   return <p className="text-sm font-medium leading-relaxed m-0" style={{ color: tone }}>{text}</p>
@@ -197,7 +205,7 @@ function BookFigure({ book }: { book: MarketBook | null }) {
       <Figure
         label="Book"
         size="md"
-        tone={t.won ? 'var(--probex-positive)' : 'var(--probex-negative)'}
+        tone={t.won ? 'var(--synatra-positive)' : 'var(--synatra-negative)'}
         footnote={<span className="t-helper">{t.direction.toUpperCase()} {formatCurrency(t.size)} · settled{book.settled.length > 1 ? ` · ${book.settled.length} trades` : ''}</span>}
       >
         {t.won ? 'won' : 'lost'} {formatSignedCurrency(t.pnl)}
@@ -222,7 +230,7 @@ function EdgeEvidence({ edge }: { edge: EdgeRow | undefined }) {
       {facts.map((f) => (
         <div key={f.label} className="flex flex-col gap-0.5 min-w-0">
           <dt className="t-label truncate">{f.label}</dt>
-          <dd className="m-0 font-mono text-xs font-semibold tabular-nums truncate" style={{ color: 'var(--probex-text-primary)' }}>{f.value}</dd>
+          <dd className="m-0 font-mono text-xs font-semibold tabular-nums truncate" style={{ color: 'var(--synatra-text-primary)' }}>{f.value}</dd>
         </div>
       ))}
     </dl>
@@ -241,7 +249,7 @@ function BaselineLine({ reading }: { reading: ReturnType<typeof baselineReading>
     return (
       <p className="t-helper m-0">
         Reported baseline <Mono>{formatBtcPrice(reading.baseline)}</Mono>
-        <span style={{ color: 'var(--probex-text-disabled)' }}> · no live price on this screen to check it against</span>
+        <span style={{ color: 'var(--synatra-text-disabled)' }}> · no live price on this screen to check it against</span>
       </p>
     )
   }
@@ -249,14 +257,14 @@ function BaselineLine({ reading }: { reading: ReturnType<typeof baselineReading>
   return (
     <p className="t-helper m-0" title="Above/below is derived on this screen from the reported baseline and the live BTC price — not a value the engine sent">
       Baseline <Mono>{formatBtcPrice(reading.baseline)}</Mono>
-      <span style={{ color: 'var(--probex-text-disabled)' }}> · BTC now </span>
+      <span style={{ color: 'var(--synatra-text-disabled)' }}> · BTC now </span>
       <Mono>{formatBtcPrice(reading.now)}</Mono>
       <span className="font-semibold ml-1.5" style={{ color: tone }}>{reading.above ? '▲ above' : '▼ below'}</span>
-      <span className="ml-1" style={{ color: 'var(--probex-text-disabled)' }}>· derived</span>
+      <span className="ml-1" style={{ color: 'var(--synatra-text-disabled)' }}>· derived</span>
     </p>
   )
 }
 
 function Mono({ children }: { children: React.ReactNode }) {
-  return <span className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>{children}</span>
+  return <span className="font-mono tabular-nums" style={{ color: 'var(--synatra-text-secondary)' }}>{children}</span>
 }

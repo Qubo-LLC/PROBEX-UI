@@ -3,7 +3,7 @@
 // OverviewPage — the engine's current position in the loop.
 //
 // ─── The composition ─────────────────────────────────────────────────────────
-// PROBEX is not a trading terminal. Its user does not act; the engine acts, and
+// Synatra is not a trading terminal. Its user does not act; the engine acts, and
 // the user watches. So the questions are causal rather than comparative — what
 // did it decide, why, was it right, is it still able to — and the product's
 // data forms one closed loop:
@@ -73,6 +73,7 @@ import { PerceptionArc } from './PerceptionArc'
 import { CapitalBookGroup } from './CapitalBookGroup'
 import { EngineAttention } from './EngineAttention'
 import { MarketField } from './MarketField'
+import { marketDataSignal } from '@/lib/display/engineFocus'
 import { Card } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -95,6 +96,9 @@ export function OverviewPage() {
   // must never be softened into an empty state.
   const marketsSlice = useApplicationStore((s) => s.engine.markets)
   const statsSlice   = useApplicationStore((s) => s.engine.stats)
+  const healthSlice  = useApplicationStore((s) => s.engine.health)
+  // The engine's own verdict on its market data (api_access), quoted verbatim.
+  const marketData   = marketDataSignal(healthSlice.data, marketsSlice.data?.count ?? null)
 
   const marketRows = useMemo(
     () => (marketsSlice.data ? parseMarketRows(marketsSlice.data) : null),
@@ -121,7 +125,7 @@ export function OverviewPage() {
           if the engine stops. `showWhenFresh` is on here and nowhere else:
           this is the one place a healthy age is worth stating. */}
       <div className="flex items-baseline justify-between gap-3 flex-wrap pb-4">
-        <h1 className="sr-only">Probex Overview</h1>
+        <h1 className="sr-only">Synatra Overview</h1>
         <span className="t-label">Market intelligence</span>
         <FreshnessIndicator state={statsSlice} expectedIntervalMs={2_000} showWhenFresh />
       </div>
@@ -167,6 +171,7 @@ export function OverviewPage() {
             status={marketsSlice.status}
             message={marketsSlice.error?.message ?? null}
             unrecognizedCount={marketRows?.kind === 'unrecognized' ? marketRows.count : null}
+            staleMessage={marketData?.stale ? (marketData.message ?? 'The engine reports its market data is stale.') : null}
           />
         </section>
       )}
@@ -189,15 +194,18 @@ function MarketContextFrame({
   status,
   message,
   unrecognizedCount,
+  staleMessage,
 }: {
   status:            'loading' | 'success' | 'empty' | 'error'
   message:           string | null
   unrecognizedCount: number | null
+  /** api_access unhealthy: the empty list is a stale fetcher, not a quiet market. */
+  staleMessage:      string | null
 }) {
   if (status === 'loading') {
     return (
       <Card>
-        <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-text-disabled)' }}>
           Waiting for /api/markets — the engine’s market fetcher can take several seconds under rate limiting.
         </p>
       </Card>
@@ -219,11 +227,24 @@ function MarketContextFrame({
   if (unrecognizedCount !== null) {
     return (
       <Card>
-        <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-warning)' }}>
           The engine reports {unrecognizedCount} active market{unrecognizedCount === 1 ? '' : 's'}, but the item
           format doesn’t match the agreed schema — the catalogue is withheld rather than shown with wrong values.
         </p>
       </Card>
+    )
+  }
+
+  // Phase 2: an empty list while the engine's own api_access check is failing
+  // is NOT a quiet market — the venue may have open windows the engine cannot
+  // see. Say which it is, in the engine's words.
+  if (staleMessage) {
+    return (
+      <EmptyState
+        size="sm"
+        title="No current market data"
+        description={`The engine’s market data is stale, so this list says nothing about which markets are open. Engine: “${staleMessage}”`}
+      />
     )
   }
 

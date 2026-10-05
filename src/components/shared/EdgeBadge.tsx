@@ -27,14 +27,14 @@ export function EdgeBadge({ edge, size = 'md', showEmpty = true, className = '' 
     return (
       <span
         className={`text-2xs font-medium rounded px-1.5 py-0.5 ${className}`}
-        style={{ color: 'var(--probex-text-disabled)', background: 'var(--probex-surface-2)' }}
+        style={{ color: 'var(--synatra-text-disabled)', background: 'var(--synatra-surface-2)' }}
       >
         No active edge
       </span>
     )
   }
 
-  const color = edge.direction === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)'
+  const color = edge.direction === 'yes' ? 'var(--synatra-yes)' : 'var(--synatra-no)'
   const fontSize = size === 'sm' ? 'text-2xs' : 'text-xs'
 
   return (

@@ -56,7 +56,7 @@ export function PerformanceWindow() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h3 className="t-label">Last {hours >= 24 ? `${hours / 24}d` : `${hours}h`}</h3>
-        <div className="inline-flex rounded-md overflow-hidden" style={{ border: '1px solid var(--probex-border-default)' }} role="group" aria-label="Lookback window">
+        <div className="inline-flex rounded-md overflow-hidden" style={{ border: '1px solid var(--synatra-border-default)' }} role="group" aria-label="Lookback window">
           {WINDOWS.map((w) => (
             <button
               key={w.hours}
@@ -65,8 +65,8 @@ export function PerformanceWindow() {
               className="px-3 py-1 text-2xs font-semibold cursor-pointer transition-colors duration-150 focus-ring"
               style={
                 hours === w.hours
-                  ? { background: 'var(--probex-primary)', color: 'var(--probex-bg)' }
-                  : { background: 'transparent', color: 'var(--probex-text-muted)' }
+                  ? { background: 'var(--synatra-primary)', color: 'var(--synatra-bg)' }
+                  : { background: 'transparent', color: 'var(--synatra-text-muted)' }
               }
             >
               {w.label}
@@ -78,7 +78,7 @@ export function PerformanceWindow() {
       {loading ? (
         <p className="t-helper">Loading the {hours}h window…</p>
       ) : error ? (
-        <p className="t-description" style={{ color: 'var(--probex-negative)' }}>{error}</p>
+        <p className="t-description" style={{ color: 'var(--synatra-negative)' }}>{error}</p>
       ) : !hasData || !p ? (
         // The engine's own wording when it supplied one.
         <p className="t-description">{data?.message ?? `The engine has no recorded snapshots covering the last ${hours}h yet.`}</p>
@@ -87,19 +87,19 @@ export function PerformanceWindow() {
           <Figure
             label="Return"
             size="md"
-            tone={up ? 'var(--probex-positive)' : 'var(--probex-negative)'}
+            tone={up ? 'var(--synatra-positive)' : 'var(--synatra-negative)'}
             title="/api/portfolio/performance"
             footnote={`${formatCurrency(p.startValue)} → ${formatCurrency(p.endValue)}`}
           >
             {`${up ? '+' : ''}${p.returnPct.toFixed(1)}%`}
           </Figure>
-          <Figure label="Value change" size="md" tone={p.valueChange > 0 ? 'var(--probex-positive)' : p.valueChange < 0 ? 'var(--probex-negative)' : undefined} title="/api/portfolio/performance">
+          <Figure label="Value change" size="md" tone={p.valueChange > 0 ? 'var(--synatra-positive)' : p.valueChange < 0 ? 'var(--synatra-negative)' : undefined} title="/api/portfolio/performance">
             {formatSignedCurrency(p.valueChange)}
           </Figure>
           <Figure
             label="Worst drawdown"
             size="md"
-            tone={p.maxDrawdownPct > 0 ? 'var(--probex-negative)' : undefined}
+            tone={p.maxDrawdownPct > 0 ? 'var(--synatra-negative)' : undefined}
             title="/api/portfolio/performance"
             footnote="inside this window"
           >

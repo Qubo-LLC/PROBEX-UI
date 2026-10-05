@@ -33,7 +33,7 @@ const stamp = (ts: number) =>
 
 export function MarketCharts({ history }: { history: MarketHistoryState }) {
   return (
-    <section aria-labelledby="md-history" className="flex flex-col gap-3 pt-6" style={{ borderTop: '1px solid var(--probex-border)' }}>
+    <section aria-labelledby="md-history" className="flex flex-col gap-3 pt-6" style={{ borderTop: '1px solid var(--synatra-border)' }}>
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <span className="flex items-baseline gap-2 flex-wrap">
           <h2 id="md-history" className="t-section-title">Recorded history</h2>
@@ -96,7 +96,7 @@ function Charts({ points }: { points: readonly MarketHistoryPoint[] }) {
           <span>
             BTC <Mono>{formatBtcPrice(path.from.btcPrice)}</Mono> → <Mono>{formatBtcPrice(path.to.btcPrice)}</Mono>
             {path.btcMove !== null && (
-              <span className="ml-1 font-mono tabular-nums" style={{ color: path.btcMove >= 0 ? 'var(--probex-positive)' : 'var(--probex-negative)' }}>
+              <span className="ml-1 font-mono tabular-nums" style={{ color: path.btcMove >= 0 ? 'var(--synatra-positive)' : 'var(--synatra-negative)' }}>
                 {path.btcMove >= 0 ? '+' : ''}{(path.btcMove * 100).toFixed(2)}%
               </span>
             )}
@@ -113,7 +113,7 @@ function Charts({ points }: { points: readonly MarketHistoryPoint[] }) {
           variant="area"
           height={180}
           bare
-          color="var(--probex-yes)"
+          color="var(--synatra-yes)"
           yTickFormatter={(v) => `${v.toFixed(0)}¢`}
           valueFormatter={(v) => `${v.toFixed(1)}¢`}
         />
@@ -124,7 +124,7 @@ function Charts({ points }: { points: readonly MarketHistoryPoint[] }) {
           variant="line"
           height={180}
           bare
-          color="var(--probex-primary)"
+          color="var(--synatra-primary)"
           // BTC moves only tens of dollars inside a 5-minute market; a
           // zero-based axis would render that as a flat line.
           yDomain={['dataMin', 'dataMax']}
@@ -138,7 +138,7 @@ function Charts({ points }: { points: readonly MarketHistoryPoint[] }) {
           variant="area"
           height={160}
           bare
-          color="var(--probex-text-muted)"
+          color="var(--synatra-text-muted)"
           yTickFormatter={(v) => formatCurrency(v, true)}
           valueFormatter={(v) => formatCurrency(v)}
         />
@@ -148,14 +148,14 @@ function Charts({ points }: { points: readonly MarketHistoryPoint[] }) {
 }
 
 function Mono({ children }: { children: React.ReactNode }) {
-  return <span className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>{children}</span>
+  return <span className="font-mono tabular-nums" style={{ color: 'var(--synatra-text-secondary)' }}>{children}</span>
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 min-w-0">
       <dt className="t-label truncate">{label}</dt>
-      <dd className="m-0 font-mono text-xs font-semibold tabular-nums truncate" style={{ color: 'var(--probex-text-primary)' }}>{value}</dd>
+      <dd className="m-0 font-mono text-xs font-semibold tabular-nums truncate" style={{ color: 'var(--synatra-text-primary)' }}>{value}</dd>
     </div>
   )
 }

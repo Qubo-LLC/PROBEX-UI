@@ -1,4 +1,4 @@
-// Every Probex service speaks the same envelope, so swapping mock → live is
+// Every Synatra service speaks the same envelope, so swapping mock → live is
 // mechanical. The four UI states (loading / success / empty / error) are
 // expressed through ServiceState; the wire payload through ApiResult.
 //

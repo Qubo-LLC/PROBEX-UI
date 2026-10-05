@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { LiveFeedConsole } from '@/components/live-feed/LiveFeedConsole'
+import { LiveFeedConsole } from '@/components/ledger/live-feed/LiveFeedConsole'
 
 export const metadata: Metadata = {
   title: 'Live Feed',

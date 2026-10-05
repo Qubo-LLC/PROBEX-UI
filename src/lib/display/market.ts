@@ -23,9 +23,9 @@ const KNOWN_SENTIMENTS = new Set(['bullish', 'bearish', 'neutral'])
 /** CSS color token for a (possibly unrecognized) sentiment string. Unknown
  *  values render neutrally rather than guessing a direction. */
 export function sentimentTone(sentiment: string | null): string {
-  if (sentiment === 'bullish') return 'var(--probex-positive)'
-  if (sentiment === 'bearish') return 'var(--probex-negative)'
-  return 'var(--probex-text-muted)'
+  if (sentiment === 'bullish') return 'var(--synatra-positive)'
+  if (sentiment === 'bearish') return 'var(--synatra-negative)'
+  return 'var(--synatra-text-muted)'
 }
 
 export function isKnownSentiment(sentiment: string | null): boolean {

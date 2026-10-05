@@ -243,11 +243,11 @@ export function ChartFrame({
   return (
     <div
       className="rounded-lg overflow-hidden"
-      style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}
+      style={{ background: 'var(--synatra-surface)', border: '1px solid var(--synatra-border)' }}
     >
       <div
         className="flex items-start justify-between gap-3 px-4 py-3"
-        style={{ borderBottom: '1px solid var(--probex-border)' }}
+        style={{ borderBottom: '1px solid var(--synatra-border)' }}
       >
         <div className="flex flex-col gap-0.5 min-w-0">
           <h3 className="t-card-title">{title}</h3>
@@ -267,7 +267,7 @@ export function ChartFrame({
           {delta && (
             <span
               className="text-xs font-semibold tabular-nums"
-              style={{ color: delta.positive ? 'var(--probex-positive)' : 'var(--probex-negative)' }}
+              style={{ color: delta.positive ? 'var(--synatra-positive)' : 'var(--synatra-negative)' }}
             >
               {delta.text}
             </span>
@@ -299,12 +299,12 @@ function StaleStrip({ age }: { age: string | null }) {
       role="status"
       className="flex items-center gap-1.5 px-2 py-1 rounded"
       style={{
-        background: 'var(--probex-warning-dim)',
-        border: '1px solid color-mix(in srgb, var(--probex-warning) 22%, transparent)',
+        background: 'var(--synatra-warning-dim)',
+        border: '1px solid color-mix(in srgb, var(--synatra-warning) 22%, transparent)',
       }}
     >
-      <span className="state-dot flex-shrink-0" style={{ background: 'var(--probex-warning)' }} aria-hidden="true" />
-      <span className="text-2xs font-medium" style={{ color: 'var(--probex-warning)' }}>
+      <span className="state-dot flex-shrink-0" style={{ background: 'var(--synatra-warning)' }} aria-hidden="true" />
+      <span className="text-2xs font-medium" style={{ color: 'var(--synatra-warning)' }}>
         {age ? `Last confirmed ${age}` : 'Last confirmed data — not currently refreshing'}
       </span>
     </div>

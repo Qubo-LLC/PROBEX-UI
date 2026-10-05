@@ -42,7 +42,7 @@ export function GlobalConsensusBar() {
         role="region"
         aria-label="Global consensus intelligence"
         className="px-5 py-3 rounded-md"
-        style={{ background: 'var(--probex-surface)', border: '1px dashed var(--probex-border-default)' }}
+        style={{ background: 'var(--synatra-surface)', border: '1px dashed var(--synatra-border-default)' }}
       >
         <AwaitingBackend
           bare
@@ -75,8 +75,8 @@ export function GlobalConsensusBar() {
   const score = reading?.score ?? null
   const color =
     score === null || Math.abs(score) < 0.05
-      ? 'var(--probex-text-muted)'
-      : score > 0 ? 'var(--probex-yes)' : 'var(--probex-no)'
+      ? 'var(--synatra-text-muted)'
+      : score > 0 ? 'var(--synatra-yes)' : 'var(--synatra-no)'
 
   return (
     // ─── A ruled block, not a card ─────────────────────────────────────────
@@ -90,7 +90,7 @@ export function GlobalConsensusBar() {
       role="region"
       aria-label="Global consensus intelligence"
       className="flex flex-col gap-3 pl-4 py-1"
-      style={{ borderLeft: '1px solid var(--probex-border-strong)' }}
+      style={{ borderLeft: '1px solid var(--synatra-border-strong)' }}
     >
       <div className="flex flex-col gap-0.5 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -125,7 +125,7 @@ export function GlobalConsensusBar() {
             composite computed on Sunday is a snapshot, and the score above
             must not read as this morning's; the qualifier turns warning once
             the reading is older than READING_STALE_AFTER_MS. */}
-        <p className="text-2xs truncate" style={{ color: freshness?.stale ? 'var(--probex-warning)' : 'var(--probex-text-muted)' }}>
+        <p className="text-2xs truncate" style={{ color: freshness?.stale ? 'var(--synatra-warning)' : 'var(--synatra-text-muted)' }}>
           {reading !== null && freshness !== null
             ? `${reading.signalCount} signals · ${freshness.stale ? 'snapshot' : 'read'} ${freshness.ageLabel}`
             : statusLine}
@@ -151,15 +151,15 @@ function Stat({ label, value, color, lead = false }: { label: string; value: str
   if (lead) {
     return (
       <div className="flex flex-col gap-0.5">
-        <span className="t-metric-md" style={{ color: color ?? 'var(--probex-text-primary)' }}>{value}</span>
+        <span className="t-metric-md" style={{ color: color ?? 'var(--synatra-text-primary)' }}>{value}</span>
         <span className="t-metadata uppercase" style={{ letterSpacing: '0.06em' }}>{label}</span>
       </div>
     )
   }
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>{label}</span>
-      <span className="text-2xs font-semibold font-mono tabular-nums capitalize" style={{ color: color ?? 'var(--probex-text-secondary)' }}>
+      <span className="text-2xs" style={{ color: 'var(--synatra-text-muted)' }}>{label}</span>
+      <span className="text-2xs font-semibold font-mono tabular-nums capitalize" style={{ color: color ?? 'var(--synatra-text-secondary)' }}>
         {value}
       </span>
     </div>

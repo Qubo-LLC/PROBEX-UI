@@ -10,8 +10,8 @@ interface ThemeProviderProps {
   initialTheme?: string | undefined
 }
 
-// Applies the active theme as `data-theme` on <html>; probex-tokens.css scopes all
-// CSS-variable overrides to that attribute. Not using next-themes: Probex themes are
+// Applies the active theme as `data-theme` on <html>; synatra-tokens.css scopes all
+// CSS-variable overrides to that attribute. Not using next-themes: Synatra themes are
 // full token-set swaps (not just dark/light) and need data-theme, not a class.
 export function ThemeProvider({ children, initialTheme }: ThemeProviderProps) {
   const { theme, setTheme } = useThemeStore()

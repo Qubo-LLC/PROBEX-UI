@@ -24,6 +24,7 @@ import { survivalStateLabel } from '@/lib/display/engine'
 import { formatEdgePct } from '@/lib/display/engine'
 import { Figure, certaintyFromSlice } from '@/components/shared/Figure'
 import { Popover, InfoButton, PopoverText, PopoverTitle } from '@/components/ui/Popover'
+import { DETECTOR_THRESHOLD_UNREPORTED, SURVIVAL_FLOOR_LABEL } from '@/lib/display/thresholds'
 
 export function SizingReading() {
   const configSlice   = useApplicationStore((s) => s.engine.config)
@@ -48,12 +49,12 @@ export function SizingReading() {
   const effective = cfg && sv ? cfg.kellyFraction * sv.kellyModifier : null
   const modifierTone =
     sv === null || sv === undefined ? undefined
-    : sv.kellyModifier === 0 ? 'var(--probex-negative)'
-    : sv.kellyModifier < 1 ? 'var(--probex-warning)'
+    : sv.kellyModifier === 0 ? 'var(--synatra-negative)'
+    : sv.kellyModifier < 1 ? 'var(--synatra-warning)'
     : undefined
 
   return (
-    <section aria-labelledby="an-sizing" className="flex flex-col gap-5 py-6" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+    <section aria-labelledby="an-sizing" className="flex flex-col gap-5 py-6" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
       <div className="flex items-center gap-1.5">
         <h2 id="an-sizing" className="t-section-title">Sizing and the current edge set</h2>
         <Popover
@@ -68,9 +69,10 @@ export function SizingReading() {
             losses is the mechanism, not a fault.
           </PopoverText>
           <PopoverText>
-            The edge threshold is the minimum edge the brain will act on right now; it
-            moves with the same state. The current edge set is what the detector sees this
-            cycle — context for the figures above, not part of the record.
+            The survival floor is the minimum edge the survival brain will accept right
+            now; it moves with the same state. It is not the whole entry requirement —
+            {' '}{DETECTOR_THRESHOLD_UNREPORTED}. The current edge set is what the detector
+            sees this cycle — context for the figures above, not part of the record.
           </PopoverText>
         </Popover>
       </div>
@@ -109,16 +111,16 @@ export function SizingReading() {
 
         {sv ? (
           <Figure
-            label="Edge threshold"
+            label={SURVIVAL_FLOOR_LABEL}
             size="md"
-            title="/api/survival"
+            title="min_edge_threshold from /api/survival"
             {...certaintyFromSlice(survivalSlice, 5_000)}
-            footnote="minimum edge to act on now"
+            footnote="survival brain’s minimum — not the detector’s threshold"
           >
             {formatEdgePct(sv.minEdgeThreshold)}
           </Figure>
         ) : (
-          <Figure label="Edge threshold" size="md" certainty="absent" absentReason="The survival brain has not reported" />
+          <Figure label={SURVIVAL_FLOOR_LABEL} size="md" certainty="absent" absentReason="The survival brain has not reported" />
         )}
 
         {cfg ? (
@@ -138,7 +140,7 @@ export function SizingReading() {
 
       {/* The current edge set — a ruled row when there is one, a sentence
           when there is not. Never an empty card. */}
-      <div className="pt-4" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <div className="pt-4" style={{ borderTop: '1px solid var(--synatra-border)' }}>
         {edgeSet === null ? (
           <p className="t-description">
             {edgesSlice.status === 'error'

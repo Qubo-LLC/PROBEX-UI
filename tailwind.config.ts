@@ -9,64 +9,64 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // ─── Probex Design Tokens ────────────────────────────────────────────
+      // ─── Synatra Design Tokens ────────────────────────────────────────────
       colors: {
         // Brand primitives
-        "probex-cyan":    "var(--probex-primary)",
-        "probex-blue":    "#3B82F6",
-        "probex-purple":  "var(--probex-secondary)",
-        "probex-green":   "#10B981",
-        "probex-red":     "#EF4444",
-        "probex-amber":   "#F59E0B",
+        "synatra-cyan":    "var(--synatra-primary)",
+        "synatra-blue":    "#3B82F6",
+        "synatra-purple":  "var(--synatra-secondary)",
+        "synatra-green":   "#10B981",
+        "synatra-red":     "#EF4444",
+        "synatra-amber":   "#F59E0B",
 
         // Surface system (theme-reactive via CSS vars)
-        "surface-0":      "var(--probex-bg)",
-        "surface-1":      "var(--probex-surface)",
-        "surface-2":      "var(--probex-surface-2)",
-        "surface-3":      "var(--probex-surface-3)",
+        "surface-0":      "var(--synatra-bg)",
+        "surface-1":      "var(--synatra-surface)",
+        "surface-2":      "var(--synatra-surface-2)",
+        "surface-3":      "var(--synatra-surface-3)",
         // New steps. surface-lowest is the RECESSED plane (table headers,
         // input troughs, probe rows) that the ladder never had; surface-raised
         // is a name for the existing surface-2 value so call sites can migrate
         // gradually; surface-overlay is the modal/palette plane.
-        "surface-lowest": "var(--probex-surface-lowest)",
-        "surface-raised": "var(--probex-surface-raised)",
-        "surface-overlay":"var(--probex-surface-overlay)",
+        "surface-lowest": "var(--synatra-surface-lowest)",
+        "surface-raised": "var(--synatra-surface-raised)",
+        "surface-overlay":"var(--synatra-surface-overlay)",
 
         // Border system
-        "border-subtle":  "var(--probex-border)",
-        "border-default": "var(--probex-border-default)",
-        "border-strong":  "var(--probex-border-strong)",
-        "border-active":  "var(--probex-border-active)",
+        "border-subtle":  "var(--synatra-border)",
+        "border-default": "var(--synatra-border-default)",
+        "border-strong":  "var(--synatra-border-strong)",
+        "border-active":  "var(--synatra-border-active)",
 
         // Text system
-        "text-primary":   "var(--probex-text-primary)",
-        "text-secondary": "var(--probex-text-secondary)",
-        "text-muted":     "var(--probex-text-muted)",
-        "text-disabled":  "var(--probex-text-disabled)",
+        "text-primary":   "var(--synatra-text-primary)",
+        "text-secondary": "var(--synatra-text-secondary)",
+        "text-muted":     "var(--synatra-text-muted)",
+        "text-disabled":  "var(--synatra-text-disabled)",
 
         // Semantic
-        "yes":            "var(--probex-yes)",
-        "no":             "var(--probex-no)",
+        "yes":            "var(--synatra-yes)",
+        "no":             "var(--synatra-no)",
         // Ink for text placed ON a filled accent. Per theme, because the
         // correct ink flips with the accent's luminance.
-        "on-accent":      "var(--probex-on-accent)",
-        "on-yes":         "var(--probex-on-yes)",
-        "on-no":          "var(--probex-on-no)",
+        "on-accent":      "var(--synatra-on-accent)",
+        "on-yes":         "var(--synatra-on-yes)",
+        "on-no":          "var(--synatra-on-no)",
         // The six data states must never collapse into one another, so each
         // gets its own token rather than borrowing positive/warning/muted.
-        "status-live":      "var(--probex-status-live)",
-        "status-stale":     "var(--probex-status-stale)",
-        "status-degraded":  "var(--probex-status-degraded)",
-        "status-offline":   "var(--probex-status-offline)",
-        "status-synthetic": "var(--probex-status-synthetic)",
-        "positive":       "var(--probex-positive)",
-        "negative":       "var(--probex-negative)",
-        "warning":        "var(--probex-warning)",
+        "status-live":      "var(--synatra-status-live)",
+        "status-stale":     "var(--synatra-status-stale)",
+        "status-degraded":  "var(--synatra-status-degraded)",
+        "status-offline":   "var(--synatra-status-offline)",
+        "status-synthetic": "var(--synatra-status-synthetic)",
+        "positive":       "var(--synatra-positive)",
+        "negative":       "var(--synatra-negative)",
+        "warning":        "var(--synatra-warning)",
 
         // Consensus-specific
-        "consensus-high":   "var(--probex-consensus-high)",
-        "consensus-med":    "var(--probex-consensus-med)",
-        "consensus-low":    "var(--probex-consensus-low)",
+        "consensus-high":   "var(--synatra-consensus-high)",
+        "consensus-med":    "var(--synatra-consensus-med)",
+        "consensus-low":    "var(--synatra-consensus-low)",
       },
 
       // ─── Typography ──────────────────────────────────────────────────────
@@ -149,16 +149,16 @@ const config: Config = {
       // ─── Box Shadow ──────────────────────────────────────────────────────
       // The elev-* scale is the canonical elevation vocabulary; each pairs a
       // drop shadow with an inset top highlight so surfaces read as milled
-      // rather than blurred. Tokens live in styles/probex-tokens.css.
+      // rather than blurred. Tokens live in styles/synatra-tokens.css.
       boxShadow: {
         // `surface` / `surface-lg` were removed here: they were a SECOND
         // elevation vocabulary competing with the canonical elev-* scale,
         // and elev-* is the one that pairs a drop shadow with an inset top
         // highlight (the milled-panel look). Do not reintroduce them.
-        "elev-1": "var(--probex-elev-1)",
-        "elev-2": "var(--probex-elev-2)",
-        "elev-3": "var(--probex-elev-3)",
-        "elev-4": "var(--probex-elev-4)",
+        "elev-1": "var(--synatra-elev-1)",
+        "elev-2": "var(--synatra-elev-2)",
+        "elev-3": "var(--synatra-elev-3)",
+        "elev-4": "var(--synatra-elev-4)",
       },
 
       // ─── Backdrop Blur ───────────────────────────────────────────────────

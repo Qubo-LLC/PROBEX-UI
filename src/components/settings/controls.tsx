@@ -19,9 +19,9 @@ export function SettingRow({
   children:     ReactNode
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 py-3" style={{ borderTop: '1px solid var(--probex-border)' }}>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 py-3" style={{ borderTop: '1px solid var(--synatra-border)' }}>
       <div className="flex-1 min-w-0">
-        <label htmlFor={htmlFor} className="text-xs font-medium block" style={{ color: 'var(--probex-text-primary)' }}>{label}</label>
+        <label htmlFor={htmlFor} className="text-xs font-medium block" style={{ color: 'var(--synatra-text-primary)' }}>{label}</label>
         {description && <p className="t-helper m-0 mt-0.5">{description}</p>}
       </div>
       <div className="flex-shrink-0 w-full sm:w-auto sm:flex sm:justify-end">{children}</div>
@@ -48,7 +48,7 @@ export function Toggle({
       aria-label={label}
       onClick={() => onChange(!checked)}
       className="focus-ring relative inline-flex items-center rounded-full transition-colors duration-150 cursor-pointer flex-shrink-0"
-      style={{ width: 38, height: 22, background: checked ? 'var(--probex-primary)' : 'var(--probex-border-default)' }}
+      style={{ width: 38, height: 22, background: checked ? 'var(--synatra-primary)' : 'var(--synatra-border-default)' }}
     >
       <span
         className="rounded-full"
@@ -69,7 +69,7 @@ export function SegmentedControl<T extends string>({
   ariaLabel?: string
 }) {
   return (
-    <div className="flex rounded-md overflow-hidden w-full sm:w-auto" style={{ border: '1px solid var(--probex-border-default)' }} role="radiogroup" aria-label={ariaLabel}>
+    <div className="flex rounded-md overflow-hidden w-full sm:w-auto" style={{ border: '1px solid var(--synatra-border-default)' }} role="radiogroup" aria-label={ariaLabel}>
       {options.map((o, i) => {
         const active = value === o.value
         return (
@@ -81,9 +81,9 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(o.value)}
             className="focus-ring flex-1 sm:flex-none text-xs font-medium px-3 py-1.5 cursor-pointer transition-colors duration-100 whitespace-nowrap"
             style={{
-              background:  active ? 'var(--probex-primary-dim)' : 'transparent',
-              color:       active ? 'var(--probex-primary)' : 'var(--probex-text-muted)',
-              borderRight: i < options.length - 1 ? '1px solid var(--probex-border-default)' : 'none',
+              background:  active ? 'var(--synatra-primary-dim)' : 'transparent',
+              color:       active ? 'var(--synatra-primary)' : 'var(--synatra-text-muted)',
+              borderRight: i < options.length - 1 ? '1px solid var(--synatra-border-default)' : 'none',
             }}
           >
             {o.label}

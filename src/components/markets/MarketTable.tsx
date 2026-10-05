@@ -82,7 +82,7 @@ export function MarketTable({
                     // A resolved market reads at secondary weight. It stays
                     // openable — its history is still worth reading — but it
                     // must not present as a live candidate.
-                    color: closed ? 'var(--probex-text-secondary)' : 'var(--probex-text-primary)',
+                    color: closed ? 'var(--synatra-text-secondary)' : 'var(--synatra-text-primary)',
                     cursor: onSelect ? 'pointer' : 'default', background: 'transparent', border: 0, padding: 0,
                     // Event-market questions run to ~90 characters. Two lines
                     // keeps the whole question readable in the elastic column
@@ -95,13 +95,13 @@ export function MarketTable({
                   {m.title}
                 </button>
                 {category && !dense && (
-                  <div className="text-2xs mt-0.5 hidden sm:block" style={{ color: 'var(--probex-text-muted)' }}>{category}</div>
+                  <div className="text-2xs mt-0.5 hidden sm:block" style={{ color: 'var(--synatra-text-muted)' }}>{category}</div>
                 )}
                 {/* What the folded columns carried, restated once beneath the
                     title. Only the facts that exist for this row: an edge if
                     the engine has one, the volume, the lifecycle when the
                     column is shown at all. */}
-                <span className="md:hidden flex items-center gap-x-2 gap-y-0.5 flex-wrap mt-1 text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
+                <span className="md:hidden flex items-center gap-x-2 gap-y-0.5 flex-wrap mt-1 text-2xs" style={{ color: 'var(--synatra-text-muted)' }}>
                   {edge && <span className="sm:hidden"><EdgeBadge edge={edge} size="sm" /></span>}
                   {m.volume24h !== null && (
                     <span className="font-mono tabular-nums">Vol {formatVolume(m.volume24h)}</span>
@@ -115,16 +115,16 @@ export function MarketTable({
               </Td>
               <Td align="left" dense={dense} hideBelow="sm">
                 {quietEmptyEdge && !edge
-                  ? <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }} aria-label="No active edge">—</span>
+                  ? <span className="text-2xs" style={{ color: 'var(--synatra-text-disabled)' }} aria-label="No active edge">—</span>
                   : <EdgeBadge edge={edge} />}
               </Td>
               <Td align="right" dense={dense}>
                 {m.probability !== null
                   ? <ProbabilityValue probability={m.probability} size="sm" />
-                  : <span style={{ color: 'var(--probex-text-disabled)' }}>—</span>}
+                  : <span style={{ color: 'var(--synatra-text-disabled)' }}>—</span>}
               </Td>
               <Td align="right" dense={dense} hideBelow="md">
-                <span className="tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>
+                <span className="tabular-nums" style={{ color: 'var(--synatra-text-secondary)' }}>
                   {m.volume24h !== null ? formatVolume(m.volume24h) : '—'}
                 </span>
               </Td>
@@ -139,15 +139,15 @@ export function MarketTable({
                     className="w-1.5 h-1.5 rounded-full inline-block flex-shrink-0"
                     style={{
                       background:
-                        life === 'open' ? 'var(--probex-status-live)'
-                        : life === 'closing' ? 'var(--probex-status-stale)'
-                        : 'var(--probex-text-disabled)',
+                        life === 'open' ? 'var(--synatra-status-live)'
+                        : life === 'closing' ? 'var(--synatra-status-stale)'
+                        : 'var(--synatra-text-disabled)',
                     }}
                   />
-                  <span className="text-2xs font-semibold" style={{ color: closed ? 'var(--probex-text-muted)' : 'var(--probex-text-secondary)' }}>
+                  <span className="text-2xs font-semibold" style={{ color: closed ? 'var(--synatra-text-muted)' : 'var(--synatra-text-secondary)' }}>
                     {life === 'unknown' ? '—' : lifecycleLabel(life)}
                   </span>
-                  <span className="text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-disabled)' }}>
+                  <span className="text-2xs font-mono tabular-nums" style={{ color: 'var(--synatra-text-disabled)' }}>
                     {formatCloseTime(m.closesAt)}
                   </span>
                 </span>

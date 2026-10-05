@@ -75,12 +75,12 @@ export function BottomNav() {
       // md:hidden — the rail is for the widths where the sidebar is off-canvas.
       className="md:hidden fixed bottom-0 left-0 right-0 z-sidebar"
       style={{
-        background: 'var(--probex-surface)',
-        borderTop: '1px solid var(--probex-border)',
+        background: 'var(--synatra-surface)',
+        borderTop: '1px solid var(--synatra-border)',
         // Below the home indicator on iOS the rail would otherwise sit under
         // the system gesture area.
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-        boxShadow: 'var(--probex-elev-3)',
+        boxShadow: 'var(--synatra-elev-3)',
       }}
       aria-label="Primary"
     >
@@ -95,7 +95,7 @@ export function BottomNav() {
                 // 44px comfort target is cheap to honour, and a thumb target
                 // that misses costs a navigation.
                 className="focus-ring flex flex-col items-center justify-center gap-1 h-14 no-underline"
-                style={{ color: active ? 'var(--probex-primary)' : 'var(--probex-text-muted)' }}
+                style={{ color: active ? 'var(--synatra-primary)' : 'var(--synatra-text-muted)' }}
                 aria-current={active ? 'page' : undefined}
               >
                 <Ico />
@@ -105,7 +105,7 @@ export function BottomNav() {
                 <span
                   aria-hidden="true"
                   className="block w-6 h-px rounded-full"
-                  style={{ background: active ? 'var(--probex-primary)' : 'transparent' }}
+                  style={{ background: active ? 'var(--synatra-primary)' : 'transparent' }}
                 />
               </Link>
             </li>
@@ -116,7 +116,7 @@ export function BottomNav() {
             type="button"
             onClick={openMobile}
             className="focus-ring w-full flex flex-col items-center justify-center gap-1 h-14 cursor-pointer bg-transparent border-0"
-            style={{ color: 'var(--probex-text-muted)' }}
+            style={{ color: 'var(--synatra-text-muted)' }}
             aria-label="Open full navigation"
           >
             <Icon.More />

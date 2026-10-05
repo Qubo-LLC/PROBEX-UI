@@ -3,7 +3,7 @@
 //
 // ─── Provenance ──────────────────────────────────────────────────────────────
 // Every shape here was derived from a REAL captured response against
-// https://qubo-probex.duckdns.org on 2026-08-20, not from documentation. These
+// https://qubo-synatra.duckdns.org on 2026-08-20, not from documentation. These
 // endpoints appear in the attached `postman_collection.json` (folders
 // "5 Mathematical Layers" and "Performance Monitoring by Category") but NOT in
 // the collection published to the Postman workspace, which is the older

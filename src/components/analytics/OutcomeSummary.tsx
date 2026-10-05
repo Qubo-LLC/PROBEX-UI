@@ -44,8 +44,8 @@ export function OutcomeSummary() {
   const returnPct = summary !== null ? summary.totalReturnPct : null
   const returnTone =
     returnPct === null ? undefined
-    : returnPct > 0 ? 'var(--probex-positive)'
-    : returnPct < 0 ? 'var(--probex-negative)'
+    : returnPct > 0 ? 'var(--synatra-positive)'
+    : returnPct < 0 ? 'var(--synatra-negative)'
     : undefined
 
   // The window the figures describe, read off the data. Stated once, at the
@@ -56,7 +56,7 @@ export function OutcomeSummary() {
     : null
 
   return (
-    <section aria-labelledby="an-outcome" className="flex flex-col gap-4 pb-6" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+    <section aria-labelledby="an-outcome" className="flex flex-col gap-4 pb-6" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <span className="flex items-center gap-1.5">
           <h2 id="an-outcome" className="t-section-title">Outcome</h2>
@@ -117,7 +117,7 @@ export function OutcomeSummary() {
             label="Expectancy"
             size="md"
             certainty="derived"
-            tone={perTrade > 0 ? 'var(--probex-positive)' : perTrade < 0 ? 'var(--probex-negative)' : undefined}
+            tone={perTrade > 0 ? 'var(--synatra-positive)' : perTrade < 0 ? 'var(--synatra-negative)' : undefined}
             title="Mean P&L per settled trade, computed from /api/trades/ledger"
             footnote={`per trade · ${trades.length} settled`}
           >
@@ -131,7 +131,7 @@ export function OutcomeSummary() {
           <Figure
             label="Drawdown"
             size="md"
-            tone={summary.currentDrawdownPct > 0 ? 'var(--probex-negative)' : undefined}
+            tone={summary.currentDrawdownPct > 0 ? 'var(--synatra-negative)' : undefined}
             title="/api/portfolio/summary"
             {...certaintyFromSlice(summarySlice, SLOW_MS)}
             footnote={`from peak ${formatCurrency(summary.peakValue)}`}

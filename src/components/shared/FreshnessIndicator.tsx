@@ -33,10 +33,10 @@ interface FreshnessIndicatorProps {
 }
 
 const LEVEL_COLOR: Record<FreshnessLevel, string> = {
-  fresh: 'var(--probex-text-disabled)',
-  aging: 'var(--probex-text-muted)',
-  stale: 'var(--probex-warning)',
-  never: 'var(--probex-text-disabled)',
+  fresh: 'var(--synatra-text-disabled)',
+  aging: 'var(--synatra-text-muted)',
+  stale: 'var(--synatra-warning)',
+  never: 'var(--synatra-text-disabled)',
 }
 
 export function FreshnessIndicator({
@@ -98,9 +98,9 @@ export function StaleNotice({
     <div
       className={`flex items-start gap-2 px-3 py-2 rounded text-2xs ${className}`}
       style={{
-        background: 'var(--probex-warning-dim)',
-        color:      'var(--probex-warning)',
-        border:     '1px solid var(--probex-warning)',
+        background: 'var(--synatra-warning-dim)',
+        color:      'var(--synatra-warning)',
+        border:     '1px solid var(--synatra-warning)',
       }}
       role="status"
     >

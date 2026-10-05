@@ -46,6 +46,7 @@ import { useApplicationStore } from '@/store/applicationStore'
 import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'
 import { selectExposureSource } from '@/lib/display/exposureSource'
 import { selectPerformanceSource } from '@/lib/display/performanceSource'
+import { readFinancialTrust, suppressesTone } from '@/lib/display/financialTrust'
 import { Figure, certaintyFromSlice } from '@/components/shared/Figure'
 import { Row, RowGroup, Meter } from '@/components/ui/Panel'
 
@@ -59,6 +60,7 @@ export function CapitalBookGroup() {
   const identity   = useApplicationStore((s) => s.engine.identity)
   const paperStats = useApplicationStore((s) => s.engine.paperStats)
   const policy     = useApplicationStore((s) => s.engine.executionPolicy)
+  const ledger     = useApplicationStore((s) => s.engine.tradesLedger)
 
   // Both derivations are reused verbatim. They encode provenance decisions that
   // took measured bugs to find — exposure must come from the position ledger
@@ -82,6 +84,12 @@ export function CapitalBookGroup() {
   const isPaperSurface = performance.provenance.surface === 'paper'
   const perfSlice = isPaperSurface ? paperStats : execution
 
+  // Whether these figures can be believed (remediation phase 1). Values are
+  // never altered; an untrusted book loses its gain/loss colour and says why.
+  // The frontend can raise this flag from evidence but never grant "valid".
+  const trust   = readFinancialTrust({ trades: ledger.data?.ledger ?? null, sourceStatus: perfSlice.status, engineIntegrity: paperStats.data?.integrity ?? null })
+  const neutral = suppressesTone(trust)
+
   const maxPositions = policy.data?.riskLimits.maxConcurrentPositions ?? null
 
   return (
@@ -89,8 +97,8 @@ export function CapitalBookGroup() {
       aria-labelledby="arc-book"
       className="rounded-lg px-5 py-4 mt-5"
       style={{
-        background: 'var(--probex-surface)',
-        border: '1px solid var(--probex-border)',
+        background: 'var(--synatra-surface)',
+        border: '1px solid var(--synatra-border)',
       }}
     >
       <div className="flex items-baseline justify-between gap-3 flex-wrap mb-4">
@@ -101,13 +109,19 @@ export function CapitalBookGroup() {
         <span className="t-description">What the current engine state means for the account</span>
       </div>
 
+      {trust && (
+        <p role="status" className="t-description mb-4" style={{ color: 'var(--synatra-warning)' }}>
+          <span className="font-semibold">{trust.headline}.</span> {trust.detail}
+        </p>
+      )}
+
       {/* Three columns, one subject each, separated by rules rather than by
           borders. At the top of each column sits the figure that answers it;
           beneath, the context that makes that figure mean something. The old
           layout gave each of these its own card header, badge and padding —
           roughly 40% of the space went to the containers rather than the
           content. */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 md:divide-x" style={{ borderColor: 'var(--probex-border)' }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 md:divide-x" style={{ borderColor: 'var(--synatra-border)' }}>
 
         {/* ── CAPITAL ─────────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-3 min-w-0 md:pr-8">
@@ -125,7 +139,7 @@ export function CapitalBookGroup() {
 
               <Meter
                 value={clamp01(d.capitalPct / 100)}
-                color="var(--probex-primary)"
+                color="var(--synatra-primary)"
                 ariaLabel="Capital remaining against initial"
               />
 
@@ -135,8 +149,8 @@ export function CapitalBookGroup() {
                   against the engine's own goal. Recovered from 4ace3902 with
                   their progress logic intact. */}
               <RowGroup>
-                <TargetRow label="Daily"  pnl={d.dailyPnl}  target={d.dailyTarget} />
-                <TargetRow label="Weekly" pnl={d.weeklyPnl} target={d.weeklyTarget} />
+                <TargetRow label="Daily"  pnl={d.dailyPnl}  target={d.dailyTarget} neutral={neutral} />
+                <TargetRow label="Weekly" pnl={d.weeklyPnl} target={d.weeklyTarget} neutral={neutral} />
                 <Row
                   label="Runway"
                   value={d.daysOfRunway === null ? 'No burn' : `${d.daysOfRunway.toFixed(1)}d`}
@@ -191,8 +205,8 @@ export function CapitalBookGroup() {
                   value={clamp01(exposure.openPositions / maxPositions)}
                   color={
                     exposure.openPositions >= maxPositions
-                      ? 'var(--probex-warning)'
-                      : 'var(--probex-primary)'
+                      ? 'var(--synatra-warning)'
+                      : 'var(--synatra-primary)'
                   }
                   ariaLabel="Open positions against the concurrent maximum"
                 />
@@ -208,8 +222,8 @@ export function CapitalBookGroup() {
                   }
                   color={
                     exposure.unrealizedPnl === null ? undefined
-                      : exposure.unrealizedPnl > 0 ? 'var(--probex-positive)'
-                      : exposure.unrealizedPnl < 0 ? 'var(--probex-negative)'
+                      : exposure.unrealizedPnl > 0 ? 'var(--synatra-positive)'
+                      : exposure.unrealizedPnl < 0 ? 'var(--synatra-negative)'
                       : undefined
                   }
                   title="Aggregate unrealized P&L across open positions, from the same envelope as the count so the two cannot disagree"
@@ -245,8 +259,9 @@ export function CapitalBookGroup() {
                 label="Result"
                 size="md"
                 tone={
-                  m.totalPnl > 0 ? 'var(--probex-positive)'
-                  : m.totalPnl < 0 ? 'var(--probex-negative)'
+                  neutral ? undefined
+                  : m.totalPnl > 0 ? 'var(--synatra-positive)'
+                  : m.totalPnl < 0 ? 'var(--synatra-negative)'
                   : undefined
                 }
                 title={performance.provenance.note}
@@ -303,11 +318,12 @@ export function CapitalBookGroup() {
  * it was correct, and the reason it disappeared was that its container did,
  * not that anything was wrong with it.
  */
-function TargetRow({ label, pnl, target }: { label: string; pnl: number; target: number }) {
+function TargetRow({ label, pnl, target, neutral = false }: { label: string; pnl: number; target: number; neutral?: boolean }) {
   const hasTarget = target > 0
   const ratio = hasTarget ? pnl / target : 0
-  const met = hasTarget && pnl >= target
-  const color = pnl < 0 ? 'var(--probex-negative)' : met ? 'var(--probex-positive)' : 'var(--probex-primary)'
+  const met = hasTarget && pnl >= target && !neutral
+  const color = neutral ? 'var(--synatra-text-secondary)'
+    : pnl < 0 ? 'var(--synatra-negative)' : met ? 'var(--synatra-positive)' : 'var(--synatra-primary)'
 
   return (
     <Meter
@@ -321,11 +337,11 @@ function TargetRow({ label, pnl, target }: { label: string; pnl: number; target:
           value={
             <>
               {formatSignedCurrency(pnl)}
-              <span style={{ color: 'var(--probex-text-disabled)', fontWeight: 400 }}>
+              <span style={{ color: 'var(--synatra-text-disabled)', fontWeight: 400 }}>
                 {' / '}
                 {hasTarget ? formatCurrency(target) : '—'}
               </span>
-              {met && <span style={{ color: 'var(--probex-positive)' }}> ✓</span>}
+              {met && <span style={{ color: 'var(--synatra-positive)' }}> ✓</span>}
             </>
           }
         />
