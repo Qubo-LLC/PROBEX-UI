@@ -2,7 +2,7 @@
 //
 // Maps engine store slices → CommandCenterVM for the Overview page.
 //
-// Design contract (PROBEX_PRODUCT_SPEC.md §4, §6):
+// Design contract (SYNATRA_PRODUCT_SPEC.md §4, §6):
 //   • Each section is null until its backing endpoint has data — the page hides
 //     sections rather than rendering fake zeros.
 //   • Trading performance (PnL, trades, win rate) comes from the surface that

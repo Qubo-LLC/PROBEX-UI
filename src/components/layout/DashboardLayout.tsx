@@ -81,11 +81,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       className="flex flex-col h-screen overflow-hidden"
       // Environmental light field (Phase 1 · T6) composited as the shell's base
       // background layer: the fixed atmospheric glow paints behind all content,
-      // the solid --probex-bg is the final layer. It's a background (not an
+      // the solid --synatra-bg is the final layer. It's a background (not an
       // element), so it never intercepts pointer events. The content <main> is
       // transparent so the field shows through the content plane behind the glass
       // cards; the opaque sidebar/top-nav chassis cover it in their own regions.
-      style={{ background: 'var(--probex-lightfield), var(--probex-bg)' }}
+      style={{ background: 'var(--synatra-lightfield), var(--synatra-bg)' }}
     >
       {/* ── Top Navigation — fixed height, spans full width ───────────── */}
       <TopNavigation />
@@ -184,8 +184,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           '-translate-y-16 focus:translate-y-0 transition-all duration-150',
         )}
         style={{
-          background: 'var(--probex-primary)',
-          color:      'var(--probex-bg)',
+          background: 'var(--synatra-primary)',
+          color:      'var(--synatra-bg)',
         }}
       >
         Skip to content

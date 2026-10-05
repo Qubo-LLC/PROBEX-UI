@@ -72,7 +72,7 @@ export function DeploymentReading() {
   const cert = certaintyFromSlice(positionsSlice, 5_000)
 
   return (
-    <section aria-labelledby="pf-deploy" className="flex flex-col gap-4 py-6" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+    <section aria-labelledby="pf-deploy" className="flex flex-col gap-4 py-6" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <span className="flex items-center gap-1.5">
           <h2 id="pf-deploy" className="t-section-title">Deployment</h2>
@@ -87,7 +87,7 @@ export function DeploymentReading() {
             </PopoverText>
           </Popover>
         </span>
-        <Link href={ROUTES.POSITIONS} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>
+        <Link href={ROUTES.POSITIONS} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--synatra-primary)' }}>
           Each position and its evidence →
         </Link>
       </div>
@@ -107,9 +107,9 @@ export function DeploymentReading() {
               {formatCurrency(reading.deployed)}
             </Figure>
             <Figure label="Side split" size="md" certainty="derived" footnote={`${formatCurrency(reading.yesStake)} on YES`}>
-              <span style={{ color: 'var(--probex-yes)' }}>{reading.yes}</span>
-              <span style={{ color: 'var(--probex-text-muted)' }}> / </span>
-              <span style={{ color: 'var(--probex-no)' }}>{reading.no}</span>
+              <span style={{ color: 'var(--synatra-yes)' }}>{reading.yes}</span>
+              <span style={{ color: 'var(--synatra-text-muted)' }}> / </span>
+              <span style={{ color: 'var(--synatra-no)' }}>{reading.no}</span>
             </Figure>
             <Figure
               label="Aligned with current edge"
@@ -126,9 +126,9 @@ export function DeploymentReading() {
                 certainty="derived"
                 footnote={`best ${reading.best.assetSymbol ?? ''} · worst ${reading.worst.assetSymbol ?? ''}`}
               >
-                <span style={{ color: 'var(--probex-positive)' }}>{`${(reading.best.unrealizedPnlPct ?? 0) >= 0 ? '+' : ''}${((reading.best.unrealizedPnlPct ?? 0) * 100).toFixed(1)}%`}</span>
-                <span style={{ color: 'var(--probex-text-muted)' }}> … </span>
-                <span style={{ color: (reading.worst.unrealizedPnlPct ?? 0) < 0 ? 'var(--probex-negative)' : 'var(--probex-positive)' }}>{`${((reading.worst.unrealizedPnlPct ?? 0) * 100).toFixed(1)}%`}</span>
+                <span style={{ color: 'var(--synatra-positive)' }}>{`${(reading.best.unrealizedPnlPct ?? 0) >= 0 ? '+' : ''}${((reading.best.unrealizedPnlPct ?? 0) * 100).toFixed(1)}%`}</span>
+                <span style={{ color: 'var(--synatra-text-muted)' }}> … </span>
+                <span style={{ color: (reading.worst.unrealizedPnlPct ?? 0) < 0 ? 'var(--synatra-negative)' : 'var(--synatra-positive)' }}>{`${((reading.worst.unrealizedPnlPct ?? 0) * 100).toFixed(1)}%`}</span>
               </Figure>
             ) : (
               <Figure label="Range" size="md" certainty="absent" absentReason="No marked positions yet" />
@@ -148,13 +148,13 @@ export function DeploymentReading() {
                 {reading.assets.map((a) => (
                   <Tr key={a.key}>
                     <Td align="left" dense grow className={cert.certainty === 'stale' ? 'c-stale' : ''}>
-                      <span className="font-semibold" style={{ color: 'var(--probex-text-primary)' }}>{a.key}</span>
+                      <span className="font-semibold" style={{ color: 'var(--synatra-text-primary)' }}>{a.key}</span>
                     </Td>
                     <Td align="right" dense><span className="font-mono">{a.count}</span></Td>
                     <Td align="right" dense><span className="font-mono">{formatCurrency(a.stake)}</span></Td>
-                    <Td align="right" dense hideBelow="sm"><span className="font-mono" style={{ color: 'var(--probex-text-muted)' }}>{Math.round(a.share * 100)}%</span></Td>
+                    <Td align="right" dense hideBelow="sm"><span className="font-mono" style={{ color: 'var(--synatra-text-muted)' }}>{Math.round(a.share * 100)}%</span></Td>
                     <Td align="right" dense>
-                      <span className="font-mono font-semibold" style={{ color: a.pnl > 0 ? 'var(--probex-positive)' : a.pnl < 0 ? 'var(--probex-negative)' : undefined }}>
+                      <span className="font-mono font-semibold" style={{ color: a.pnl > 0 ? 'var(--synatra-positive)' : a.pnl < 0 ? 'var(--synatra-negative)' : undefined }}>
                         {formatSignedCurrency(a.pnl)}
                       </span>
                     </Td>

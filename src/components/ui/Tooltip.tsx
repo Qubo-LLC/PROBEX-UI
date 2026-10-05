@@ -41,13 +41,13 @@ export function Tooltip({
           sideOffset={6}
           className="z-[60] max-w-xs px-2.5 py-1.5 rounded-md text-2xs font-medium shadow-lg animate-fade-in-up"
           style={{
-            background: 'var(--probex-surface-2)',
-            border:     '1px solid var(--probex-border-default)',
-            color:      'var(--probex-text-primary)',
+            background: 'var(--synatra-surface-2)',
+            border:     '1px solid var(--synatra-border-default)',
+            color:      'var(--synatra-text-primary)',
           }}
         >
           {content}
-          <RadixTooltip.Arrow style={{ fill: 'var(--probex-surface-2)' }} />
+          <RadixTooltip.Arrow style={{ fill: 'var(--synatra-surface-2)' }} />
         </RadixTooltip.Content>
       </RadixTooltip.Portal>
     </RadixTooltip.Root>

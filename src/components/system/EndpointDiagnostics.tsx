@@ -97,14 +97,14 @@ export function EndpointDiagnostics() {
       {paused.length > 0 && (
         <div
           className="flex flex-col gap-1 px-3 py-2 rounded-md"
-          style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}
+          style={{ background: 'var(--synatra-surface-2)', border: '1px solid var(--synatra-border)' }}
           role="status"
         >
-          <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-warning)' }}>
+          <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--synatra-warning)' }}>
             Requests paused
           </span>
           {paused.map((c) => (
-            <span key={c.key} className="text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+            <span key={c.key} className="text-2xs tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>
               {c.key} — stopped responding {c.consecutiveFailures}× in a row; retrying in {c.cooldownSeconds}s
             </span>
           ))}
@@ -112,7 +112,7 @@ export function EndpointDiagnostics() {
       )}
 
       {records.length === 0 ? (
-        <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-text-disabled)' }}>
           No requests recorded yet this session.
         </p>
       ) : (
@@ -155,9 +155,9 @@ function EndpointRow({ record: r }: { record: EndpointRecord }) {
   // weight rather than by a ring. A degraded rate is bold as well as coloured,
   // so it survives greyscale.
   const rateColor =
-    rate >= 0.95 ? 'var(--probex-text-secondary)'
-    : rate >= 0.8 ? 'var(--probex-warning)'
-    : 'var(--probex-negative)'
+    rate >= 0.95 ? 'var(--synatra-text-secondary)'
+    : rate >= 0.8 ? 'var(--synatra-warning)'
+    : 'var(--synatra-negative)'
 
   const latency = Math.round(r.lastDurationMs)
   const slow = latency >= 1000
@@ -172,16 +172,16 @@ function EndpointRow({ record: r }: { record: EndpointRecord }) {
         >
           <span
             className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-            style={{ background: failing ? 'var(--probex-negative)' : 'var(--probex-positive)' }}
+            style={{ background: failing ? 'var(--synatra-negative)' : 'var(--synatra-positive)' }}
             aria-hidden="true"
           />
-          <span className="truncate font-medium" style={{ color: 'var(--probex-text-secondary)' }}>
+          <span className="truncate font-medium" style={{ color: 'var(--synatra-text-secondary)' }}>
             {r.endpoint || '/'}
           </span>
         </span>
       </Td>
       <Td align="left">
-        <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-disabled)' }}>
+        <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--synatra-text-disabled)' }}>
           {r.method}
         </span>
       </Td>
@@ -197,7 +197,7 @@ function EndpointRow({ record: r }: { record: EndpointRecord }) {
         <span
           className="tabular-nums"
           style={{
-            color: slow ? 'var(--probex-negative)' : sluggish ? 'var(--probex-warning)' : 'var(--probex-text-disabled)',
+            color: slow ? 'var(--synatra-negative)' : sluggish ? 'var(--synatra-warning)' : 'var(--synatra-text-disabled)',
             fontWeight: slow ? 700 : sluggish ? 600 : 500,
           }}
           {...(slow ? { title: 'Responding slowly' } : {})}
@@ -206,14 +206,14 @@ function EndpointRow({ record: r }: { record: EndpointRecord }) {
         </span>
       </Td>
       <Td align="right">
-        <span className="tabular-nums" style={{ color: 'var(--probex-text-disabled)' }}>
+        <span className="tabular-nums" style={{ color: 'var(--synatra-text-disabled)' }}>
           {r.count.toLocaleString()}
         </span>
       </Td>
       <Td align="right">
         <span
           className="tabular-nums"
-          style={{ color: r.errorCount > 0 ? 'var(--probex-negative)' : 'var(--probex-text-disabled)' }}
+          style={{ color: r.errorCount > 0 ? 'var(--synatra-negative)' : 'var(--synatra-text-disabled)' }}
         >
           {r.errorCount.toLocaleString()}
         </span>
@@ -235,7 +235,7 @@ function SortButton({
       onClick={() => onSort(k)}
       aria-pressed={active}
       className="inline-flex items-center gap-1 cursor-pointer"
-      style={{ color: active ? 'var(--probex-primary)' : 'inherit' }}
+      style={{ color: active ? 'var(--synatra-primary)' : 'inherit' }}
     >
       {label}
       <span aria-hidden="true" style={{ opacity: active ? 1 : 0.3 }}>↓</span>

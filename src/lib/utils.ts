@@ -188,18 +188,18 @@ export function formatBias(bias: Bias): string {
 /** Returns the CSS color variable name for a bias value. */
 export function biasColorVar(bias: Bias): string {
   switch (bias) {
-    case 'bullish': return 'var(--probex-positive)'
-    case 'bearish': return 'var(--probex-negative)'
-    case 'neutral': return 'var(--probex-warning)'
+    case 'bullish': return 'var(--synatra-positive)'
+    case 'bearish': return 'var(--synatra-negative)'
+    case 'neutral': return 'var(--synatra-warning)'
   }
 }
 
 /** Returns the CSS color variable name for a sentiment value. */
 export function sentimentColorVar(sentiment: SentimentBias): string {
   switch (sentiment) {
-    case 'bullish': return 'var(--probex-positive)'
-    case 'bearish': return 'var(--probex-negative)'
-    case 'neutral': return 'var(--probex-warning)'
+    case 'bullish': return 'var(--synatra-positive)'
+    case 'bearish': return 'var(--synatra-negative)'
+    case 'neutral': return 'var(--synatra-warning)'
   }
 }
 
@@ -223,9 +223,9 @@ export function formatSignal(signal: SignalLevel): string {
 
 /** Returns color var for consensus score (0–1). */
 export function consensusScoreColorVar(score: number): string {
-  if (score >= 0.75) return 'var(--probex-consensus-high)'
-  if (score >= 0.50) return 'var(--probex-consensus-med)'
-  return 'var(--probex-consensus-low)'
+  if (score >= 0.75) return 'var(--synatra-consensus-high)'
+  if (score >= 0.50) return 'var(--synatra-consensus-med)'
+  return 'var(--synatra-consensus-low)'
 }
 
 /** Themed color var for a YES probability (0–1). Display bands, not trading logic. */
@@ -234,16 +234,16 @@ export function consensusScoreColorVar(score: number): string {
  * FINANCIAL-DIRECTION band (positive / warning / negative), which is the wrong
  * band for a YES or NO price: a cheap YES is not a loss. Its three former
  * callers — MarketCard (grid and list) and, formerly, EngineThesisPanel — now use
- * --probex-yes / --probex-no.
+ * --synatra-yes / --synatra-no.
  *
  * Kept, not deleted, because mapping a probability to a confidence tone is a
  * legitimate operation for a surface that is genuinely about likelihood rather
  * than about a side. It has no callers today.
  */
 export function probabilityColorVar(prob: number): string {
-  if (prob >= 0.65) return 'var(--probex-positive)'
-  if (prob >= 0.45) return 'var(--probex-warning)'
-  return 'var(--probex-negative)'
+  if (prob >= 0.65) return 'var(--synatra-positive)'
+  if (prob >= 0.45) return 'var(--synatra-warning)'
+  return 'var(--synatra-negative)'
 }
 
 // ─── Async result helpers ──────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 'use client'
 
 // useEndpointAvailability — the V3 availability switchboard
-// (PROBEX_V3_IMPLEMENTATION_BLUEPRINT §3, Phase 0).
+// (SYNATRA_V3_IMPLEMENTATION_BLUEPRINT §3, Phase 0).
 //
 // Reads the endpoint registry (the untouched source of truth in
 // lib/api/endpoints.ts) and answers a single static question for any widget:

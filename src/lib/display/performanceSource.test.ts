@@ -19,6 +19,8 @@ function paper(over: Partial<PaperStats['paperTrading']> = {}): PaperStats {
       ...over,
     },
     timestamp: 0,
+    integrity: null,
+    session: null,
   }
 }
 

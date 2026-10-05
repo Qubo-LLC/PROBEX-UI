@@ -72,7 +72,7 @@ export function PerformanceAnalytics() {
         {...(confirmedAt !== undefined ? { lastConfirmedAt: confirmedAt } : {})}
         data={drawdownData}
         variant="area"
-        color="var(--probex-negative)"
+        color="var(--synatra-negative)"
         yTickFormatter={(v) => `${v.toFixed(0)}%`}
         valueFormatter={(v) => `${v.toFixed(1)}%`}
       />
@@ -85,7 +85,7 @@ export function PerformanceAnalytics() {
         {...(confirmedAt !== undefined ? { lastConfirmedAt: confirmedAt } : {})}
         data={growthData}
         variant="line"
-        color="var(--probex-primary)"
+        color="var(--synatra-primary)"
         yTickFormatter={(v) => formatCurrency(v, true)}
         valueFormatter={(v) => formatCurrency(v)}
       />

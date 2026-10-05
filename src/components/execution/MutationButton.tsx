@@ -38,14 +38,14 @@ interface MutationButtonProps {
 }
 
 const TONE_STYLE: Record<Tone, React.CSSProperties> = {
-  // --probex-negative is tuned to be legible AS TEXT on a dark surface, which
+  // --synatra-negative is tuned to be legible AS TEXT on a dark surface, which
   // makes it too light to sit UNDER white text: #EF4444 with #fff gives 3.76:1,
   // below AA. That put the least readable label in the product on the Emergency
-  // Stop button. --probex-negative-strong is the same hue darkened for use as a
+  // Stop button. --synatra-negative-strong is the same hue darkened for use as a
   // fill; white on it clears 4.5:1 in every theme.
-  danger:  { background: 'var(--probex-negative-strong)', color: '#fff', border: '1px solid transparent' },
-  primary: { background: 'var(--probex-primary)', color: 'var(--probex-bg)', border: '1px solid transparent' },
-  neutral: { background: 'transparent', color: 'var(--probex-text-secondary)', border: '1px solid var(--probex-border-default)' },
+  danger:  { background: 'var(--synatra-negative-strong)', color: '#fff', border: '1px solid transparent' },
+  primary: { background: 'var(--synatra-primary)', color: 'var(--synatra-bg)', border: '1px solid transparent' },
+  neutral: { background: 'transparent', color: 'var(--synatra-text-secondary)', border: '1px solid var(--synatra-border-default)' },
 }
 
 export function MutationButton({
@@ -110,23 +110,23 @@ export function MutationButton({
               // A gate block is a safety statement, not a form hint, so it is
               // legible rather than recessive.
               color: blockedReason !== null
-                ? 'var(--probex-warning)'
-                : 'var(--probex-text-disabled)',
+                ? 'var(--synatra-warning)'
+                : 'var(--synatra-text-disabled)',
             }}
           >
             {unavailableReason}
           </span>
         )}
         {state.status === 'success' && (
-          <span className="text-2xs" style={{ color: 'var(--probex-positive)' }}>
+          <span className="text-2xs" style={{ color: 'var(--synatra-positive)' }}>
             ✓ {state.result?.message ?? 'Engine accepted the request'}
-            {endpoint && <span style={{ color: 'var(--probex-text-disabled)' }}> · {endpoint}</span>}
+            {endpoint && <span style={{ color: 'var(--synatra-text-disabled)' }}> · {endpoint}</span>}
           </span>
         )}
         {state.status === 'error' && (
-          <span className="text-2xs" style={{ color: 'var(--probex-negative)' }}>
+          <span className="text-2xs" style={{ color: 'var(--synatra-negative)' }}>
             ✕ {state.error?.message ?? 'Request failed'}
-            {endpoint && <span style={{ color: 'var(--probex-text-disabled)' }}> · {endpoint}</span>}
+            {endpoint && <span style={{ color: 'var(--synatra-text-disabled)' }}> · {endpoint}</span>}
           </span>
         )}
       </div>

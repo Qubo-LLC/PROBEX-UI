@@ -46,17 +46,17 @@ import { MARKET_DETAIL_PATH } from '@/config/constants'
 // ─── Severity (the accent rail) ───────────────────────────────────────────────
 
 const SEVERITY_COLOR: Record<string, string> = {
-  info:     'var(--probex-primary)',
-  warning:  'var(--probex-warning)',
-  warn:     'var(--probex-warning)',
-  error:    'var(--probex-negative)',
-  critical: 'var(--probex-negative)',
-  fatal:    'var(--probex-negative)',
-  success:  'var(--probex-positive)',
+  info:     'var(--synatra-primary)',
+  warning:  'var(--synatra-warning)',
+  warn:     'var(--synatra-warning)',
+  error:    'var(--synatra-negative)',
+  critical: 'var(--synatra-negative)',
+  fatal:    'var(--synatra-negative)',
+  success:  'var(--synatra-positive)',
 }
 
 export function severityColor(s: string | null): string {
-  return (s && SEVERITY_COLOR[s.toLowerCase()]) || 'var(--probex-text-muted)'
+  return (s && SEVERITY_COLOR[s.toLowerCase()]) || 'var(--synatra-text-muted)'
 }
 
 // ─── Category (the glyph) ─────────────────────────────────────────────────────
@@ -73,25 +73,25 @@ const G = (d: string) => (
 )
 
 const CATEGORY: Record<string, CategoryStyle> = {
-  edge:          { label: 'Edge',       color: 'var(--probex-primary)',   glyph: G('m13 2-10 12h9l-1 8 10-12h-9z') },
-  // Not --probex-positive: a trade is not a GAIN. Execution and financial
+  edge:          { label: 'Edge',       color: 'var(--synatra-primary)',   glyph: G('m13 2-10 12h9l-1 8 10-12h-9z') },
+  // Not --synatra-positive: a trade is not a GAIN. Execution and financial
   // direction are different bands; valence is carried by the severity rail.
-  trade:         { label: 'Trade',      color: 'var(--probex-secondary)', glyph: G('M3 17 9 11l4 4 8-8M21 7v6M21 7h-6') },
-  position:      { label: 'Position',   color: 'var(--probex-secondary)', glyph: G('M4 6h16M4 12h16M4 18h10') },
-  // Not --probex-yes — the MARKET-SIDE colour has nothing to do with resolution.
-  resolution:    { label: 'Resolution', color: 'var(--probex-text-secondary)', glyph: G('M20 6 9 17l-5-5') },
-  survival:      { label: 'Survival',   color: 'var(--probex-warning)',   glyph: G('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10') },
+  trade:         { label: 'Trade',      color: 'var(--synatra-secondary)', glyph: G('M3 17 9 11l4 4 8-8M21 7v6M21 7h-6') },
+  position:      { label: 'Position',   color: 'var(--synatra-secondary)', glyph: G('M4 6h16M4 12h16M4 18h10') },
+  // Not --synatra-yes — the MARKET-SIDE colour has nothing to do with resolution.
+  resolution:    { label: 'Resolution', color: 'var(--synatra-text-secondary)', glyph: G('M20 6 9 17l-5-5') },
+  survival:      { label: 'Survival',   color: 'var(--synatra-warning)',   glyph: G('M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10') },
   // A health event is as often a probe FAILING as recovering: neutral identity.
-  health:        { label: 'Health',     color: 'var(--probex-text-secondary)', glyph: G('M22 12h-4l-3 9L9 3l-3 9H2') },
-  error:         { label: 'Error',      color: 'var(--probex-negative)',  glyph: G('M12 8v5M12 17h.01') },
-  paper_trading: { label: 'Paper',      color: 'var(--probex-text-muted)', glyph: G('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z') },
+  health:        { label: 'Health',     color: 'var(--synatra-text-secondary)', glyph: G('M22 12h-4l-3 9L9 3l-3 9H2') },
+  error:         { label: 'Error',      color: 'var(--synatra-negative)',  glyph: G('M12 8v5M12 17h.01') },
+  paper_trading: { label: 'Paper',      color: 'var(--synatra-text-muted)', glyph: G('M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z') },
 }
 
 export function categoryFor(type: string): CategoryStyle {
   return (
     CATEGORY[type.toLowerCase()] ?? {
       label: type,
-      color: 'var(--probex-text-muted)',
+      color: 'var(--synatra-text-muted)',
       glyph: G('M12 12h.01'),
     }
   )
@@ -113,7 +113,7 @@ function DetailsButton({ className = '', ...props }: { className?: string } & Po
       aria-label="Event record — identifiers and raw metadata"
       title="Event record"
       className={`focus-ring inline-flex items-center justify-center w-6 h-6 rounded-full cursor-pointer flex-shrink-0 ${className}`}
-      style={{ color: 'var(--probex-text-disabled)' }}
+      style={{ color: 'var(--synatra-text-disabled)' }}
       {...props}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -127,7 +127,7 @@ function RecordLine({ label, value, mono = true }: { label: string; value: strin
   return (
     <div className="flex flex-col gap-0.5 min-w-0">
       <span className="t-label">{label}</span>
-      <span className={`text-2xs break-all ${mono ? 'font-mono' : ''}`} style={{ color: 'var(--probex-text-secondary)' }}>{value}</span>
+      <span className={`text-2xs break-all ${mono ? 'font-mono' : ''}`} style={{ color: 'var(--synatra-text-secondary)' }}>{value}</span>
     </div>
   )
 }
@@ -175,7 +175,7 @@ function ContextPiece({ f }: { f: ContextFragment }) {
   if (f.kind === 'direction') {
     const yes = f.text === 'YES'
     return (
-      <span className="font-black tracking-widest" style={{ color: yes ? 'var(--probex-yes)' : f.text === 'NO' ? 'var(--probex-no)' : undefined }}>
+      <span className="font-black tracking-widest" style={{ color: yes ? 'var(--synatra-yes)' : f.text === 'NO' ? 'var(--synatra-no)' : undefined }}>
         {f.text}
       </span>
     )
@@ -185,7 +185,7 @@ function ContextPiece({ f }: { f: ContextFragment }) {
       <Link
         href={MARKET_DETAIL_PATH(f.marketId)}
         className="focus-ring rounded-sm font-medium"
-        style={{ color: 'var(--probex-text-secondary)', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}
+        style={{ color: 'var(--synatra-text-secondary)', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}
         title={
           f.derivedFrom !== undefined
             ? `${f.text} — named from ${SOURCE_NAME[f.derivedFrom]}; the event itself carries only the id. Opens the market's recorded history.`
@@ -230,7 +230,7 @@ export function EventRowItem({
     <div
       className={`flex items-start gap-2.5 text-xs ${compact ? 'py-2 pr-1' : 'py-2.5 pr-1'} pl-2.5${arriving ? ' event-arrive' : ''}`}
       style={{
-        borderTop: '1px solid var(--probex-border)',
+        borderTop: '1px solid var(--synatra-border)',
         // The rail is the row's ONE state carrier and it speaks only when the
         // engine flagged the event. Transparent otherwise, so alerting rows
         // stand out from the stream instead of every row wearing a colour.
@@ -252,7 +252,7 @@ export function EventRowItem({
 
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
         <div className="flex items-baseline gap-2 min-w-0">
-          <span className="font-semibold truncate" style={{ color: 'var(--probex-text-primary)' }}>{headline}</span>
+          <span className="font-semibold truncate" style={{ color: 'var(--synatra-text-primary)' }}>{headline}</span>
           {alerting && row.severity !== null && (
             <span className="t-label flex-shrink-0" style={{ color: severityColor(row.severity) }}>{row.severity}</span>
           )}
@@ -278,7 +278,7 @@ export function EventRowItem({
           <span className="t-helper flex items-baseline gap-x-1.5 flex-wrap min-w-0">
             {context.map((f, i) => (
               <span key={i} className="inline-flex items-baseline gap-x-1.5 min-w-0">
-                {i > 0 && <span aria-hidden="true" style={{ color: 'var(--probex-text-disabled)' }}>·</span>}
+                {i > 0 && <span aria-hidden="true" style={{ color: 'var(--synatra-text-disabled)' }}>·</span>}
                 <ContextPiece f={f} />
               </span>
             ))}
@@ -334,7 +334,7 @@ export function EventStream({
     // A list, so a screen reader can report how many rows there are and step
     // through them. Rows separate with hairlines (the ledger rule) rather than
     // each sitting in its own bordered card.
-    <ul className="flex flex-col list-none m-0 p-0" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+    <ul className="flex flex-col list-none m-0 p-0" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
       {rows.map((row) => (
         <li key={row.id}>
           <EventRowItem row={row} compact={compact} arriving={arriving.has(row.id)} lookup={lookup} hideMarket={hideMarket} />

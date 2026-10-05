@@ -66,7 +66,7 @@ import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 /** The rule between two sections. A hairline and vertical space — the entire
  *  replacement for a bordered panel, and the reason five of them could go. */
 function Rule() {
-  return <hr className="my-7 border-0" style={{ borderTop: '1px solid var(--probex-border)' }} />
+  return <hr className="my-7 border-0" style={{ borderTop: '1px solid var(--synatra-border)' }} />
 }
 
 export function SystemConsole({ embedded = false }: EmbeddableProps = {}) {
@@ -135,7 +135,7 @@ export function SystemConsole({ embedded = false }: EmbeddableProps = {}) {
             aria-expanded={showDiagnostics}
             className="focus-ring flex items-center gap-2 cursor-pointer text-left"
           >
-            <span aria-hidden="true" style={{ color: 'var(--probex-text-muted)' }}>
+            <span aria-hidden="true" style={{ color: 'var(--synatra-text-muted)' }}>
               {showDiagnostics ? '▾' : '▸'}
             </span>
             <span className="t-section-title">Endpoint diagnostics</span>

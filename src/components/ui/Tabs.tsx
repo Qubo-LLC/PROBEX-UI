@@ -66,7 +66,7 @@ export function Tabs({ tabs, param = 'view', label }: TabsProps) {
       role="tablist"
       aria-label={label}
       className="flex items-center gap-0.5 overflow-x-auto"
-      style={{ borderBottom: '1px solid var(--probex-border)' }}
+      style={{ borderBottom: '1px solid var(--synatra-border)' }}
     >
       {tabs.map((tab) => {
         const isActive = tab.id === active
@@ -80,15 +80,15 @@ export function Tabs({ tabs, param = 'view', label }: TabsProps) {
               'relative px-3 py-2 text-xs font-semibold whitespace-nowrap cursor-pointer',
               'transition-colors duration-150 focus-ring flex items-center gap-1.5',
             )}
-            style={{ color: isActive ? 'var(--probex-text-primary)' : 'var(--probex-text-muted)' }}
+            style={{ color: isActive ? 'var(--synatra-text-primary)' : 'var(--synatra-text-muted)' }}
           >
             {tab.label}
             {tab.count !== undefined && tab.count > 0 && (
               <span
                 className="text-2xs tabular-nums px-1.5 py-0.5 rounded"
                 style={{
-                  background: 'var(--probex-surface-2)',
-                  color: isActive ? 'var(--probex-text-secondary)' : 'var(--probex-text-disabled)',
+                  background: 'var(--synatra-surface-2)',
+                  color: isActive ? 'var(--synatra-text-secondary)' : 'var(--synatra-text-disabled)',
                 }}
               >
                 {tab.count}
@@ -97,7 +97,7 @@ export function Tabs({ tabs, param = 'view', label }: TabsProps) {
             {isActive && (
               <span
                 className="absolute left-0 right-0 -bottom-px h-0.5"
-                style={{ background: 'var(--probex-primary)' }}
+                style={{ background: 'var(--synatra-primary)' }}
                 aria-hidden="true"
               />
             )}

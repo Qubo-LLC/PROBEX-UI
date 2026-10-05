@@ -90,11 +90,11 @@ interface LiveChartProps {
 // charts share this component and their formatters range from 34% to -$1.2K
 // to $79178, so no single constant is right for all of them.
 // Axis ticks are numbers, so they are set in the mono face with the rest of
-// the product's numerics, at the 11px floor, in --probex-text-muted rather
-// than --probex-text-disabled: an axis label is the scale, not a disabled
+// the product's numerics, at the 11px floor, in --synatra-text-muted rather
+// than --synatra-text-disabled: an axis label is the scale, not a disabled
 // control, and disabled is deliberately near-invisible.
 const AXIS_TICK = {
-  fill: 'var(--probex-text-muted)',
+  fill: 'var(--synatra-text-muted)',
   fontSize: 11,
   fontFamily: 'var(--font-mono)',
 } as const
@@ -137,7 +137,7 @@ function axisGutter(
 
 export function LiveChart({
   title, subtitle, source, provenance = 'live', data, variant = 'area', height = 200, bare = false,
-  color = 'var(--probex-primary)',
+  color = 'var(--synatra-primary)',
   yTickFormatter = (v) => String(v),
   valueFormatter = (v) => String(v),
   emptyTitle = 'No history yet',
@@ -187,7 +187,7 @@ export function LiveChart({
       {isWindowed && (
         <span
           className="absolute top-0 right-0 text-2xs tabular-nums z-10 px-1.5 py-0.5 rounded"
-          style={{ color: 'var(--probex-text-disabled)', background: 'color-mix(in srgb, var(--probex-surface) 70%, transparent)' }}
+          style={{ color: 'var(--synatra-text-disabled)', background: 'color-mix(in srgb, var(--synatra-surface) 70%, transparent)' }}
         >
           last {windowSize} of {data.length}
         </span>
@@ -206,14 +206,14 @@ export function LiveChart({
               </linearGradient>
             </defs>
           )}
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--probex-chart-grid)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--synatra-chart-grid)" vertical={false} />
           <XAxis dataKey="tick" tick={AXIS_TICK} tickLine={false} axisLine={false} minTickGap={24} />
           <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} width={axisWidth} tickFormatter={yTickFormatter} {...(yDomain !== undefined ? { domain: yDomain } : {})} />
           <Tooltip
             // A crosshair, so the reading is tied to a position rather than
             // floating near the pointer. Replaces the default Recharts cursor,
             // which was a translucent grey band that read as a selection.
-            cursor={{ stroke: 'var(--probex-border-strong)', strokeWidth: 1, strokeDasharray: '4 4' }}
+            cursor={{ stroke: 'var(--synatra-border-strong)', strokeWidth: 1, strokeDasharray: '4 4' }}
             content={<ChartTooltip seriesLabel={title} format={valueFormatter} />}
             isAnimationActive={false}
           />
@@ -226,14 +226,14 @@ export function LiveChart({
               // point is drawn plain. See the header note on why the series
               // itself is not animated.
               dot={<NewestDot color={color} lastTick={latest?.tick} />}
-              activeDot={{ r: 3, fill: color, stroke: 'var(--probex-bg)', strokeWidth: 1.5 }}
+              activeDot={{ r: 3, fill: color, stroke: 'var(--synatra-bg)', strokeWidth: 1.5 }}
             />
           ) : (
             <Line
               type="monotone" dataKey="value" stroke={color} strokeWidth={1.5}
               isAnimationActive={false}
               dot={<NewestDot color={color} lastTick={latest?.tick} />}
-              activeDot={{ r: 3, fill: color, stroke: 'var(--probex-bg)', strokeWidth: 1.5 }}
+              activeDot={{ r: 3, fill: color, stroke: 'var(--synatra-bg)', strokeWidth: 1.5 }}
             />
           )}
         </ComposedChart>
@@ -284,7 +284,7 @@ function NewestDot(props: { color: string; lastTick: string | number | undefined
   return (
     <g>
       <circle cx={cx} cy={cy} r={4.5} fill={color} opacity={0.18} />
-      <circle cx={cx} cy={cy} r={2.25} fill={color} stroke="var(--probex-bg)" strokeWidth={1} />
+      <circle cx={cx} cy={cy} r={2.25} fill={color} stroke="var(--synatra-bg)" strokeWidth={1} />
     </g>
   )
 }
@@ -313,20 +313,20 @@ function ChartTooltip(props: {
       className="flex flex-col gap-0.5 px-2.5 py-2 rounded-md"
       style={{
         // The overlay plane, not the hover plane. A tooltip that sits on
-        // --probex-surface-2 is the same colour as a hovered table row.
-        background: 'var(--probex-surface-overlay)',
-        border: '1px solid var(--probex-border-strong)',
-        boxShadow: 'var(--probex-elev-4)',
+        // --synatra-surface-2 is the same colour as a hovered table row.
+        background: 'var(--synatra-surface-overlay)',
+        border: '1px solid var(--synatra-border-strong)',
+        boxShadow: 'var(--synatra-elev-4)',
       }}
     >
       <span
         className="text-sm font-bold tabular-nums leading-none"
-        style={{ color: 'var(--probex-text-primary)', fontFamily: 'var(--font-mono)' }}
+        style={{ color: 'var(--synatra-text-primary)', fontFamily: 'var(--font-mono)' }}
       >
         {format(point.value)}
       </span>
       <span className="t-metadata">{String(point.tick)}</span>
-      <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>{seriesLabel}</span>
+      <span className="text-2xs" style={{ color: 'var(--synatra-text-disabled)' }}>{seriesLabel}</span>
     </div>
   )
 }

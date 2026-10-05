@@ -29,7 +29,7 @@ export function EngineAttention() {
   if (vm.attention.length === 0) return null
 
   const worst = vm.attention.some((a) => a.severity === 'critical') ? 'critical' : 'warning'
-  const color = worst === 'critical' ? 'var(--probex-negative)' : 'var(--probex-warning)'
+  const color = worst === 'critical' ? 'var(--synatra-negative)' : 'var(--synatra-warning)'
 
   return (
     <section
@@ -37,7 +37,7 @@ export function EngineAttention() {
       aria-label="Engine attention"
       className="rounded-lg px-4 py-3 flex flex-col gap-2"
       style={{
-        background: `color-mix(in srgb, ${color} 7%, var(--probex-surface))`,
+        background: `color-mix(in srgb, ${color} 7%, var(--synatra-surface))`,
         border: `1px solid color-mix(in srgb, ${color} 26%, transparent)`,
       }}
     >
@@ -57,7 +57,7 @@ export function EngineAttention() {
         <Link
           href={ROUTES.SYSTEM}
           className="focus-ring ml-auto text-2xs font-semibold no-underline whitespace-nowrap"
-          style={{ color: 'var(--probex-text-muted)' }}
+          style={{ color: 'var(--synatra-text-muted)' }}
         >
           System console →
         </Link>
@@ -73,12 +73,14 @@ export function EngineAttention() {
 }
 
 function AttentionRow({ item }: { item: AttentionItem }) {
-  const color = item.severity === 'critical' ? 'var(--probex-negative)' : 'var(--probex-warning)'
+  const color = item.severity === 'critical' ? 'var(--synatra-negative)' : 'var(--synatra-warning)'
   return (
-    // The engine's own words are kept — on the element, not in the layout.
-    // An operator who wants the probe's exact reading hovers or opens System;
-    // one who wants to know whether anything is wrong reads the line.
-    <li className="flex items-baseline gap-2 flex-wrap" {...(item.detail ? { title: item.detail } : {})}>
+    // The engine's own words are shown IN the layout (remediation phase 2).
+    // They used to live only in a hover `title`, so the banner said WHAT had
+    // failed ("api_access") but not WHY ("Market data stale (…s old, 0
+    // markets cached)") — and the why is the part that explains Holding, the
+    // empty market list and the frozen figures below it.
+    <li className="flex items-baseline gap-2 flex-wrap">
       <span
         className="w-1 h-1 rounded-full inline-block flex-shrink-0 translate-y-[-2px]"
         style={{ background: color }}
@@ -87,6 +89,11 @@ function AttentionRow({ item }: { item: AttentionItem }) {
       <span className="text-xs font-semibold" style={{ color }}>
         {item.message}
       </span>
+      {item.detail && (
+        <span className="font-mono text-2xs break-all" style={{ color: 'var(--synatra-text-secondary)' }}>
+          {item.detail}
+        </span>
+      )}
     </li>
   )
 }

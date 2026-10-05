@@ -20,8 +20,8 @@ import { formatEdgePct } from '@/lib/display/engine'
 import { formatRuntime } from '@/lib/display/positionDisplay'
 import { ROUTES } from '@/config/constants'
 
-const YES = 'var(--probex-yes)'
-const NO  = 'var(--probex-no)'
+const YES = 'var(--synatra-yes)'
+const NO  = 'var(--synatra-no)'
 
 interface MarketBookProps {
   book: Book | null
@@ -31,7 +31,7 @@ interface MarketBookProps {
 
 export function MarketBook({ book, ledger, positions }: MarketBookProps) {
   return (
-    <section aria-labelledby="md-book" className="flex flex-col gap-3 pt-6" style={{ borderTop: '1px solid var(--probex-border)' }}>
+    <section aria-labelledby="md-book" className="flex flex-col gap-3 pt-6" style={{ borderTop: '1px solid var(--synatra-border)' }}>
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <span className="flex items-baseline gap-2 flex-wrap">
           <h2 id="md-book" className="t-section-title">The book on this market</h2>
@@ -39,7 +39,7 @@ export function MarketBook({ book, ledger, positions }: MarketBookProps) {
         </span>
         <span className="flex items-baseline gap-3">
           <span className="t-metadata">/api/positions · /api/trades/ledger</span>
-          <Link href={ROUTES.POSITIONS} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>
+          <Link href={ROUTES.POSITIONS} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--synatra-primary)' }}>
             Positions →
           </Link>
         </span>
@@ -54,14 +54,14 @@ export function MarketBook({ book, ledger, positions }: MarketBookProps) {
       ) : book.open === null && book.settled.length === 0 ? (
         <p className="t-description">No open position and no settled trade on this market in the engine’s records.</p>
       ) : (
-        <div className="flex flex-col" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+        <div className="flex flex-col" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
           {book.open !== null && (
             <Row
               accent={book.open.side === 'yes' ? YES : NO}
               side={book.open.side}
               headline="Open position"
               result={book.open.unrealizedPnl !== null ? `${formatSignedCurrency(book.open.unrealizedPnl)} unrealized` : 'unrealized P&L not reported'}
-              resultTone={book.open.unrealizedPnl === null ? undefined : book.open.unrealizedPnl >= 0 ? 'var(--probex-positive)' : 'var(--probex-negative)'}
+              resultTone={book.open.unrealizedPnl === null ? undefined : book.open.unrealizedPnl >= 0 ? 'var(--synatra-positive)' : 'var(--synatra-negative)'}
               facts={[
                 ['Stake', book.open.costBasis !== null ? formatCurrency(book.open.costBasis) : '—'],
                 ['Entry', book.open.entryPrice !== null ? `${book.open.entryPrice.toFixed(1)}¢` : '—'],
@@ -75,11 +75,11 @@ export function MarketBook({ book, ledger, positions }: MarketBookProps) {
           {book.settled.map((t) => (
             <Row
               key={`${t.openedAt}-${t.closedAt}`}
-              accent={t.won ? 'var(--probex-positive)' : 'var(--probex-negative)'}
+              accent={t.won ? 'var(--synatra-positive)' : 'var(--synatra-negative)'}
               side={t.direction}
               headline={t.won ? 'Settled · won' : 'Settled · lost'}
               result={formatSignedCurrency(t.pnl)}
-              resultTone={t.won ? 'var(--probex-positive)' : 'var(--probex-negative)'}
+              resultTone={t.won ? 'var(--synatra-positive)' : 'var(--synatra-negative)'}
               facts={[
                 ['Stake', formatCurrency(t.size)],
                 ['Entry → exit', `${t.entryPrice.toFixed(1)}¢ → ${t.exitPrice !== null ? `${t.exitPrice.toFixed(1)}¢` : 'resolved'}`],
@@ -106,17 +106,17 @@ function Row({ accent, side, headline, result, resultTone, facts }: {
 }) {
   const isYes = side.toLowerCase() === 'yes'
   return (
-    <div className="flex flex-col gap-2 py-2.5 pl-2.5 pr-1" style={{ borderTop: '1px solid var(--probex-border)', borderLeft: `2.5px solid ${accent}` }}>
+    <div className="flex flex-col gap-2 py-2.5 pl-2.5 pr-1" style={{ borderTop: '1px solid var(--synatra-border)', borderLeft: `2.5px solid ${accent}` }}>
       <div className="flex items-baseline gap-2 flex-wrap text-xs">
         <span className="text-2xs font-black uppercase tracking-widest" style={{ color: isYes ? YES : NO }}>{side}</span>
-        <span className="font-semibold" style={{ color: 'var(--probex-text-primary)' }}>{headline}</span>
-        <span className="font-mono tabular-nums ml-auto" style={{ color: resultTone ?? 'var(--probex-text-secondary)' }}>{result}</span>
+        <span className="font-semibold" style={{ color: 'var(--synatra-text-primary)' }}>{headline}</span>
+        <span className="font-mono tabular-nums ml-auto" style={{ color: resultTone ?? 'var(--synatra-text-secondary)' }}>{result}</span>
       </div>
       <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-1.5 m-0">
         {facts.map(([label, value]) => (
           <div key={label} className="flex flex-col gap-0.5 min-w-0">
             <dt className="t-label truncate">{label}</dt>
-            <dd className="m-0 font-mono text-xs tabular-nums truncate" style={{ color: 'var(--probex-text-secondary)' }}>{value}</dd>
+            <dd className="m-0 font-mono text-xs tabular-nums truncate" style={{ color: 'var(--synatra-text-secondary)' }}>{value}</dd>
           </div>
         ))}
       </dl>

@@ -48,19 +48,19 @@ export function ErrorState({
       {/* Icon */}
       <div
         className="w-16 h-16 rounded-2xl flex items-center justify-center"
-        style={{ background: 'var(--probex-negative-dim)', border: '1px solid var(--probex-negative-border)' }}
+        style={{ background: 'var(--synatra-negative-dim)', border: '1px solid var(--synatra-negative-border)' }}
         aria-hidden="true"
       >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--probex-negative)' }}>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--synatra-negative)' }}>
           <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
       </div>
 
       <div className="flex flex-col gap-2 max-w-sm">
-        <h1 className="text-xl font-bold" style={{ color: 'var(--probex-text-primary)' }}>{title}</h1>
-        <p className="text-sm" style={{ color: 'var(--probex-text-muted)' }}>{description}</p>
+        <h1 className="text-xl font-bold" style={{ color: 'var(--synatra-text-primary)' }}>{title}</h1>
+        <p className="text-sm" style={{ color: 'var(--synatra-text-muted)' }}>{description}</p>
         {detail && (
-          <p className="text-2xs font-data mt-1 px-2 py-1 rounded inline-block mx-auto" style={{ background: 'var(--probex-surface-2)', color: 'var(--probex-text-disabled)' }}>
+          <p className="text-2xs font-data mt-1 px-2 py-1 rounded inline-block mx-auto" style={{ background: 'var(--synatra-surface-2)', color: 'var(--synatra-text-disabled)' }}>
             {detail}
           </p>
         )}

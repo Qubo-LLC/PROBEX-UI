@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="public/probex-icon.svg" alt="Probex" width="96" height="96" />
+<img src="public/synatra-icon.svg" alt="Synatra" width="96" height="96" />
 
-# Probex
+# Synatra
 
 ### Prediction Intelligence Platform
 
@@ -20,7 +20,7 @@
 
 ## Overview
 
-**Probex** (QUBO Probex) is an institutional-grade frontend for a Bitcoin prediction-markets platform. Rather than presenting markets as a simple order book, Probex layers a **Consensus Engine** on top — a proprietary intelligence signal that aggregates market sentiment, confidence, and structure into a single readable score that updates in real time.
+**Synatra** (QUBO Synatra) is an institutional-grade frontend for a Bitcoin prediction-markets platform. Rather than presenting markets as a simple order book, Synatra layers a **Consensus Engine** on top — a proprietary intelligence signal that aggregates market sentiment, confidence, and structure into a single readable score that updates in real time.
 
 The application is a **Next.js 15 App Router** project written in **strict TypeScript**. It is built "mock-first": every data domain is served today by an in-repo mock layer behind a clean service interface, so the UI is fully interactive without a backend. Switching to live infrastructure is a configuration change (`NEXT_PUBLIC_API_MODE=live`) — no component rewrites — which makes this repository the front end of an in-progress full-stack product.
 
@@ -51,7 +51,7 @@ The application is a **Next.js 15 App Router** project written in **strict TypeS
 | **Framework** | [Next.js 15](https://nextjs.org/) (App Router, Turbopack dev) |
 | **Language** | [TypeScript 5](https://www.typescriptlang.org/) — `strict`, `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess` |
 | **UI runtime** | [React 19](https://react.dev/) |
-| **Styling** | [Tailwind CSS 3](https://tailwindcss.com/) + custom CSS design tokens (`probex-tokens.css`), PostCSS, Autoprefixer |
+| **Styling** | [Tailwind CSS 3](https://tailwindcss.com/) + custom CSS design tokens (`synatra-tokens.css`), PostCSS, Autoprefixer |
 | **Components** | [Radix UI](https://www.radix-ui.com/) primitives, [lucide-react](https://lucide.dev/) icons, `class-variance-authority`, `tailwind-merge`, `clsx` |
 | **State** | [Zustand](https://zustand-demo.pmnd.rs/) (per-domain stores, persisted theme) |
 | **Server state** | [TanStack Query](https://tanstack.com/query) |
@@ -67,7 +67,7 @@ The application is a **Next.js 15 App Router** project written in **strict TypeS
 ## Project Structure
 
 ```
-PROBEX/
+SYNATRA/
 ├── public/                     # Favicons, PWA icons, brand SVG
 ├── src/
 │   ├── app/                    # Next.js App Router
@@ -96,7 +96,7 @@ PROBEX/
 │   ├── mock/                   # Rich mock datasets for every domain
 │   ├── types/                  # Domain types + branded IDs (barrel: types/index.ts)
 │   ├── config/                 # App constants & routes
-│   └── styles/                 # probex-tokens.css (design tokens)
+│   └── styles/                 # synatra-tokens.css (design tokens)
 ├── tailwind.config.ts
 ├── postcss.config.mjs          # Required — wires Tailwind into the build
 ├── next-env.d.ts
@@ -116,8 +116,8 @@ PROBEX/
 
 ```bash
 # 1. Clone
-git clone <your-repo-url> probex
-cd probex
+git clone <your-repo-url> synatra
+cd synatra
 
 # 2. Install dependencies
 npm install
@@ -167,7 +167,7 @@ All variables are optional in mock mode. They are read where the app integrates 
 
 - **Path aliases** — Import via `@/` (e.g. `@/components/...`, `@/lib/...`, `@/store/...`). Aliases are defined in `tsconfig.json`.
 - **Strict TypeScript** — The project enables `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess`. Keep optional props honest (`prop?: T | undefined`) and narrow array access. Run `npm run type-check` before pushing.
-- **Styling** — Tailwind utilities + the `probex-tokens.css` design-token system. **`postcss.config.mjs` is required** — it wires Tailwind/Autoprefixer into the build; removing it silently disables all Tailwind processing.
+- **Styling** — Tailwind utilities + the `synatra-tokens.css` design-token system. **`postcss.config.mjs` is required** — it wires Tailwind/Autoprefixer into the build; removing it silently disables all Tailwind processing.
 - **Themes** — Add or edit themes in `src/types/theme.ts` (`THEME_NAMES` / `THEME_META`); the active theme is persisted to a cookie and resolved server-side in `app/layout.tsx`.
 - **Mock vs. live** — Components consume **hooks and service interfaces**, never concrete implementations. To integrate a backend, implement the `live` counterpart of a service (e.g. `LiveConsensusService`) and set `NEXT_PUBLIC_API_MODE=live`.
 - **Editor** — VS Code with the workspace TypeScript version is recommended for accurate strict-mode diagnostics.
@@ -193,7 +193,7 @@ The mock-first architecture defines the integration path. Indicative milestones 
 Contributions are welcome. To keep the codebase consistent:
 
 1. **Branch** from `main`: `git checkout -b feat/<short-description>`.
-2. **Match the conventions** — feature-grouped components, `@/` imports, Zustand for client state, TanStack Query for server state, and the `probex-tokens.css` design tokens for styling.
+2. **Match the conventions** — feature-grouped components, `@/` imports, Zustand for client state, TanStack Query for server state, and the `synatra-tokens.css` design tokens for styling.
 3. **Respect the type contract** — do not relax `tsconfig.json`. Prefer correcting prop/interface types over casting; avoid `any`, `@ts-ignore`, and `eslint-disable`.
 4. **Verify before pushing:**
    ```bash
@@ -212,6 +212,6 @@ Proprietary — © QUBO. All rights reserved. (Update this section if an open-so
 
 <div align="center">
 
-**Probex** · QUBO Prediction Intelligence
+**Synatra** · QUBO Prediction Intelligence
 
 </div>

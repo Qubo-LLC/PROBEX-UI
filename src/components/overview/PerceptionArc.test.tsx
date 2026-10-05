@@ -48,11 +48,12 @@ describe('PerceptionArc', () => {
     expect(screen.queryByText('Not acting')).toBeNull()
   })
 
-  it('healthy + no edge → Holding with the threshold', () => {
+  it('healthy + no edge → Holding, with the survival floor stated as a floor', () => {
     seed({ edges: edges([]), survival: survival({}) })
     render(<PerceptionArc />)
     expect(screen.getByText('Holding')).toBeTruthy()
-    expect(screen.getByText(/cleared the 3.0% edge threshold/)).toBeTruthy()
+    expect(screen.getByText(/survival brain's floor is 3.0%/)).toBeTruthy()
+    expect(screen.getByText(/detector’s own threshold is not reported/)).toBeTruthy()
   })
 
   it('survival DEAD + candidate → Halted leads; the candidate remains as context with its figures', () => {
@@ -60,7 +61,7 @@ describe('PerceptionArc', () => {
     render(<PerceptionArc />)
     expect(screen.getByText('Halted')).toBeTruthy()
     expect(screen.getByText(/Dead state and has halted trading/)).toBeTruthy()
-    expect(screen.getByText(/14.5% edge is below the 999.0%/)).toBeTruthy()
+    expect(screen.getByText(/14.5% edge is below the survival brain's 999.0% floor/)).toBeTruthy()
     expect(screen.getByText(/Kelly modifier is 0.00×/)).toBeTruthy()
     // Signal preserved, one register down, no gauge.
     expect(screen.getByText('Candidate the engine sees')).toBeTruthy()
@@ -88,7 +89,7 @@ describe('PerceptionArc', () => {
     seed({ edges: edges([{ ...CANDIDATE, edge_pct: 2 }]), survival: survival({ minEdgeThreshold: 3 }) })
     render(<PerceptionArc />)
     expect(screen.getByText('Not acting')).toBeTruthy()
-    expect(screen.getByText(/2.0% edge is below the 3.0%/)).toBeTruthy()
+    expect(screen.getByText(/2.0% edge is below the survival brain's 3.0% floor/)).toBeTruthy()
   })
 
   it('edges endpoint failed → No signal report, never Holding', () => {

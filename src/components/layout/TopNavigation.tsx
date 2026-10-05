@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link                   from 'next/link'
 import { cn }                 from '@/lib/utils'
-import { ProbexLogo }         from '@/components/ui/ProbexLogo'
+import { SYNATRALogo }         from '@/components/ui/SynatraLogo'
 import { EngineStatusStrip }  from './EngineStatusStrip'
 import { ProfileMenu }        from './ProfileMenu'
 import { CommandPalette }     from './CommandPalette'
@@ -15,7 +15,7 @@ import { ROUTES, TOPNAV_HEIGHT } from '@/config/constants'
  * TopNavigation
  * ─────────────
  * Fixed-height top bar. Communicates ENGINE STATUS, not application chrome
- * (PROBEX_PRODUCT_SPEC.md §3): brand + rail control on the left, live engine
+ * (SYNATRA_PRODUCT_SPEC.md §3): brand + rail control on the left, live engine
  * vitals (BTC price · survival chip · feed status · mode badge) on the right.
  *
  * 2026-07-24: a session-identity element (ProfileMenu — gradient avatar +
@@ -57,8 +57,8 @@ export function TopNavigation() {
       )}
       style={{
         height:          `${TOPNAV_HEIGHT}px`,
-        background:      'var(--probex-surface)',
-        borderColor:     'var(--probex-border)',
+        background:      'var(--synatra-surface)',
+        borderColor:     'var(--synatra-border)',
       }}
       role="banner"
     >
@@ -72,7 +72,7 @@ export function TopNavigation() {
             'focus-ring lg:hidden flex items-center justify-center w-8 h-8 rounded-md',
             'transition-colors duration-200 cursor-pointer active:scale-95',
           )}
-          style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border-default)', color: 'var(--probex-text-secondary)' }}
+          style={{ background: 'var(--synatra-surface-2)', border: '1px solid var(--synatra-border-default)', color: 'var(--synatra-text-secondary)' }}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
             <line x1="4" y1="6" x2="20" y2="6" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="18" x2="20" y2="18" />
@@ -88,22 +88,22 @@ export function TopNavigation() {
             'focus-ring hidden lg:flex items-center justify-center w-8 h-8 rounded-md',
             'transition-colors duration-200 cursor-pointer active:scale-95',
           )}
-          style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border-default)', color: 'var(--probex-text-secondary)' }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--probex-primary)'; e.currentTarget.style.borderColor = 'var(--probex-border-active)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--probex-text-secondary)'; e.currentTarget.style.borderColor = 'var(--probex-border-default)' }}
+          style={{ background: 'var(--synatra-surface-2)', border: '1px solid var(--synatra-border-default)', color: 'var(--synatra-text-secondary)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--synatra-primary)'; e.currentTarget.style.borderColor = 'var(--synatra-border-active)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--synatra-text-secondary)'; e.currentTarget.style.borderColor = 'var(--synatra-border-default)' }}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" />
           </svg>
         </button>
 
-        {/* Brand lockup — Probex (always visible) */}
+        {/* Brand lockup — Synatra (always visible) */}
         <Link
           href={ROUTES.HOME}
           className="flex items-center gap-2 no-underline cursor-pointer pl-0.5"
-          aria-label="Probex home"
+          aria-label="Synatra home"
         >
-          <ProbexLogo variant="lockup" size="sm" responsiveWordmark decorative />
+          <SYNATRALogo variant="lockup" size="sm" responsiveWordmark decorative />
         </Link>
       </div>
 
@@ -121,15 +121,15 @@ export function TopNavigation() {
           onClick={() => setPaletteOpen(true)}
           aria-label="Open command palette"
           className="focus-ring flex items-center gap-2 h-8 w-full rounded-md px-2.5 sm:px-3 transition-colors duration-150 cursor-pointer justify-center sm:justify-start"
-          style={{ background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border-default)', color: 'var(--probex-text-muted)' }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--probex-border-active)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--probex-border-default)' }}
+          style={{ background: 'var(--synatra-surface-2)', border: '1px solid var(--synatra-border-default)', color: 'var(--synatra-text-muted)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--synatra-border-active)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--synatra-border-default)' }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
           </svg>
           <span className="hidden sm:inline text-xs flex-1 text-left">Jump to page…</span>
-          <kbd className="hidden sm:inline text-2xs font-bold uppercase tracking-wider rounded px-1.5 py-0.5" style={{ border: '1px solid var(--probex-border)' }}>⌘K</kbd>
+          <kbd className="hidden sm:inline text-2xs font-bold uppercase tracking-wider rounded px-1.5 py-0.5" style={{ border: '1px solid var(--synatra-border)' }}>⌘K</kbd>
         </button>
       </div>
 

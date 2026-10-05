@@ -31,7 +31,7 @@ export function ConfigPanel() {
           <h2 className="t-section-title">Configuration</h2>
           <span className="t-metadata">awaiting /api/config</span>
         </div>
-        <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-text-disabled)' }}>
           Reading engine configuration… this endpoint is polled every 30 seconds.
         </p>
       </div>
@@ -74,7 +74,7 @@ export function ConfigPanel() {
         <h2 className="t-section-title">
           Configuration
         </h2>
-        <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
+        <span className="text-2xs" style={{ color: 'var(--synatra-text-disabled)' }}>
           Read-only — the engine exposes no config write endpoint yet
         </span>
       </div>
@@ -82,13 +82,13 @@ export function ConfigPanel() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
         {groups.map((group) => (
           <div key={group} className="flex flex-col gap-1.5">
-            <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-disabled)' }}>
+            <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--synatra-text-disabled)' }}>
               {group}
             </span>
             {rows.filter((r) => r.group === group).map((r) => (
               <div key={r.label} className="flex items-baseline justify-between gap-3 text-xs">
-                <span style={{ color: 'var(--probex-text-muted)' }}>{r.label}</span>
-                <span className="font-medium tabular-nums text-right truncate" style={{ color: 'var(--probex-text-secondary)' }} title={r.value}>
+                <span style={{ color: 'var(--synatra-text-muted)' }}>{r.label}</span>
+                <span className="font-medium tabular-nums text-right truncate" style={{ color: 'var(--synatra-text-secondary)' }} title={r.value}>
                   {r.value}
                 </span>
               </div>

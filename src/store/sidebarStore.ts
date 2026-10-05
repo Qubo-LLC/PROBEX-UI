@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
-const STORAGE_KEY = 'probex-sidebar'
+const STORAGE_KEY = 'synatra-sidebar'
 
 // ─── Types ────────────────────────────────────────────────────────────────
 

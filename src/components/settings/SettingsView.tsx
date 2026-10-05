@@ -135,11 +135,11 @@ export function SettingsView() {
       </section>
 
       {/* ── B · engine policy ───────────────────────────────────────────── */}
-      <section aria-labelledby="st-policy" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <section aria-labelledby="st-policy" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <span className="flex items-center gap-1.5 flex-wrap">
             <h2 id="st-policy" className="t-section-title">Engine policy</h2>
-            <span className="t-description">what the engine holds — PROBEX reads it and cannot write it</span>
+            <span className="t-description">what the engine holds — Synatra reads it and cannot write it</span>
             <Popover label="About engine policy" trigger={(p) => <InfoButton what="engine policy" {...p} />}>
               <PopoverTitle>Read-only, by the engine’s own contract</PopoverTitle>
               <PopoverText>
@@ -160,7 +160,7 @@ export function SettingsView() {
           </span>
         </div>
 
-        <p className="t-helper m-0" style={posture.liveTradingEnabled === true ? { color: 'var(--probex-negative)' } : undefined}>
+        <p className="t-helper m-0" style={posture.liveTradingEnabled === true ? { color: 'var(--synatra-negative)' } : undefined}>
           {configSlice.status === 'error' && !config
             ? 'The engine’s configuration did not answer — its policy cannot be read right now.'
             : posture.sentence}
@@ -178,20 +178,20 @@ export function SettingsView() {
               return (
                 <Tr key={g.id}>
                   <Td align="left" dense grow>
-                    <span className="font-semibold block" style={{ color: 'var(--probex-text-primary)' }}>{g.label}</span>
+                    <span className="font-semibold block" style={{ color: 'var(--synatra-text-primary)' }}>{g.label}</span>
                     <span className="t-metadata block">{g.source} · read-only</span>
                     {/* The wire names, wrapping in the elastic column, so the
                         reader can match them against the engine's own docs. */}
-                    <span className="block font-mono text-2xs mt-0.5" style={{ color: 'var(--probex-text-muted)', whiteSpace: 'normal', wordBreak: 'break-word' }}>{g.parameters.join(' · ')}</span>
-                    <Link href={dest.href} className="sm:hidden focus-ring text-2xs font-semibold mt-1 inline-block" style={{ color: 'var(--probex-primary)' }}>{dest.label} →</Link>
+                    <span className="block font-mono text-2xs mt-0.5" style={{ color: 'var(--synatra-text-muted)', whiteSpace: 'normal', wordBreak: 'break-word' }}>{g.parameters.join(' · ')}</span>
+                    <Link href={dest.href} className="sm:hidden focus-ring text-2xs font-semibold mt-1 inline-block" style={{ color: 'var(--synatra-primary)' }}>{dest.label} →</Link>
                   </Td>
                   <Td align="right" dense>
-                    <span className="font-mono tabular-nums text-xs" style={{ color: g.reported === 0 ? 'var(--probex-text-disabled)' : 'var(--probex-text-secondary)' }} title={g.reported === 0 ? 'The endpoint has not answered' : `${g.reported} of ${g.parameters.length} parameters carried a value`}>
+                    <span className="font-mono tabular-nums text-xs" style={{ color: g.reported === 0 ? 'var(--synatra-text-disabled)' : 'var(--synatra-text-secondary)' }} title={g.reported === 0 ? 'The endpoint has not answered' : `${g.reported} of ${g.parameters.length} parameters carried a value`}>
                       {g.reported} / {g.parameters.length}
                     </span>
                   </Td>
                   <Td align="left" dense hideBelow="sm">
-                    <Link href={dest.href} className="focus-ring text-2xs font-semibold whitespace-nowrap" style={{ color: 'var(--probex-primary)' }}>{dest.label} →</Link>
+                    <Link href={dest.href} className="focus-ring text-2xs font-semibold whitespace-nowrap" style={{ color: 'var(--synatra-primary)' }}>{dest.label} →</Link>
                   </Td>
                 </Tr>
               )
@@ -201,21 +201,21 @@ export function SettingsView() {
       </section>
 
       {/* ── C · this deployment ─────────────────────────────────────────── */}
-      <section aria-labelledby="st-about" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+      <section aria-labelledby="st-about" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <span className="flex items-baseline gap-2 flex-wrap">
             <h2 id="st-about" className="t-section-title">This deployment</h2>
             <span className="t-description">read at runtime, not typed by hand</span>
           </span>
-          <Link href={`${ROUTES.SYSTEM}?view=health`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>System & diagnostics →</Link>
+          <Link href={`${ROUTES.SYSTEM}?view=health`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--synatra-primary)' }}>System & diagnostics →</Link>
         </div>
 
         <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-3 m-0">
-          <Fact label="Dashboard" value={`PROBEX ${APP_VERSION}`} note="package.json version" />
+          <Fact label="Dashboard" value={`Synatra ${APP_VERSION}`} note="package.json version" />
           <Fact
             label="Data source"
             value={mode.word}
-            tone={mode.tone === 'positive' ? 'var(--probex-positive)' : mode.tone === 'warning' ? 'var(--probex-warning)' : 'var(--probex-negative)'}
+            tone={mode.tone === 'positive' ? 'var(--synatra-positive)' : mode.tone === 'warning' ? 'var(--synatra-warning)' : 'var(--synatra-negative)'}
             note={`${mode.meaning} · API base ${runtimeCfg.baseUrl}`}
             detail={runtimeCfg.reason}
           />
@@ -229,7 +229,7 @@ export function SettingsView() {
           <Fact
             label="Engine health"
             value={health ? health.statusLabel : healthSlice.status === 'error' ? 'did not answer' : '—'}
-            tone={health?.status === 'online' ? 'var(--probex-positive)' : health?.status === 'degraded' ? 'var(--probex-warning)' : health?.status === 'offline' ? 'var(--probex-negative)' : undefined}
+            tone={health?.status === 'online' ? 'var(--synatra-positive)' : health?.status === 'degraded' ? 'var(--synatra-warning)' : health?.status === 'offline' ? 'var(--synatra-negative)' : undefined}
             note={health
               ? unhealthy.length === 0 ? `${health.components.length} components reporting healthy` : `unhealthy: ${unhealthy.join(', ')}`
               : 'waiting for /api/health'}
@@ -249,14 +249,14 @@ export function SettingsView() {
 
 function PrefPointer({ label, value, note, href, where }: { label: string; value: string; note: string; href: string; where: string }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-3" style={{ borderTop: '1px solid var(--probex-border)' }}>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 py-3" style={{ borderTop: '1px solid var(--synatra-border)' }}>
       <div className="flex-1 min-w-0">
-        <span className="text-xs font-medium block" style={{ color: 'var(--probex-text-primary)' }}>{label}</span>
+        <span className="text-xs font-medium block" style={{ color: 'var(--synatra-text-primary)' }}>{label}</span>
         <span className="t-helper block mt-0.5">{note}</span>
       </div>
       <span className="flex items-baseline gap-3 flex-shrink-0">
-        <span className="text-xs font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>{value}</span>
-        <Link href={href} className="focus-ring text-2xs font-semibold whitespace-nowrap" style={{ color: 'var(--probex-primary)' }}>{where} →</Link>
+        <span className="text-xs font-mono tabular-nums" style={{ color: 'var(--synatra-text-secondary)' }}>{value}</span>
+        <Link href={href} className="focus-ring text-2xs font-semibold whitespace-nowrap" style={{ color: 'var(--synatra-primary)' }}>{where} →</Link>
       </span>
     </div>
   )
@@ -267,7 +267,7 @@ function Fact({ label, value, note, detail, tone }: { label: string; value: stri
     <div className="flex flex-col gap-0.5 min-w-0">
       <dt className="t-metadata">{label}</dt>
       <dd className="m-0 flex flex-col min-w-0">
-        <span className="text-xs font-semibold" style={{ color: tone ?? 'var(--probex-text-secondary)' }}>{value}</span>
+        <span className="text-xs font-semibold" style={{ color: tone ?? 'var(--synatra-text-secondary)' }}>{value}</span>
         <span className="t-helper">{note}</span>
         {detail && <span className="t-metadata">{detail}</span>}
       </dd>

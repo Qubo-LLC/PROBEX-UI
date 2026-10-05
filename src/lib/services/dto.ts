@@ -352,7 +352,7 @@ export function toEngineIdentity(dto: EngineIdentityDTO): EngineIdentity {
  * Runtime carries the functional identity (mode, initialized_at, components).
  * It does NOT carry the engine's name or version, and neither does any other
  * /api/* endpoint; they used to be filled from the dashboard's own APP_NAME /
- * APP_VERSION here, which put "Probex 2.0.0" under the label "Engine" in the
+ * APP_VERSION here, which put "Synatra 2.0.0" under the label "Engine" in the
  * shell. They are null now, and the shell says the version is not reported.
  * `status` is 'online' because a successful runtime response means the engine
  * process is up.
@@ -543,6 +543,13 @@ export function toPaperStats(dto: PaperStatsDTO): PaperStats {
       hourlyPerformance: toBucketPerformanceRecord(p.hourly_performance),
     },
     timestamp: isoToMs(dto.timestamp),
+    // Additive, optional on the wire (phase 2). Absent → null, never a default.
+    integrity: dto.integrity
+      ? { state: dto.integrity.state, violations: dto.integrity.violations.map((v) => ({ code: v.code, count: v.count })) }
+      : null,
+    session: dto.session
+      ? { id: dto.session.id, legacy: dto.session.legacy, stateLoadError: dto.session.state_load_error }
+      : null,
   }
 }
 
@@ -555,6 +562,9 @@ export function toPositionsHistory(dto: PositionsHistoryDTO): PositionsHistory {
     count:     dto.count,
     limit:     dto.limit,
     timestamp: isoToMs(dto.timestamp),
+    // The cursor contract is recognised by a boolean has_more, as for the ledger.
+    total:     typeof dto.has_more === 'boolean' && typeof dto.total === 'number' ? dto.total : null,
+    hasMore:   typeof dto.has_more === 'boolean' ? dto.has_more : null,
   }
 }
 

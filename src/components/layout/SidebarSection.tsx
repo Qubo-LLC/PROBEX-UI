@@ -42,7 +42,7 @@ export function SidebarSection({ label, children, className }: SidebarSectionPro
             'sidebar-section-label px-2 pb-1.5 pt-3 text-2xs font-bold uppercase select-none',
             !label && 'sidebar-section-label-empty',
           )}
-          style={{ color: 'var(--probex-text-disabled)', letterSpacing: '0.1em' }}
+          style={{ color: 'var(--synatra-text-disabled)', letterSpacing: '0.1em' }}
         >
           {label}
         </p>
@@ -54,7 +54,7 @@ export function SidebarSection({ label, children, className }: SidebarSectionPro
           className="mx-2 my-1.5"
           style={{
             height:     '1px',
-            background: 'var(--probex-border)',
+            background: 'var(--synatra-border)',
           }}
           role="separator"
           aria-hidden="true"

@@ -7,7 +7,7 @@
 // prediction market you trade. Server component — no interactivity, no data.
 
 import Link            from 'next/link'
-import { ProbexLogo }  from '@/components/ui/ProbexLogo'
+import { SYNATRALogo }  from '@/components/ui/SynatraLogo'
 import { ROUTES }      from '@/config/constants'
 import { FooterTrust, FooterMode } from './FooterTrust'
 
@@ -24,8 +24,8 @@ export function Footer() {
     <footer
       className="mt-14 pt-9 pb-8 px-5"
       style={{
-        borderTop: '1px solid var(--probex-border)',
-        background: 'linear-gradient(180deg, transparent, color-mix(in srgb, var(--probex-surface) 40%, transparent))',
+        borderTop: '1px solid var(--synatra-border)',
+        background: 'linear-gradient(180deg, transparent, color-mix(in srgb, var(--synatra-surface) 40%, transparent))',
       }}
     >
       <div className="max-w-[1920px] mx-auto">
@@ -33,20 +33,20 @@ export function Footer() {
           {/* Brand column */}
           <div className="min-w-[220px] max-w-[320px]">
             <div className="mb-3">
-              <ProbexLogo variant="lockup" size="sm" />
+              <SYNATRALogo variant="lockup" size="sm" />
             </div>
-            <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--probex-text-muted)' }}>
+            <p className="text-xs leading-relaxed mb-3" style={{ color: 'var(--synatra-text-muted)' }}>
               An autonomous intelligence trading Bitcoin&apos;s fastest markets —
               and the console for watching it think.
             </p>
-            <p className="text-xs font-semibold leading-relaxed" style={{ color: 'var(--probex-text-secondary)' }}>
+            <p className="text-xs font-semibold leading-relaxed" style={{ color: 'var(--synatra-text-secondary)' }}>
               Built for operators, not spectators.
             </p>
           </div>
 
           {/* Platform links */}
           <div className="min-w-[110px]">
-            <div className="text-2xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--probex-text-muted)' }}>
+            <div className="text-2xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--synatra-text-muted)' }}>
               Platform
             </div>
             <ul className="list-none p-0 m-0 flex flex-col gap-2.5">
@@ -54,8 +54,8 @@ export function Footer() {
                 <li key={l.label}>
                   <Link
                     href={l.href}
-                    className="text-xs no-underline transition-colors hover:!text-[var(--probex-text-primary)]"
-                    style={{ color: 'var(--probex-text-secondary)' }}
+                    className="text-xs no-underline transition-colors hover:!text-[var(--synatra-text-primary)]"
+                    style={{ color: 'var(--synatra-text-secondary)' }}
                   >
                     {l.label}
                   </Link>
@@ -70,9 +70,9 @@ export function Footer() {
         <FooterTrust />
 
         {/* Bottom bar */}
-        <div className="mt-5 pt-4 flex justify-between items-center flex-wrap gap-2" style={{ borderTop: '1px solid var(--probex-border)' }}>
-          <span className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
-            © {year} Probex. All rights reserved.
+        <div className="mt-5 pt-4 flex justify-between items-center flex-wrap gap-2" style={{ borderTop: '1px solid var(--synatra-border)' }}>
+          <span className="text-2xs" style={{ color: 'var(--synatra-text-muted)' }}>
+            © {year} Synatra. All rights reserved.
           </span>
           {/* The execution mode was hardcoded to "paper" here, which is a claim
               about the running engine written as static copy — it stayed on

@@ -36,11 +36,11 @@ import { formatUptime } from '@/lib/display/engine'
 type LayerState = 'ok' | 'warn' | 'bad' | 'unknown' | 'simulated'
 
 const LAYER_COLOR: Record<LayerState, string> = {
-  ok:        'var(--probex-positive)',
-  warn:      'var(--probex-warning)',
-  bad:       'var(--probex-negative)',
-  unknown:   'var(--probex-text-muted)',
-  simulated: 'var(--probex-warning)',
+  ok:        'var(--synatra-positive)',
+  warn:      'var(--synatra-warning)',
+  bad:       'var(--synatra-negative)',
+  unknown:   'var(--synatra-text-muted)',
+  simulated: 'var(--synatra-warning)',
 }
 
 export function SystemPosture() {
@@ -65,15 +65,18 @@ export function SystemPosture() {
     },
     {
       label: 'Engine reachable',
-      state: synthetic ? 'simulated' : runtime.mode === 'offline' ? 'bad' : status.state === 'unreachable' ? 'bad' : 'ok',
-      value: synthetic ? 'Not contacted' : runtime.mode === 'offline' || status.state === 'unreachable' ? 'No' : 'Yes',
+      state: synthetic ? 'simulated' : runtime.mode === 'offline' ? 'bad' : status.state === 'unreachable' ? 'bad' : status.state === 'slow' ? 'warn' : 'ok',
+      value: synthetic ? 'Not contacted' : runtime.mode === 'offline' || status.state === 'unreachable' ? 'No' : status.state === 'slow' ? 'Not yet' : 'Yes',
       // The engine's address is a development diagnostic, not something to
       // print on a production console that may be screen-shared.
       note: synthetic
         ? 'No request is being made to any engine'
         : runtime.deployment === 'development'
           ? runtime.baseUrl
-          : status.state === 'unreachable' ? 'the configured engine did not respond' : 'engine responded to the startup probe',
+          : status.state === 'unreachable' ? 'the configured engine did not respond'
+            : status.state === 'slow' ? 'no answer to the startup check in time; waiting for a first response'
+              : runtime.startupProbe === 'timeout' ? 'no answer to the startup check in time; answering requests since'
+                : 'engine responded to the startup probe',
     },
     {
       label: 'Engine operating',
@@ -130,7 +133,7 @@ export function SystemPosture() {
       <div
         className="flex flex-col rounded-lg overflow-hidden"
         style={{
-          background: `color-mix(in srgb, ${color} 7%, var(--probex-surface))`,
+          background: `color-mix(in srgb, ${color} 7%, var(--synatra-surface))`,
           border: `1px solid color-mix(in srgb, ${color} 24%, transparent)`,
         }}
       >
@@ -144,7 +147,7 @@ export function SystemPosture() {
         />
         <div className="flex flex-col gap-0.5 min-w-0 flex-1">
           <span className="text-base font-semibold leading-tight" style={{ color }}>{status.label}</span>
-          <span className="text-xs leading-relaxed" style={{ color: 'var(--probex-text-secondary)' }}>
+          <span className="text-xs leading-relaxed" style={{ color: 'var(--synatra-text-secondary)' }}>
             {status.detail}
           </span>
         </div>
@@ -166,7 +169,7 @@ export function SystemPosture() {
           <div
             key={l.label}
             className="flex items-baseline gap-3 py-2"
-            style={i > 0 ? { borderTop: '1px solid var(--probex-border)' } : undefined}
+            style={i > 0 ? { borderTop: '1px solid var(--synatra-border)' } : undefined}
           >
             <span
               className="w-1.5 h-1.5 rounded-full flex-shrink-0 self-center"
@@ -180,7 +183,7 @@ export function SystemPosture() {
             >
               {l.value}
             </span>
-            <span className="text-2xs truncate ml-auto text-right" style={{ color: 'var(--probex-text-muted)' }} title={l.note}>
+            <span className="text-2xs truncate ml-auto text-right" style={{ color: 'var(--synatra-text-muted)' }} title={l.note}>
               {l.note}
             </span>
           </div>
@@ -192,9 +195,9 @@ export function SystemPosture() {
         <p
           className="text-xs leading-relaxed rounded-md px-3 py-2.5"
           style={{
-            color: 'var(--probex-warning)',
-            background: 'var(--probex-warning-dim)',
-            border: '1px solid color-mix(in srgb, var(--probex-warning) 24%, transparent)',
+            color: 'var(--synatra-warning)',
+            background: 'var(--synatra-warning-dim)',
+            border: '1px solid color-mix(in srgb, var(--synatra-warning) 24%, transparent)',
           }}
         >
           Every section below is rendering generated responses. They show what this

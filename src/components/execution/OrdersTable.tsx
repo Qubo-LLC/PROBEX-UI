@@ -49,16 +49,16 @@ export function OrdersTable() {
   const columns = objects.length > 0 ? Object.keys(objects[0]!) : []
 
   return (
-    <div className="rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
-      <div className="px-4 py-3 flex items-center justify-between gap-3 flex-wrap" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+    <div className="rounded-lg overflow-hidden" style={{ background: 'var(--synatra-surface)', border: '1px solid var(--synatra-border)' }}>
+      <div className="px-4 py-3 flex items-center justify-between gap-3 flex-wrap" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>Orders</h2>
-          <p className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
+          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--synatra-text-primary)' }}>Orders</h2>
+          <p className="text-2xs" style={{ color: 'var(--synatra-text-muted)' }}>
             {activeCount} active · {closedCount} closed
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="inline-flex rounded-md overflow-hidden" style={{ border: '1px solid var(--probex-border-default)' }} role="group" aria-label="Order scope">
+          <div className="inline-flex rounded-md overflow-hidden" style={{ border: '1px solid var(--synatra-border-default)' }} role="group" aria-label="Order scope">
             {(['active', 'closed'] as const).map((s) => (
               <button
                 key={s}
@@ -66,8 +66,8 @@ export function OrdersTable() {
                 aria-pressed={scope === s}
                 className="px-3 py-1 text-2xs font-semibold capitalize cursor-pointer transition-colors duration-150 focus-ring"
                 style={scope === s
-                  ? { background: 'var(--probex-primary)', color: 'var(--probex-bg)' }
-                  : { background: 'transparent', color: 'var(--probex-text-muted)' }}
+                  ? { background: 'var(--synatra-primary)', color: 'var(--synatra-bg)' }
+                  : { background: 'transparent', color: 'var(--synatra-text-muted)' }}
               >
                 {s}
               </button>
@@ -93,7 +93,7 @@ export function OrdersTable() {
                       const v = row[c]
                       return (
                         <Td key={c} align="left">
-                          <span className="tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>
+                          <span className="tabular-nums" style={{ color: 'var(--synatra-text-secondary)' }}>
                             {v === null || v === undefined ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v)}
                           </span>
                         </Td>
@@ -105,7 +105,7 @@ export function OrdersTable() {
                           onClick={() => setSelectedId(id)}
                           disabled={id === null}
                           className="text-2xs font-semibold px-2 py-0.5 rounded cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed focus-ring"
-                          style={{ color: 'var(--probex-negative)', border: '1px solid var(--probex-negative)' }}
+                          style={{ color: 'var(--synatra-negative)', border: '1px solid var(--synatra-negative)' }}
                         >
                           Select
                         </button>
@@ -118,7 +118,7 @@ export function OrdersTable() {
           </TableShell>
 
           {scope === 'active' && selectedId !== null && (
-            <div className="p-4" style={{ borderTop: '1px solid var(--probex-border)' }}>
+            <div className="p-4" style={{ borderTop: '1px solid var(--synatra-border)' }}>
               <MutationButton
                 mutation={cancelMutation}
                 label="Cancel Order"
@@ -132,7 +132,7 @@ export function OrdersTable() {
           )}
         </>
       ) : (
-        <p className="text-2xs leading-relaxed p-4" style={{ color: 'var(--probex-text-disabled)' }}>
+        <p className="text-2xs leading-relaxed p-4" style={{ color: 'var(--synatra-text-disabled)' }}>
           {mode === 'paper'
             ? <>No {scope} orders — the engine is in <strong>paper mode</strong>, so no real orders are submitted to the exchange. This endpoint tracks live order-submission activity specifically; it will populate once live trading is enabled.</>
             : <>No {scope} orders. <span className="mono">/api/execution/orders</span> responds correctly but both lists are empty.</>}

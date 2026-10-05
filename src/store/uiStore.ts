@@ -1,7 +1,7 @@
 'use client'
 
-// uiStore — ephemeral product view state (PROBEX_V3_RESTORATION_PLAN §2,
-// PROBEX_V3_IMPLEMENTATION_BLUEPRINT §2). V1 spread this across marketStore +
+// uiStore — ephemeral product view state (SYNATRA_V3_RESTORATION_PLAN §2,
+// SYNATRA_V3_IMPLEMENTATION_BLUEPRINT §2). V1 spread this across marketStore +
 // portfolioStore + analyticsStore (5 stores); V3 consolidates all session-only
 // product UI state into ONE store. Never holds engine data — that is
 // applicationStore's sole domain.

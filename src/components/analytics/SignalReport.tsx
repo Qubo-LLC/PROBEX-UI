@@ -72,7 +72,7 @@ export function SignalReport() {
         <span className="t-metadata">
           {analysed !== null && `${analysed} trade${analysed === 1 ? '' : 's'} analysed`}
           {analysed !== null && settled !== null && analysed < settled && ` · ${settled} settled`}
-          {cert.certainty === 'stale' && <span className="ml-1.5" style={{ color: 'var(--probex-warning)' }}>· stale {cert.staleFor}</span>}
+          {cert.certainty === 'stale' && <span className="ml-1.5" style={{ color: 'var(--synatra-warning)' }}>· stale {cert.staleFor}</span>}
         </span>
       </div>
 
@@ -109,13 +109,13 @@ export function SignalReport() {
                   {signals.map((s) => (
                     <Tr key={s.name}>
                       <Td align="left" dense grow className={cell}>
-                        <span className="font-mono block truncate" style={{ color: 'var(--probex-text-primary)' }}>{s.name}</span>
+                        <span className="font-mono block truncate" style={{ color: 'var(--synatra-text-primary)' }}>{s.name}</span>
                       </Td>
                       <Td align="right" dense className={cell}><span className="font-mono font-semibold">{s.occurrences}</span></Td>
                       {reconciled && <Td align="right" dense className={cell}><span className="font-mono">{s.correct}</span></Td>}
                       {reconciled && (
                         <Td align="right" dense hideBelow="sm" className={cell}>
-                          <span className="font-mono font-semibold" style={{ color: s.accuracy >= 0.5 ? 'var(--probex-positive)' : 'var(--probex-text-secondary)' }}>
+                          <span className="font-mono font-semibold" style={{ color: s.accuracy >= 0.5 ? 'var(--synatra-positive)' : 'var(--synatra-text-secondary)' }}>
                             {formatPercent(s.accuracy)}
                           </span>
                         </Td>
@@ -145,13 +145,13 @@ export function SignalReport() {
                 <tbody>
                   {hourly.map((h) => (
                     <Tr key={h.hour}>
-                      <Td align="left" dense grow className={cell}><span className="font-mono" style={{ color: 'var(--probex-text-primary)' }}>{h.label}</span></Td>
+                      <Td align="left" dense grow className={cell}><span className="font-mono" style={{ color: 'var(--synatra-text-primary)' }}>{h.label}</span></Td>
                       <Td align="right" dense className={cell}><span className="font-mono font-semibold">{h.trades}</span></Td>
                       <Td align="right" dense className={cell}><span className="font-mono">{formatEdgePct(h.avgEdgePct)}</span></Td>
                       {reconciled && <Td align="right" dense hideBelow="sm" className={cell}><span className="font-mono">{h.wins}</span></Td>}
                       {reconciled && (
                         <Td align="right" dense hideBelow="sm" className={cell}>
-                          <span className="font-mono" style={{ color: h.totalPnl > 0 ? 'var(--probex-positive)' : h.totalPnl < 0 ? 'var(--probex-negative)' : undefined }}>
+                          <span className="font-mono" style={{ color: h.totalPnl > 0 ? 'var(--synatra-positive)' : h.totalPnl < 0 ? 'var(--synatra-negative)' : undefined }}>
                             {formatSignedCurrency(h.totalPnl, true)}
                           </span>
                         </Td>

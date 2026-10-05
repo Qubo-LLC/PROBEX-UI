@@ -1,4 +1,4 @@
-// Shared Axios client for the Probex backend/engine. The base URL comes solely
+// Shared Axios client for the Synatra backend/engine. The base URL comes solely
 // from NEXT_PUBLIC_API_BASE_URL (via config/env) — no hardcoded URLs. The base
 // already includes the `/api` prefix, so endpoint paths (from the endpoint
 // registry) are appended directly. Failures are normalized to the same

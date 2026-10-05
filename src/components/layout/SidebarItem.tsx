@@ -93,9 +93,9 @@ export function SidebarItem({
             'transition-all duration-150 shadow-elev-3',
           )}
           style={{
-            background:   'var(--probex-surface-3)',
-            color:        'var(--probex-text-primary)',
-            border:       '1px solid var(--probex-border-default)',
+            background:   'var(--synatra-surface-3)',
+            color:        'var(--synatra-text-primary)',
+            border:       '1px solid var(--synatra-border-default)',
           }}
           role="tooltip"
         >

@@ -3,7 +3,7 @@
 // SectionHeading — one treatment for "this is a group of related things".
 //
 // ─── Why this exists ─────────────────────────────────────────────────────────
-// Probex had four dialects for the same idea, and which one a section spoke
+// Synatra had four dialects for the same idea, and which one a section spoke
 // depended entirely on which week it was written:
 //
 //   .t-section-title                              Overview
@@ -56,7 +56,7 @@ export function SectionHeading({
         <div className="flex items-baseline gap-2">
           <Tag className="t-section-title">{title}</Tag>
           {count !== undefined && count !== null && (
-            <span className="text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+            <span className="text-2xs font-mono tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>
               {count}
             </span>
           )}

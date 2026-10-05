@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 import { BASE_PATH, APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from '@/config/constants'
 
 /**
- * Probex Web App Manifest
+ * Synatra Web App Manifest
  * ────────────────────────
  * PWA manifest for the dashboard, served at `${BASE_PATH}/manifest.webmanifest`.
  *

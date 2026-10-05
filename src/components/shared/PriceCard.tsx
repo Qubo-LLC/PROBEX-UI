@@ -38,7 +38,7 @@ interface PriceCardProps {
 
 export function PriceCard({ chart, feed, size = 'default' }: PriceCardProps) {
   const isUp    = chart.priceChange >= 0
-  const accent  = isUp ? 'var(--probex-positive)' : 'var(--probex-negative)'
+  const accent  = isUp ? 'var(--synatra-positive)' : 'var(--synatra-negative)'
   const isHero  = size === 'hero'
   const series  = useMarketSeries()
 
@@ -80,7 +80,7 @@ export function PriceCard({ chart, feed, size = 'default' }: PriceCardProps) {
             BTC / USD
           </span>
           <div className="flex items-baseline gap-2.5">
-            <span className={`${isHero ? 'text-5xl' : 'text-3xl'} font-bold leading-none tabular-nums`} style={{ color: 'var(--probex-text-primary)' }}>
+            <span className={`${isHero ? 'text-5xl' : 'text-3xl'} font-bold leading-none tabular-nums`} style={{ color: 'var(--synatra-text-primary)' }}>
               {isHero ? <ValueFlash value={chart.currentPrice}>{formatBtcPrice(chart.currentPrice)}</ValueFlash> : formatBtcPrice(chart.currentPrice)}
             </span>
             <span className={`${isHero ? 'text-base' : 'text-sm'} font-semibold tabular-nums`} style={{ color: accent }}>
@@ -89,13 +89,13 @@ export function PriceCard({ chart, feed, size = 'default' }: PriceCardProps) {
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-1 text-xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+        <div className="flex flex-col items-end gap-1 text-xs tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>
           <span>H {formatBtcPrice(chart.highPrice)} · L {formatBtcPrice(chart.lowPrice)}</span>
           {feed && (
             <span className="flex items-center gap-1.5">
               <span
                 className="w-1.5 h-1.5 rounded-full inline-block"
-                style={{ background: feed.connected ? 'var(--probex-positive)' : 'var(--probex-negative)' }}
+                style={{ background: feed.connected ? 'var(--synatra-positive)' : 'var(--synatra-negative)' }}
                 aria-hidden="true"
               />
               {feed.connected ? `Feed ${Math.round(feed.latencyMs)}ms` : 'Feed disconnected'}
@@ -114,7 +114,7 @@ export function PriceCard({ chart, feed, size = 'default' }: PriceCardProps) {
       )}
 
       {windowLabel && (
-        <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>
+        <p className="text-2xs" style={{ color: 'var(--synatra-text-disabled)' }}>
           {windowLabel} — engine rolling buffer
         </p>
       )}

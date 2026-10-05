@@ -81,7 +81,7 @@ export function MarketDataSection() {
     <section
       aria-label="Market data"
       className="flex flex-col gap-4 rounded-lg px-4 py-4"
-      style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}
+      style={{ background: 'var(--synatra-surface)', border: '1px solid var(--synatra-border)' }}
     >
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <span className="flex items-center gap-1.5">
@@ -120,9 +120,9 @@ export function MarketDataSection() {
         <p
           className="text-xs rounded-md px-3 py-2"
           style={{
-            color: 'var(--probex-negative)',
-            background: 'color-mix(in srgb, var(--probex-negative) 9%, transparent)',
-            border: '1px solid var(--probex-negative-border)',
+            color: 'var(--synatra-negative)',
+            background: 'color-mix(in srgb, var(--synatra-negative) 9%, transparent)',
+            border: '1px solid var(--synatra-negative-border)',
           }}
           role="status"
         >
@@ -137,7 +137,7 @@ export function MarketDataSection() {
             label="Price feed"
             size="md"
             {...certaintyFromSlice(stats, 2_000)}
-            tone={s.feedConnected ? 'var(--probex-positive)' : 'var(--probex-negative)'}
+            tone={s.feedConnected ? 'var(--synatra-positive)' : 'var(--synatra-negative)'}
             footnote={s.feedConnected ? `${Math.round(s.feedLatencyMs)}ms round trip` : 'no samples arriving'}
           >
             {s.feedConnected ? 'Connected' : 'Down'}
@@ -224,7 +224,7 @@ export function MarketDataSection() {
 /** A runtime flag as an inline word rather than a bordered tile. The dot, the
  *  colour and the word all agree, so the state survives greyscale. */
 function ComponentFlag({ label, active }: { label: string; active: boolean }) {
-  const tone = active ? 'var(--probex-positive)' : 'var(--probex-text-disabled)'
+  const tone = active ? 'var(--synatra-positive)' : 'var(--synatra-text-disabled)'
   return (
     <span className="inline-flex items-center gap-1.5 text-xs">
       <span
@@ -236,7 +236,7 @@ function ComponentFlag({ label, active }: { label: string; active: boolean }) {
         }}
         aria-hidden="true"
       />
-      <span style={{ color: 'var(--probex-text-secondary)' }}>{label}</span>
+      <span style={{ color: 'var(--synatra-text-secondary)' }}>{label}</span>
       <span className="text-2xs font-bold uppercase tracking-wider" style={{ color: tone }}>
         {active ? 'on' : 'off'}
       </span>

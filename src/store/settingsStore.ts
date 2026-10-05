@@ -27,7 +27,7 @@ export const useSettingsStore = create<SettingsStore>()(
       setAccessibility: (patch) => set((s) => ({ accessibility: { ...s.accessibility, ...patch } })),
     }),
     {
-      name:       'probex-settings',
+      name:       'synatra-settings',
       storage:    createJSONStorage(() => localStorage),
       version:    2,
       partialize: (s) => ({ accessibility: s.accessibility }),

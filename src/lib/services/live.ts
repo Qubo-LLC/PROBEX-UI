@@ -18,6 +18,8 @@ import {
   toMarketsSummary, toMarketPriceHistory, toMarketDetail, toMutationResult,
 } from './dto'
 import { apiGet, apiGetHost, apiPost } from '@/lib/api/client'
+import { toLedgerPage } from '@/lib/mappers/ledger'
+import type { LedgerPage, LedgerPageDTO, LedgerPageQuery } from '@/types/ledger'
 import { ENDPOINTS, endpointPath, endpointPathWith } from '@/lib/api/endpoints'
 import type {
   EngineHealthDTO, EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
@@ -308,6 +310,17 @@ export class LiveEngineService implements IEngineService {
       ...(direction !== undefined ? { direction } : {}),
     }, signal)
     return ok(toTradesLedger(dto))
+  }
+
+  async getLedgerPage(source: 'ledger' | 'history', query: LedgerPageQuery, signal?: AbortSignal): Promise<ApiResult<LedgerPage>> {
+    const path = source === 'ledger' ? ENDPOINTS.trades.ledger : ENDPOINTS.positions.history
+    const dto = await apiGet<LedgerPageDTO>(endpointPath(path), {
+      limit: query.limit,
+      ...(query.beforeSeq !== undefined ? { before_seq: query.beforeSeq } : {}),
+      ...(query.status !== undefined && source === 'ledger' ? { status: query.status } : {}),
+      ...(query.direction !== undefined ? { direction: query.direction } : {}),
+    }, signal)
+    return ok(toLedgerPage(dto, { requestedLimit: query.limit }))
   }
 
   async getExecutionOrders(status?: 'active' | 'closed', signal?: AbortSignal): Promise<ApiResult<ExecutionOrders>> {

@@ -33,14 +33,14 @@ export function CapitalSummary() {
 
   const severity = pf ? survivalStateSeverity(pf.survival.state) : null
   const survivalTone =
-    severity === 'danger' ? 'var(--probex-negative)'
-    : severity === 'caution' ? 'var(--probex-warning)'
+    severity === 'danger' ? 'var(--synatra-negative)'
+    : severity === 'caution' ? 'var(--synatra-warning)'
     : undefined
 
   const snapAge = snap ? `snapshot ${new Date(snap.lastSnapshot).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : null
 
   return (
-    <section aria-labelledby="pf-capital" className="flex flex-col gap-4 pb-6" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+    <section aria-labelledby="pf-capital" className="flex flex-col gap-4 pb-6" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <span className="flex items-center gap-1.5">
           <h2 id="pf-capital" className="t-section-title">Capital</h2>
@@ -85,7 +85,7 @@ export function CapitalSummary() {
           <Figure
             label="Realized"
             size="md"
-            tone={pf.pnl.realized > 0 ? 'var(--probex-positive)' : pf.pnl.realized < 0 ? 'var(--probex-negative)' : undefined}
+            tone={pf.pnl.realized > 0 ? 'var(--synatra-positive)' : pf.pnl.realized < 0 ? 'var(--synatra-negative)' : undefined}
             title="/api/portfolio"
             {...certaintyFromSlice(portfolioSlice, 5_000)}
             footnote={
@@ -104,7 +104,7 @@ export function CapitalSummary() {
           <Figure
             label="Unrealized"
             size="md"
-            tone={pos.totalUnrealizedPnl > 0 ? 'var(--probex-positive)' : pos.totalUnrealizedPnl < 0 ? 'var(--probex-negative)' : undefined}
+            tone={pos.totalUnrealizedPnl > 0 ? 'var(--synatra-positive)' : pos.totalUnrealizedPnl < 0 ? 'var(--synatra-negative)' : undefined}
             title="/api/positions"
             {...certaintyFromSlice(positionsSlice, 5_000)}
             footnote={pos.count === 0 ? 'flat — nothing deployed' : `${pos.count} open position${pos.count === 1 ? '' : 's'}`}
@@ -119,7 +119,7 @@ export function CapitalSummary() {
           <Figure
             label="Drawdown"
             size="md"
-            tone={snap.currentDrawdownPct > 0 ? 'var(--probex-negative)' : undefined}
+            tone={snap.currentDrawdownPct > 0 ? 'var(--synatra-negative)' : undefined}
             title="/api/portfolio/summary"
             {...certaintyFromSlice(summarySlice, 30_000)}
             footnote={`from peak ${formatCurrency(snap.peakValue)} · ${snapAge}`}

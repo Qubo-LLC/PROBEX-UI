@@ -17,7 +17,7 @@
 //                network error
 //   EdgeBlocked  (added 2026-09-13) a candidate exists but the engine's own
 //                operational state says it cannot act — survival DEAD, edge
-//                below the threshold the brain currently requires, or Kelly
+//                below the survival brain's floor, or Kelly
 //                sizing at zero. Operational state leads; the candidate is
 //                shown as context. See lib/display/engineFocus.
 //
@@ -36,14 +36,17 @@ import { useApplicationStore } from '@/store/applicationStore'
 import { parseEdgeRows, type EdgeRow } from '@/lib/mappers/edges'
 import { formatPercent } from '@/lib/utils'
 import { formatEdgePct, survivalStateLabel } from '@/lib/display/engine'
-import { deriveEngineFocus, type BlockReason } from '@/lib/display/engineFocus'
+import { deriveEngineFocus, marketDataSignal, type BlockReason } from '@/lib/display/engineFocus'
 import { RadialGauge } from '@/components/shared/RadialGauge'
 import { Figure, certaintyFromSlice, type FigureCertaintyProps } from '@/components/shared/Figure'
+import { DETECTOR_THRESHOLD_UNREPORTED, SURVIVAL_FLOOR_LABEL } from '@/lib/display/thresholds'
 
 export function PerceptionArc() {
   const edgesSlice = useApplicationStore((s) => s.engine.edges)
   const survival   = useApplicationStore((s) => s.engine.survival)
   const stats      = useApplicationStore((s) => s.engine.stats)
+  const health     = useApplicationStore((s) => s.engine.health)
+  const markets    = useApplicationStore((s) => s.engine.markets)
 
   const edges = useMemo<EdgeRow[]>(() => {
     if (!edgesSlice.data) return []
@@ -59,13 +62,19 @@ export function PerceptionArc() {
   // ─── Operational state outranks signal state ──────────────────────────────
   // A candidate is only the engine's DECISION if the engine can act on it. When
   // the survival brain has halted trading, or the candidate falls below the
-  // threshold the brain currently requires, or Kelly sizing is zero, the block
+  // survival brain's floor, or Kelly sizing is zero, the block
   // leads with that and shows the candidate as context. See lib/display/
   // engineFocus for the precedence and the live contradiction that forced it.
+  //
+  // Phase 2: market data outranks both. "Holding" was shown whenever the edge
+  // list was empty — including when the engine's own api_access check said its
+  // market data had been stale for hours and it held no markets at all, which
+  // told the reader the engine had weighed candidates when there were none.
   const focus = deriveEngineFocus({
     topEdge,
     edgesKnown: edgesSlice.data !== null,
     survival: survival.data,
+    marketData: marketDataSignal(health.data, markets.data?.count ?? null),
   })
 
   return (
@@ -90,7 +99,7 @@ export function PerceptionArc() {
     <section
       aria-labelledby="arc-perception"
       className="py-5"
-      style={{ borderBottom: '1px solid var(--probex-border)' }}
+      style={{ borderBottom: '1px solid var(--synatra-border)' }}
     >
       {/* ── The decision, given authority ─────────────────────────────────
           This block is the page's semantic climax: the market above is
@@ -110,9 +119,9 @@ export function PerceptionArc() {
           rather than a rail beside an unattached column. */}
       <div
         className="flex flex-col gap-4 min-w-0 pl-4"
-        style={{ borderLeft: '2px solid var(--probex-primary)' }}
+        style={{ borderLeft: '2px solid var(--synatra-primary)' }}
       >
-        <h2 id="arc-perception" className="t-label" style={{ color: 'var(--probex-primary)' }}>
+        <h2 id="arc-perception" className="t-label" style={{ color: 'var(--synatra-primary)' }}>
           Engine focus
         </h2>
 
@@ -122,6 +131,8 @@ export function PerceptionArc() {
           <EdgeBlocked edge={focus.edge} reasons={focus.reasons} halted={focus.halted} />
         ) : focus.kind === 'holding' ? (
           <EdgeHolding minEdge={minEdge} halted={focus.halted} state={focus.state} />
+        ) : focus.kind === 'no-valid-markets' ? (
+          <NoValidMarkets cause={focus.cause} message={focus.message} />
         ) : (
           <EdgeUnknown errored={edgesSlice.status === 'error'} />
         )}
@@ -139,7 +150,7 @@ export function PerceptionArc() {
             particular number is retained. */}
         <dl
           className="grid grid-cols-3 gap-x-6 sm:gap-x-10 gap-y-2 m-0 pt-3.5 max-w-3xl"
-          style={{ borderTop: '1px solid var(--probex-border)' }}
+          style={{ borderTop: '1px solid var(--synatra-border)' }}
         >
         <LedgerFigure
           label="Under review"
@@ -155,8 +166,12 @@ export function PerceptionArc() {
           certainty={certaintyFromSlice(stats, 2_000)}
           absentReason="No engine stats reading"
         />
+        {/* Labelled for what it is. /api/survival reports the survival
+            brain's floor; the edge detector applies its own entry threshold,
+            which the engine does not report — so this is not "the" threshold
+            (remediation spec Part 2 §J; owner decision on the canonical one). */}
         <LedgerFigure
-          label="Threshold"
+          label={SURVIVAL_FLOOR_LABEL}
           value={minEdge !== null ? formatEdgePct(minEdge) : null}
           certainty={certaintyFromSlice(survival, 5_000)}
           absentReason="The survival brain has not reported"
@@ -190,8 +205,8 @@ function LedgerFigure({
 
 function EdgeFound({ edge }: { edge: EdgeRow }) {
   const isYes = edge.direction.toLowerCase() === 'yes'
-  const color = isYes ? 'var(--probex-yes)' : 'var(--probex-no)'
-  const ink   = isYes ? 'var(--probex-on-yes)' : 'var(--probex-on-no)'
+  const color = isYes ? 'var(--synatra-yes)' : 'var(--synatra-no)'
+  const ink   = isYes ? 'var(--synatra-on-yes)' : 'var(--synatra-on-no)'
 
   // The engine's SUBJECT leads: the market question reads first, at reading
   // size, and the magnitude supports it. A gauge answering "how much" above the
@@ -235,10 +250,10 @@ function EdgeFound({ edge }: { edge: EdgeRow }) {
           strokeWidth={6}
           ariaLabel={`Edge ${edge.edgePct.toFixed(1)} percent, on a 0 to 100 percent scale`}
         >
-          <span className="text-sm font-bold font-mono tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>
+          <span className="text-sm font-bold font-mono tabular-nums" style={{ color: 'var(--synatra-text-primary)' }}>
             {edge.edgePct.toFixed(1)}%
           </span>
-          <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>
+          <span className="text-2xs font-semibold uppercase tracking-wider" style={{ color: 'var(--synatra-text-muted)' }}>
             edge
           </span>
         </RadialGauge>
@@ -257,7 +272,7 @@ function EdgeFound({ edge }: { edge: EdgeRow }) {
           >
             {edge.direction}
           </span>
-          <span className="flex items-center gap-x-2.5 gap-y-0.5 flex-wrap text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+          <span className="flex items-center gap-x-2.5 gap-y-0.5 flex-wrap text-2xs font-mono tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>
             {edge.confidence !== null && <span>{formatPercent(edge.confidence)} confidence</span>}
             {edge.kellySize !== null && <span>{(edge.kellySize * 100).toFixed(0)}% Kelly</span>}
           </span>
@@ -279,9 +294,9 @@ function EdgeFound({ edge }: { edge: EdgeRow }) {
  */
 function EdgeBlocked({ edge, reasons, halted }: { edge: EdgeRow; reasons: BlockReason[]; halted: boolean }) {
   const isYes = edge.direction.toLowerCase() === 'yes'
-  const sideColor = isYes ? 'var(--probex-yes)' : 'var(--probex-no)'
-  const sideInk   = isYes ? 'var(--probex-on-yes)' : 'var(--probex-on-no)'
-  const tone = halted ? 'var(--probex-negative)' : 'var(--probex-warning)'
+  const sideColor = isYes ? 'var(--synatra-yes)' : 'var(--synatra-no)'
+  const sideInk   = isYes ? 'var(--synatra-on-yes)' : 'var(--synatra-on-no)'
+  const tone = halted ? 'var(--synatra-negative)' : 'var(--synatra-warning)'
 
   return (
     <div className="flex flex-col gap-3 max-w-2xl">
@@ -290,7 +305,7 @@ function EdgeBlocked({ edge, reasons, halted }: { edge: EdgeRow; reasons: BlockR
           className="flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0"
           style={{
             border: `1px solid color-mix(in srgb, ${tone} 45%, transparent)`,
-            background: `color-mix(in srgb, ${tone} 10%, var(--probex-surface))`,
+            background: `color-mix(in srgb, ${tone} 10%, var(--synatra-surface))`,
             color: tone,
           }}
           aria-hidden="true"
@@ -325,11 +340,11 @@ function EdgeBlocked({ edge, reasons, halted }: { edge: EdgeRow; reasons: BlockR
           clear, and this one cannot. */}
       <div
         className="flex flex-col gap-1.5 pt-3 min-w-0"
-        style={{ borderTop: '1px solid var(--probex-border)' }}
+        style={{ borderTop: '1px solid var(--synatra-border)' }}
       >
         <span className="t-label">Candidate the engine sees</span>
         {edge.marketTitle && (
-          <span className="text-sm font-semibold leading-snug truncate" style={{ color: 'var(--probex-text-secondary)' }}>
+          <span className="text-sm font-semibold leading-snug truncate" style={{ color: 'var(--synatra-text-secondary)' }}>
             {edge.marketTitle}
           </span>
         )}
@@ -340,7 +355,7 @@ function EdgeBlocked({ edge, reasons, halted }: { edge: EdgeRow; reasons: BlockR
           >
             {edge.direction}
           </span>
-          <span className="flex items-center gap-x-2.5 flex-wrap text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>
+          <span className="flex items-center gap-x-2.5 flex-wrap text-2xs font-mono tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>
             <span>{formatEdgePct(edge.edgePct)} edge</span>
             {edge.confidence !== null && <span>{formatPercent(edge.confidence)} confidence</span>}
             {edge.kellySize !== null && <span>{(edge.kellySize * 100).toFixed(0)}% Kelly</span>}
@@ -357,10 +372,29 @@ function reasonSentence(r: BlockReason): string {
     case 'halted':
       return `The survival brain is in ${survivalStateLabel(r.state)} state and has halted trading.`
     case 'threshold':
-      return `The candidate's ${formatEdgePct(r.edgePct)} edge is below the ${formatEdgePct(r.minEdge)} the brain currently requires.`
+      return `The candidate's ${formatEdgePct(r.edgePct)} edge is below the survival brain's ${formatEdgePct(r.minEdge)} floor.`
     case 'sizing':
       return `The Kelly modifier is ${r.kellyModifier.toFixed(2)}×, so any position would size to zero.`
+    case 'stale-market-data':
+      return `The engine reports its market data is stale${r.message ? ` (“${r.message}”)` : ''}, so this edge was measured against a quote that is not current.`
   }
+}
+
+/** Nothing valid to evaluate. Stated as a condition, not as a decision. */
+function NoValidMarkets({ cause, message }: { cause: 'stale' | 'empty'; message: string | null }) {
+  return (
+    <div className="flex flex-col gap-2 min-w-0">
+      <span className="t-metric" style={{ color: 'var(--synatra-warning)' }}>
+        No valid markets
+      </span>
+      <p className="t-description max-w-2xl">
+        {cause === 'stale'
+          ? 'The engine has no current market data to evaluate, so there is no candidate to hold on. '
+          : 'The engine’s current market scan holds no markets, so there is nothing to evaluate. '}
+        {message && <span className="font-mono text-2xs" style={{ color: 'var(--synatra-text-secondary)' }}>Engine: “{message}”</span>}
+      </p>
+    </div>
+  )
 }
 
 /** The common state. Holding is a DECISION, so it is presented as one — with
@@ -368,16 +402,16 @@ function reasonSentence(r: BlockReason): string {
  *  and there is no candidate either, the halt is the more important fact and
  *  leads; "Holding" would describe a choice the engine is not free to make. */
 function EdgeHolding({ minEdge, halted, state }: { minEdge: number | null; halted: boolean; state: string | null }) {
-  const tone = halted ? 'var(--probex-negative)' : undefined
+  const tone = halted ? 'var(--synatra-negative)' : undefined
   return (
     <div className="flex flex-col gap-2 max-w-xl">
       <div className="flex items-center gap-2.5">
         <span
           className="flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0"
           style={{
-            border: `1px solid ${halted ? `color-mix(in srgb, ${tone} 45%, transparent)` : 'var(--probex-border-default)'}`,
-            background: halted ? `color-mix(in srgb, ${tone} 10%, var(--probex-surface))` : 'var(--probex-surface)',
-            color: tone ?? 'var(--probex-text-muted)',
+            border: `1px solid ${halted ? `color-mix(in srgb, ${tone} 45%, transparent)` : 'var(--synatra-border-default)'}`,
+            background: halted ? `color-mix(in srgb, ${tone} 10%, var(--synatra-surface))` : 'var(--synatra-surface)',
+            color: tone ?? 'var(--synatra-text-muted)',
           }}
           aria-hidden="true"
         >
@@ -402,8 +436,8 @@ function EdgeHolding({ minEdge, halted, state }: { minEdge: number | null; halte
         {halted
           ? `The survival brain is in ${survivalStateLabel(state ?? 'DEAD')} state and has halted trading. No candidate is under consideration.`
           : minEdge !== null
-            ? `No candidate has cleared the ${formatEdgePct(minEdge)} edge threshold the survival brain currently requires. The engine prefers no trade to a weak one.`
-            : 'No candidate has cleared the edge threshold. The engine prefers no trade to a weak one.'}
+            ? `No candidate has cleared the engine's entry requirements. The survival brain's floor is ${formatEdgePct(minEdge)}; ${DETECTOR_THRESHOLD_UNREPORTED}.`
+            : `No candidate has cleared the engine's entry requirements; ${DETECTOR_THRESHOLD_UNREPORTED}.`}
       </p>
     </div>
   )
@@ -418,8 +452,8 @@ function EdgeUnknown({ errored }: { errored: boolean }) {
         <span
           className="flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0"
           style={{
-            border: '1px dashed var(--probex-border-default)',
-            color: 'var(--probex-text-disabled)',
+            border: '1px dashed var(--synatra-border-default)',
+            color: 'var(--synatra-text-disabled)',
           }}
           aria-hidden="true"
         >
@@ -430,7 +464,7 @@ function EdgeUnknown({ errored }: { errored: boolean }) {
         {/* Same register as Holding — the ABSENCE of a decision is as
             important as a decision, and rendering it quieter would let a
             failed endpoint read as a calm engine. */}
-        <span className="t-metric" style={{ color: 'var(--probex-text-secondary)', letterSpacing: '-0.02em' }}>
+        <span className="t-metric" style={{ color: 'var(--synatra-text-secondary)', letterSpacing: '-0.02em' }}>
           No signal report
         </span>
       </div>

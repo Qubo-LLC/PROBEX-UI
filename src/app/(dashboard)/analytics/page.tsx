@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { AnalyticsPage } from '@/components/analytics/AnalyticsPage'
 
 export const metadata: Metadata = {
-  title: 'Analytics — Probex',
+  title: 'Analytics — Synatra',
   description: 'Edge quality, Kelly utilization, and trading performance analysis.',
 }
 

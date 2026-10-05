@@ -28,12 +28,12 @@ export type ChipTone =
   | 'accent'
 
 const TONE_VAR: Record<ChipTone, string> = {
-  neutral:  'var(--probex-text-muted)',
-  positive: 'var(--probex-positive)',
-  warning:  'var(--probex-warning)',
-  danger:   'var(--probex-negative)',
-  info:     'var(--probex-primary)',
-  accent:   'var(--probex-secondary)',
+  neutral:  'var(--synatra-text-muted)',
+  positive: 'var(--synatra-positive)',
+  warning:  'var(--synatra-warning)',
+  danger:   'var(--synatra-negative)',
+  info:     'var(--synatra-primary)',
+  accent:   'var(--synatra-secondary)',
 }
 
 interface StatusChipProps {

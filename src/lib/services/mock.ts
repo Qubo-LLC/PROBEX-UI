@@ -4,6 +4,7 @@
 
 import { ok, type ApiResult } from './response'
 import type { IEngineService, ServiceRegistry, CreateOrderInput } from './interfaces'
+import type { LedgerItem, LedgerPage, LedgerPageQuery } from '@/types/ledger'
 import {
   MOCK_ENGINE_HEALTH, MOCK_ENGINE_RUNTIME, MOCK_ENGINE_STATS,
   MOCK_ENGINE_CONFIG, MOCK_SURVIVAL_STATUS, MOCK_PRICE_HISTORY,
@@ -110,6 +111,22 @@ class MockEngineService implements IEngineService {
   async getPaperStatus():          Promise<ApiResult<PaperStatus>>          { return ok(MOCK_PAPER_STATUS) }
   async getSystemMetrics():        Promise<ApiResult<SystemMetrics>>        { return ok(MOCK_SYSTEM_METRICS) }
   async getTradesLedger():         Promise<ApiResult<TradesLedger>>         { return ok(MOCK_TRADES_LEDGER) }
+  // Mock mode models the DEPLOYED contract (capped, page-scoped summary) —
+  // it has no cursor, so the ledger view shows its "cannot page" state.
+  async getLedgerPage(_source: 'ledger' | 'history', query: LedgerPageQuery): Promise<ApiResult<LedgerPage>> {
+    const items: LedgerItem[] = MOCK_TRADES_LEDGER.ledger.slice(0, query.limit).map((t) => ({
+      seq: null, tradeId: null, status: 'settled', mode: 'paper', sessionId: null, executionModel: null,
+      marketId: t.marketId, marketQuestion: null, assetSymbol: t.assetSymbol, assetCategory: t.assetCategory,
+      durationMinutes: t.durationMinutes, marketClosesAt: null, direction: t.direction === 'no' ? 'no' : 'yes',
+      sizeUsd: t.size, shares: null, entryPriceCents: t.entryPrice, exitPriceCents: t.exitPrice, pnl: t.pnl,
+      pnlFraction: t.pnlPercent, won: t.won, outcome: null, edgePct: t.edgePct, confidence: null, openedAt: t.openedAt,
+      closedAt: t.closedAt, holdTimeSeconds: t.holdTimeSeconds, resolutionSource: null, orderId: null,
+    }))
+    return ok({
+      available: true, items, paging: { kind: 'capped', returned: items.length, requestedLimit: query.limit },
+      summary: null, summaryScope: null, durable: null, mode: 'paper', supportsCursor: false, timestamp: Date.now(),
+    })
+  }
   async getExecutionOrders():      Promise<ApiResult<ExecutionOrders>>      { return ok(MOCK_EXECUTION_ORDERS) }
 
   /** No mock orders exist — mirrors the live 404 for an unknown id. */

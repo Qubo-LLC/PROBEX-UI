@@ -66,7 +66,7 @@ export function TableRowSkeleton({ columns = 6, rows = 5 }: TableRowSkeletonProp
               className="px-3 py-2.5"
               // Row separator (bottom border on every row except the last),
               // preserving the look of the former table-CSS row rules.
-              style={rowIndex < rows - 1 ? { borderBottom: '1px solid var(--probex-border)' } : undefined}
+              style={rowIndex < rows - 1 ? { borderBottom: '1px solid var(--synatra-border)' } : undefined}
             >
               <Skeleton
                 height={16}
@@ -105,10 +105,10 @@ export function Spinner({ size = 'md', className, label = 'Loading' }: SpinnerPr
         className,
       )}
       style={{
-        borderTopColor: 'var(--probex-primary)',
-        borderLeftColor: 'var(--probex-primary)',
-        borderRightColor: 'var(--probex-border-default)',
-        borderBottomColor: 'var(--probex-border-default)',
+        borderTopColor: 'var(--synatra-primary)',
+        borderLeftColor: 'var(--synatra-primary)',
+        borderRightColor: 'var(--synatra-border-default)',
+        borderBottomColor: 'var(--synatra-border-default)',
       }}
     />
   )
@@ -131,7 +131,7 @@ export function LoadingState({ label = 'Loading', className }: LoadingStateProps
       role="status"
     >
       <Spinner size="lg" />
-      <p className="text-xs" style={{ color: 'var(--probex-text-muted)' }}>
+      <p className="text-xs" style={{ color: 'var(--synatra-text-muted)' }}>
         {label}
       </p>
     </div>
@@ -189,7 +189,7 @@ export function TableSkeleton({
 }: { columns?: number; rows?: number; className?: string }) {
   return (
     <div className={cn('card overflow-hidden', className)}>
-      <div className="px-4 py-3 flex items-center gap-3 border-b" style={{ borderColor: 'var(--probex-border)' }}>
+      <div className="px-4 py-3 flex items-center gap-3 border-b" style={{ borderColor: 'var(--synatra-border)' }}>
         <Skeleton height={14} width={160} />
         <div className="ml-auto"><Skeleton height={32} width={200} /></div>
       </div>

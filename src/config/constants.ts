@@ -17,8 +17,8 @@ export const ACTIVE_ASSET_CLASS: AssetClass = 'bitcoin'
 
 // ─── App identity ─────────────────────────────────────────────────────────
 
-export const APP_NAME = 'Probex' as const
-export const APP_FULL_NAME = 'QUBO Probex' as const
+export const APP_NAME = 'Synatra' as const
+export const APP_FULL_NAME = 'QUBO Synatra' as const
 export const APP_TAGLINE = 'Prediction Intelligence' as const
 export const APP_VERSION = '2.0.0' as const
 
@@ -151,6 +151,8 @@ export const ROUTES = {
   LIVE:       '/live',
   STRATEGY:   '/strategy',
   POSITIONS:  '/positions',
+  // Trade ledger — placement provisional pending the owner IA decision (spec §14).
+  LEDGER:     '/ledger',
   EXECUTION:  '/execution',
   PAPER:      '/paper',
   SURVIVAL:   '/survival',

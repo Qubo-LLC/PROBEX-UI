@@ -12,15 +12,15 @@ import { assertDeploymentPolicy, readDeploymentPolicy } from '@/config/runtime.s
 import { normalizeApiMode, isKnownDeployment } from '@/config/runtime'
 
 export function enforceDeploymentPolicy(): void {
-  const raw        = process.env.PROBEX_DEPLOYMENT
+  const raw        = process.env.SYNATRA_DEPLOYMENT
   const deployment = readDeploymentPolicy()
-  const mode       = normalizeApiMode(process.env.PROBEX_API_MODE ?? process.env.NEXT_PUBLIC_API_MODE)
+  const mode       = normalizeApiMode(process.env.SYNATRA_API_MODE ?? process.env.NEXT_PUBLIC_API_MODE)
 
   // A typo ('prod', 'dev') silently becomes the strict default. That is safe,
   // but silence would hide the mistake — so say so.
   if (raw !== undefined && raw.trim() !== '' && !isKnownDeployment(raw)) {
     console.warn(
-      `[Probex] Unrecognised PROBEX_DEPLOYMENT="${raw}" — falling back to the ` +
+      `[Synatra] Unrecognised SYNATRA_DEPLOYMENT="${raw}" — falling back to the ` +
       'strictest policy "production". Valid values: development, test, staging, production.',
     )
   }
@@ -33,11 +33,11 @@ export function enforceDeploymentPolicy(): void {
   try {
     assertDeploymentPolicy()
   } catch (error) {
-    console.error(`\n[Probex] FATAL CONFIGURATION ERROR\n\n${(error as Error).message}\n`)
+    console.error(`\n[Synatra] FATAL CONFIGURATION ERROR\n\n${(error as Error).message}\n`)
     process.exit(1)
   }
 
   console.info(
-    `[Probex] Deployment policy "${deployment}", engine mode "${mode}" — configuration valid.`,
+    `[Synatra] Deployment policy "${deployment}", engine mode "${mode}" — configuration valid.`,
   )
 }

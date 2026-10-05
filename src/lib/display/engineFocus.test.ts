@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deriveEngineFocus, blockReasons, isHaltedState } from './engineFocus'
+import { deriveEngineFocus, blockReasons, isHaltedState, marketDataSignal } from './engineFocus'
 import type { EdgeRow } from '@/lib/mappers/edges'
 import type { SurvivalStatus } from '@/types/engine'
 
@@ -76,5 +76,49 @@ describe('deriveEngineFocus', () => {
     expect(isHaltedState('dead')).toBe(true)
     expect(isHaltedState('CRITICAL')).toBe(false)
     expect(isHaltedState(null)).toBe(false)
+  })
+})
+
+describe('deriveEngineFocus — market data (remediation phase 2)', () => {
+  // The exact production condition of 2026-09-24..26.
+  const STALE_MSG = 'Market data stale (123857.8s old, 0 markets cached)'
+  const staleHealth = { components: [
+    { name: 'price_feed', healthy: true, message: 'Connected and receiving data' },
+    { name: 'api_access', healthy: false, message: STALE_MSG },
+  ] }
+
+  it('stale market data + no edge → no-valid-markets, NOT holding', () => {
+    const s = deriveEngineFocus({ topEdge: null, edgesKnown: true, survival: survival({}),
+      marketData: marketDataSignal(staleHealth, 0) })
+    expect(s).toEqual({ kind: 'no-valid-markets', cause: 'stale', message: STALE_MSG, halted: false })
+  })
+
+  it('fresh data but an empty scan → no-valid-markets (empty)', () => {
+    const fresh = { components: [{ name: 'api_access', healthy: true, message: 'Market data fresh (2.1s old, 0 markets cached)' }] }
+    expect(deriveEngineFocus({ topEdge: null, edgesKnown: true, survival: survival({}), marketData: marketDataSignal(fresh, 0) }).kind)
+      .toBe('no-valid-markets')
+  })
+
+  it('fresh data with markets and no edge → holding (a real decision)', () => {
+    const fresh = { components: [{ name: 'api_access', healthy: true, message: 'Market data fresh (2.1s old, 4 markets cached)' }] }
+    expect(deriveEngineFocus({ topEdge: null, edgesKnown: true, survival: survival({}), marketData: marketDataSignal(fresh, 4) }).kind)
+      .toBe('holding')
+  })
+
+  it('an edge measured on stale data is blocked, with the engine’s message', () => {
+    const s = deriveEngineFocus({ topEdge: edge(14.5), edgesKnown: true, survival: survival({}),
+      marketData: marketDataSignal(staleHealth, 3) })
+    expect(s.kind).toBe('blocked')
+    if (s.kind === 'blocked') expect(s.reasons[0]).toEqual({ kind: 'stale-market-data', message: STALE_MSG })
+  })
+
+  it('no market signal → previous behaviour unchanged', () => {
+    expect(deriveEngineFocus({ topEdge: null, edgesKnown: true, survival: survival({}), marketData: null }).kind).toBe('holding')
+    expect(marketDataSignal(null, null)).toBeNull()
+  })
+
+  it('edges not answered → unknown, even with stale data', () => {
+    expect(deriveEngineFocus({ topEdge: null, edgesKnown: false, survival: survival({}), marketData: marketDataSignal(staleHealth, 0) }).kind)
+      .toBe('unknown')
   })
 })

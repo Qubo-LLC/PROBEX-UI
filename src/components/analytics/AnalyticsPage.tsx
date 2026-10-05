@@ -64,7 +64,7 @@ export function AnalyticsPage() {
 
       {/* B · Evidence — the two charts, unchanged components. They sit under
           the conclusion they support rather than opening the page. */}
-      <section aria-labelledby="an-evidence" className="flex flex-col gap-3 py-6" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+      <section aria-labelledby="an-evidence" className="flex flex-col gap-3 py-6" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
         <h2 id="an-evidence" className="t-section-title">Equity over the retained window</h2>
         <PerformanceAnalytics />
       </section>

@@ -43,7 +43,7 @@ export function MarketHeader({ marketId, identity, market, expired }: MarketHead
       <Link
         href={ROUTES.MARKETS}
         className="inline-flex items-center gap-1.5 text-2xs font-semibold focus-ring rounded self-start"
-        style={{ color: 'var(--probex-text-muted)' }}
+        style={{ color: 'var(--synatra-text-muted)' }}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
         Markets
@@ -88,7 +88,7 @@ function RecordButton(props: PopoverTriggerProps) {
     <button
       type="button"
       className="focus-ring inline-flex items-center gap-1 rounded-sm text-2xs font-mono cursor-pointer"
-      style={{ color: 'var(--probex-text-disabled)' }}
+      style={{ color: 'var(--synatra-text-disabled)' }}
       title="Market record — identifiers and timestamps"
       {...props}
     >
@@ -120,7 +120,7 @@ function Line({ label, value, mono = true }: { label: string; value: string; mon
   return (
     <div className="flex flex-col gap-0.5 min-w-0">
       <span className="t-label">{label}</span>
-      <span className={`text-2xs break-all ${mono ? 'font-mono' : ''}`} style={{ color: 'var(--probex-text-secondary)' }}>{value}</span>
+      <span className={`text-2xs break-all ${mono ? 'font-mono' : ''}`} style={{ color: 'var(--synatra-text-secondary)' }}>{value}</span>
     </div>
   )
 }

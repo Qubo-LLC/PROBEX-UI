@@ -252,7 +252,7 @@ export const MOCK_EXECUTION_TRADES: ExecutionTrades = {
 // live session mid-run — capital drawn down to $46.27, state CRITICAL).
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const MOCK_POSITIONS_HISTORY: PositionsHistory = { available: true, history: [], count: 0, limit: 50, timestamp: NOW }
+export const MOCK_POSITIONS_HISTORY: PositionsHistory = { available: true, history: [], count: 0, limit: 50, timestamp: NOW, total: null, hasMore: null }
 
 export const MOCK_SURVIVAL_PATTERNS: SurvivalPatterns = {
   available: true,
@@ -396,6 +396,8 @@ export const MOCK_PAPER_STATS: PaperStats = {
     hourlyPerformance: {},
   },
   timestamp: NOW,
+  integrity: null,
+  session: null,
 }
 
 // ─── Markets summary (2026-07-25) ─────────────────────────────────────────────

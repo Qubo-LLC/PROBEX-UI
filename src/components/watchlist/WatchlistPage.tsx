@@ -62,8 +62,8 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 import type { MarketSummaryItem, MarketsSummary } from '@/types/engine'
 
-const YES = 'var(--probex-yes)'
-const NO  = 'var(--probex-no)'
+const YES = 'var(--synatra-yes)'
+const NO  = 'var(--synatra-no)'
 const COLS = 6
 const RECENT_EVENTS = 12
 
@@ -193,7 +193,7 @@ export function WatchlistPage({ embedded = false }: EmbeddableProps = {}) {
             <Popover label="About the watchlist" trigger={(p) => <InfoButton what="the watchlist" {...p} />}>
               <PopoverTitle>A browser-local list</PopoverTitle>
               <PopoverText>
-                Starring a market anywhere in PROBEX adds its id to a list kept in this browser’s
+                Starring a market anywhere in Synatra adds its id to a list kept in this browser’s
                 storage. It survives reloads and restarts, but it is not synced to other devices,
                 the engine does not know about it, and it has no effect on what the engine scans
                 or trades.
@@ -211,7 +211,7 @@ export function WatchlistPage({ embedded = false }: EmbeddableProps = {}) {
           {t.watched === 0
             ? 'Nothing is starred. The star on any market row, card or detail page adds it here.'
             : <>
-                <strong style={{ color: 'var(--probex-text-primary)' }}>{t.watched} market{t.watched === 1 ? '' : 's'}</strong>
+                <strong style={{ color: 'var(--synatra-text-primary)' }}>{t.watched} market{t.watched === 1 ? '' : 's'}</strong>
                 {' — '}
                 {t.scanned} in the engine’s current scan, {t.recorded} held only in its records
                 {t.noRecord > 0 && `, ${t.noRecord} with no record`}
@@ -243,7 +243,7 @@ export function WatchlistPage({ embedded = false }: EmbeddableProps = {}) {
               <span className="t-description">scanning first, then recorded, then unknown — expand a row for its full record</span>
             </span>
             {marketsSlice.status === 'error' && (
-              <span className="text-2xs font-semibold" style={{ color: 'var(--probex-warning)' }}>the market list did not answer — nothing has been removed</span>
+              <span className="text-2xs font-semibold" style={{ color: 'var(--synatra-warning)' }}>the market list did not answer — nothing has been removed</span>
             )}
           </div>
           <WatchedTable rows={rows} />
@@ -252,7 +252,7 @@ export function WatchlistPage({ embedded = false }: EmbeddableProps = {}) {
 
       {/* ── C · current edges on watched markets ────────────────────────── */}
       {rows.length > 0 && (
-        <section aria-labelledby="wl-edges" className="flex flex-col gap-2 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+        <section aria-labelledby="wl-edges" className="flex flex-col gap-2 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <span className="flex items-baseline gap-2 flex-wrap">
               <h2 id="wl-edges" className="t-section-title">Current edges on watched markets</h2>
@@ -267,7 +267,7 @@ export function WatchlistPage({ embedded = false }: EmbeddableProps = {}) {
               {edgesSlice.data && edgesSlice.data.count > 0
                 ? `The engine reports ${edgesSlice.data.count} edge${edgesSlice.data.count === 1 ? '' : 's'} at the moment, none on a watched market.`
                 : 'The engine reports no edge on any market at the moment.'}
-              {' '}<Link href={ROUTES.STRATEGY} className="focus-ring font-semibold" style={{ color: 'var(--probex-primary)' }}>How edges are found →</Link>
+              {' '}<Link href={ROUTES.STRATEGY} className="focus-ring font-semibold" style={{ color: 'var(--synatra-primary)' }}>How edges are found →</Link>
             </p>
           ) : (
             <EdgeTable result={watchedEdges} />
@@ -277,7 +277,7 @@ export function WatchlistPage({ embedded = false }: EmbeddableProps = {}) {
 
       {/* ── D · events that name a watched market ───────────────────────── */}
       {rows.length > 0 && (
-        <section aria-labelledby="wl-events" className="flex flex-col gap-2 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+        <section aria-labelledby="wl-events" className="flex flex-col gap-2 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <span className="flex items-baseline gap-2 flex-wrap">
               <h2 id="wl-events" className="t-section-title">Recorded activity</h2>
@@ -285,7 +285,7 @@ export function WatchlistPage({ embedded = false }: EmbeddableProps = {}) {
             </span>
             <span className="flex items-baseline gap-3">
               <span className="t-metadata">/api/events</span>
-              <Link href={`${ROUTES.SYSTEM}?view=events`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--probex-primary)' }}>Full log →</Link>
+              <Link href={`${ROUTES.SYSTEM}?view=events`} className="focus-ring text-2xs font-semibold" style={{ color: 'var(--synatra-primary)' }}>Full log →</Link>
             </span>
           </div>
           {!eventsSlice.data ? (
@@ -305,9 +305,9 @@ export function WatchlistPage({ embedded = false }: EmbeddableProps = {}) {
 
 function stateAccent(s: WatchedState): string | undefined {
   if (s.kind === 'scanned') {
-    return s.lifecycle === 'open' ? 'var(--probex-status-live)' : s.lifecycle === 'closing' ? 'var(--probex-status-stale)' : undefined
+    return s.lifecycle === 'open' ? 'var(--synatra-status-live)' : s.lifecycle === 'closing' ? 'var(--synatra-status-stale)' : undefined
   }
-  return s.kind === 'unchecked' ? 'var(--probex-warning)' : undefined
+  return s.kind === 'unchecked' ? 'var(--synatra-warning)' : undefined
 }
 
 /** The state, in words. Colour only reinforces the word on the row's edge.
@@ -320,21 +320,21 @@ function stateWords(s: WatchedState): { word: string; detail: string | null; tit
       word: closed ? 'Closed' : 'Scanning',
       detail: s.lifecycle === 'unknown' ? null : `${s.lifecycle === 'closing' ? `${lifecycleLabel(s.lifecycle).toLowerCase()} · ` : ''}${formatCloseTime(s.closesAt)}`,
       title: closeTimestamp(s.closesAt),
-      color: closed ? 'var(--probex-text-muted)' : 'var(--probex-text-secondary)',
+      color: closed ? 'var(--synatra-text-muted)' : 'var(--synatra-text-secondary)',
     }
   }
   if (s.kind === 'recorded') {
-    return { word: 'Not scanned', detail: `last record ${stamp(s.lastRecorded)}`, title: new Date(s.lastRecorded).toLocaleString(), color: 'var(--probex-text-secondary)' }
+    return { word: 'Not scanned', detail: `last record ${stamp(s.lastRecorded)}`, title: new Date(s.lastRecorded).toLocaleString(), color: 'var(--synatra-text-secondary)' }
   }
-  if (s.kind === 'no-record') return { word: 'No record', detail: null, title: 'Neither the scan, the archive, the positions nor the trade ledger holds this id.', color: 'var(--probex-text-disabled)' }
-  if (s.kind === 'checking') return { word: 'Checking…', detail: null, title: undefined, color: 'var(--probex-text-muted)' }
-  return { word: 'Unchecked', detail: s.reason, title: undefined, color: 'var(--probex-warning)' }
+  if (s.kind === 'no-record') return { word: 'No record', detail: null, title: 'Neither the scan, the archive, the positions nor the trade ledger holds this id.', color: 'var(--synatra-text-disabled)' }
+  if (s.kind === 'checking') return { word: 'Checking…', detail: null, title: undefined, color: 'var(--synatra-text-muted)' }
+  return { word: 'Unchecked', detail: s.reason, title: undefined, color: 'var(--synatra-warning)' }
 }
 
 function StateDetail({ w, className }: { w: ReturnType<typeof stateWords>; className?: string }) {
   if (w.detail === null) return null
   return (
-    <span className={`font-mono text-2xs tabular-nums ${className ?? ''}`} style={{ color: 'var(--probex-text-muted)' }} {...(w.title !== undefined ? { title: w.title } : {})}>
+    <span className={`font-mono text-2xs tabular-nums ${className ?? ''}`} style={{ color: 'var(--synatra-text-muted)' }} {...(w.title !== undefined ? { title: w.title } : {})}>
       {w.detail}
     </span>
   )
@@ -354,7 +354,7 @@ function evidenceLine(r: WatchedRow): ReactNode[] {
   const t = r.settled[0]
   if (t) {
     parts.push(
-      <span key="trade" className="text-2xs font-semibold" style={{ color: t.won ? 'var(--probex-positive)' : 'var(--probex-negative)' }}>
+      <span key="trade" className="text-2xs font-semibold" style={{ color: t.won ? 'var(--synatra-positive)' : 'var(--synatra-negative)' }}>
         {t.direction.toUpperCase()} {t.won ? 'won' : 'lost'} {formatSignedCurrency(t.pnl)}{r.settled.length > 1 ? ` · ${r.settled.length} trades` : ''}
       </span>,
     )
@@ -388,7 +388,7 @@ function WatchedTable({ rows }: { rows: WatchedRow[] }) {
                   <Link
                     href={MARKET_DETAIL_PATH(r.marketId)}
                     className="focus-ring rounded-sm font-semibold block truncate"
-                    style={{ color: dim ? 'var(--probex-text-secondary)' : 'var(--probex-text-primary)', ...(r.identity.source === 'id' ? { fontFamily: 'var(--font-mono, monospace)', fontWeight: 500 } : {}) }}
+                    style={{ color: dim ? 'var(--synatra-text-secondary)' : 'var(--synatra-text-primary)', ...(r.identity.source === 'id' ? { fontFamily: 'var(--font-mono, monospace)', fontWeight: 500 } : {}) }}
                     title={r.identity.source === 'id' ? r.marketId : r.identity.label}
                   >
                     {r.identity.label}
@@ -403,7 +403,7 @@ function WatchedTable({ rows }: { rows: WatchedRow[] }) {
                     {/* The folded columns, restated once beneath the title:
                         the state's detail, the YES price, the evidence. */}
                     <StateDetail w={w} className="sm:hidden" />
-                    {r.yes && <span className="sm:hidden font-mono text-2xs tabular-nums" style={{ color: 'var(--probex-text-muted)' }}>YES {r.yes.cents.toFixed(1)}¢{r.yes.source === 'archive' ? ' · last recorded' : ''}</span>}
+                    {r.yes && <span className="sm:hidden font-mono text-2xs tabular-nums" style={{ color: 'var(--synatra-text-muted)' }}>YES {r.yes.cents.toFixed(1)}¢{r.yes.source === 'archive' ? ' · last recorded' : ''}</span>}
                     {evidence.length > 0 && <span className="sm:hidden flex items-center gap-2 flex-wrap">{evidence}</span>}
                   </span>
                 </Td>
@@ -416,17 +416,17 @@ function WatchedTable({ rows }: { rows: WatchedRow[] }) {
                 <Td align="right" dense hideBelow="sm">
                   {r.yes ? (
                     <span className="inline-flex flex-col items-end leading-tight">
-                      <span className="font-mono font-semibold tabular-nums" style={{ color: r.yes.source === 'scan' ? 'var(--probex-text-primary)' : 'var(--probex-text-secondary)' }} title={r.yes.source === 'scan' ? 'yes_price from the current scan' : 'The archive’s last snapshot of yes_price'}>
+                      <span className="font-mono font-semibold tabular-nums" style={{ color: r.yes.source === 'scan' ? 'var(--synatra-text-primary)' : 'var(--synatra-text-secondary)' }} title={r.yes.source === 'scan' ? 'yes_price from the current scan' : 'The archive’s last snapshot of yes_price'}>
                         {r.yes.cents.toFixed(1)}¢
                       </span>
                       {r.yes.source === 'archive' && <span className="t-metadata">last recorded</span>}
                     </span>
-                  ) : <span style={{ color: 'var(--probex-text-disabled)' }}>—</span>}
+                  ) : <span style={{ color: 'var(--synatra-text-disabled)' }}>—</span>}
                 </Td>
                 <Td align="left" dense hideBelow="sm">
                   {evidence.length > 0
                     ? <span className="flex items-center gap-2 flex-wrap">{evidence}</span>
-                    : <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }} aria-label="No edge, position or trade on this market">—</span>}
+                    : <span className="text-2xs" style={{ color: 'var(--synatra-text-disabled)' }} aria-label="No edge, position or trade on this market">—</span>}
                 </Td>
                 <Td align="center" dense><WatchlistButton marketId={r.marketId} /></Td>
                 <Td align="center" dense>
@@ -437,7 +437,7 @@ function WatchedTable({ rows }: { rows: WatchedRow[] }) {
                     aria-controls={panelId}
                     aria-label={`${isOpen ? 'Hide' : 'Show'} the record for ${r.identity.label}`}
                     className="focus-ring inline-flex items-center justify-center w-6 h-6 rounded cursor-pointer"
-                    style={{ color: 'var(--probex-text-muted)' }}
+                    style={{ color: 'var(--synatra-text-muted)' }}
                   >
                     <span aria-hidden="true" style={{ display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▸</span>
                   </button>
@@ -467,8 +467,8 @@ function WatchedRecord({ r }: { r: WatchedRow }) {
     <div className="flex flex-col gap-3">
       <div className="flex items-baseline gap-2 flex-wrap min-w-0">
         <span className="t-metadata flex-shrink-0">Market id</span>
-        <code className="font-mono text-2xs break-all" style={{ color: 'var(--probex-text-secondary)' }}>{r.marketId}</code>
-        <Link href={MARKET_DETAIL_PATH(r.marketId)} className="focus-ring text-2xs font-semibold flex-shrink-0" style={{ color: 'var(--probex-primary)' }}>Market Detail →</Link>
+        <code className="font-mono text-2xs break-all" style={{ color: 'var(--synatra-text-secondary)' }}>{r.marketId}</code>
+        <Link href={MARKET_DETAIL_PATH(r.marketId)} className="focus-ring text-2xs font-semibold flex-shrink-0" style={{ color: 'var(--synatra-primary)' }}>Market Detail →</Link>
       </div>
 
       <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-3 m-0">
@@ -530,11 +530,11 @@ function WatchedRecord({ r }: { r: WatchedRow }) {
                   key={`${t.openedAt}-${t.closedAt}`}
                   k={t.won ? 'Won' : 'Lost'}
                   v={`${t.direction.toUpperCase()} · ${formatCurrency(t.size)} staked · ${formatSignedCurrency(t.pnl)} · settled ${stamp(t.closedAt)}`}
-                  tone={t.won ? 'var(--probex-positive)' : 'var(--probex-negative)'}
+                  tone={t.won ? 'var(--synatra-positive)' : 'var(--synatra-negative)'}
                   note={`edge at entry ${formatEdgePct(t.edgePct)}`}
                 />
               ))}
-              <span className="t-metadata"><Link href={`${ROUTES.PORTFOLIO}?view=capital`} className="focus-ring" style={{ color: 'var(--probex-primary)' }}>Capital & Ledger →</Link></span>
+              <span className="t-metadata"><Link href={`${ROUTES.PORTFOLIO}?view=capital`} className="focus-ring" style={{ color: 'var(--synatra-primary)' }}>Capital & Ledger →</Link></span>
             </>
           )}
         </Block>
@@ -559,8 +559,8 @@ function Fact({ k, v, tone, note }: { k: string; v: string; tone?: string; note?
   return (
     <span className="flex flex-col min-w-0">
       <span className="text-2xs min-w-0">
-        <span style={{ color: 'var(--probex-text-muted)' }}>{k} </span>
-        <span className="font-semibold" style={{ color: tone ?? 'var(--probex-text-secondary)' }}>{v}</span>
+        <span style={{ color: 'var(--synatra-text-muted)' }}>{k} </span>
+        <span className="font-semibold" style={{ color: tone ?? 'var(--synatra-text-secondary)' }}>{v}</span>
       </span>
       {note && <span className="t-metadata">{note}</span>}
     </span>
@@ -568,5 +568,5 @@ function Fact({ k, v, tone, note }: { k: string; v: string; tone?: string; note?
 }
 
 function Absent({ children }: { children: ReactNode }) {
-  return <span className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>{children}</span>
+  return <span className="text-2xs" style={{ color: 'var(--synatra-text-disabled)' }}>{children}</span>
 }

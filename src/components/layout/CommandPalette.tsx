@@ -17,6 +17,7 @@ const COMMANDS: Cmd[] = [
   { label: 'Live Feed',  href: ROUTES.LIVE,      group: 'Operate' },
   { label: 'Portfolio',  href: ROUTES.PORTFOLIO, group: 'Trading' },
   { label: 'Positions',  href: ROUTES.POSITIONS, group: 'Trading' },
+  { label: 'Trade ledger', href: ROUTES.LEDGER, group: 'Trading' },
   { label: 'Wallet',     href: ROUTES.WALLET,    group: 'Trading' },
   { label: 'Strategy',   href: ROUTES.STRATEGY,  group: 'Trading' },
   { label: 'Execution',  href: ROUTES.EXECUTION, group: 'Trading' },
@@ -63,8 +64,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       <div className="fixed inset-0" style={{ background: 'rgba(0,0,0,0.55)' }} onClick={onClose} aria-hidden="true" />
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div className="relative w-full max-w-[560px] rounded-md overflow-hidden card-elevated animate-fade-in-up" onKeyDown={onKeyDown}>
-        <div className="flex items-center gap-2.5 px-4 py-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--probex-text-muted)' }} aria-hidden="true">
+        <div className="flex items-center gap-2.5 px-4 py-3" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--synatra-text-muted)' }} aria-hidden="true">
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
           </svg>
           <input
@@ -74,14 +75,14 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             placeholder="Jump to page…"
             aria-label="Search pages"
             className="flex-1 bg-transparent outline-none text-sm"
-            style={{ color: 'var(--probex-text-primary)' }}
+            style={{ color: 'var(--synatra-text-primary)' }}
           />
-          <kbd className="text-2xs font-bold uppercase tracking-wider rounded px-1.5 py-0.5" style={{ color: 'var(--probex-text-muted)', border: '1px solid var(--probex-border)' }}>Esc</kbd>
+          <kbd className="text-2xs font-bold uppercase tracking-wider rounded px-1.5 py-0.5" style={{ color: 'var(--synatra-text-muted)', border: '1px solid var(--synatra-border)' }}>Esc</kbd>
         </div>
 
         <div className="max-h-[320px] overflow-y-auto py-1.5" role="listbox" aria-label="Pages">
           {results.length === 0 ? (
-            <p className="px-4 py-6 text-center text-xs" style={{ color: 'var(--probex-text-muted)' }}>No matching pages</p>
+            <p className="px-4 py-6 text-center text-xs" style={{ color: 'var(--synatra-text-muted)' }}>No matching pages</p>
           ) : (
             results.map((c, i) => (
               <button
@@ -92,9 +93,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 onMouseEnter={() => setSel(i)}
                 onClick={() => choose(c)}
                 className="w-full flex items-center justify-between gap-3 px-4 py-2 text-left cursor-pointer"
-                style={{ background: i === sel ? 'var(--probex-primary-dim)' : 'transparent' }}
+                style={{ background: i === sel ? 'var(--synatra-primary-dim)' : 'transparent' }}
               >
-                <span className="text-sm font-medium" style={{ color: i === sel ? 'var(--probex-primary)' : 'var(--probex-text-primary)' }}>{c.label}</span>
+                <span className="text-sm font-medium" style={{ color: i === sel ? 'var(--synatra-primary)' : 'var(--synatra-text-primary)' }}>{c.label}</span>
                 <span className="t-label">{c.group}</span>
               </button>
             ))

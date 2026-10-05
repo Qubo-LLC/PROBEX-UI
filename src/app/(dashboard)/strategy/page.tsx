@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { StrategyDomain } from '@/components/strategy/StrategyDomain'
+import { StrategyDomain } from '@/components/providers/strategy/StrategyDomain'
 
 export const metadata: Metadata = {
   title: 'Strategy',

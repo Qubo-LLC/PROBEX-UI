@@ -14,6 +14,7 @@
 //                        /api/price-history provides the current price)
 
 import type { PriceHistory } from '@/types/engine'
+import { formatSeconds } from '@/lib/display/time'
 
 // ─── View model ───────────────────────────────────────────────────────────────
 
@@ -86,4 +87,18 @@ export function formatBtcPrice(price: number): string {
 export function formatPriceChangePct(pct: number): string {
   const sign = pct >= 0 ? '+' : ''
   return `${sign}${(pct * 100).toFixed(2)}%`
+}
+
+/**
+ * Append the window a change was measured over: "+0.00% · 21s". The engine's
+ * /api/price-history is a short tick buffer (observed: ~0.7–25 s), so a change
+ * without its window reads as a daily move it is not. Fewer than two points →
+ * the change is returned unlabelled only because there is no window to state.
+ */
+export function withChangeWindow(changeText: string, points: readonly BtcPricePoint[]): string {
+  if (points.length < 2) return changeText
+  const first = points[0]!.ts
+  const last = points[points.length - 1]!.ts
+  const seconds = Math.max(0, (last - first) / 1000)
+  return `${changeText} · ${formatSeconds(seconds)}`
 }

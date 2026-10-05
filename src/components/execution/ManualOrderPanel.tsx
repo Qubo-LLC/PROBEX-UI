@@ -81,13 +81,13 @@ export function ManualOrderPanel() {
     undefined
 
   return (
-    <div className="rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
-      <div className="px-4 py-3 flex items-center justify-between gap-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+    <div className="rounded-lg overflow-hidden" style={{ background: 'var(--synatra-surface)', border: '1px solid var(--synatra-border)' }}>
+      <div className="px-4 py-3 flex items-center justify-between gap-3" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>
+          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--synatra-text-primary)' }}>
             Manual Order
           </h2>
-          <p className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
+          <p className="text-2xs" style={{ color: 'var(--synatra-text-muted)' }}>
             Override the engine and place an order against a detected edge
           </p>
         </div>
@@ -104,12 +104,12 @@ export function ManualOrderPanel() {
 
       <div className="p-4 flex flex-col gap-3.5">
         <label className="flex flex-col gap-1.5">
-          <span className="text-2xs uppercase tracking-wider font-semibold" style={{ color: 'var(--probex-text-muted)' }}>Market</span>
+          <span className="text-2xs uppercase tracking-wider font-semibold" style={{ color: 'var(--synatra-text-muted)' }}>Market</span>
           <select
             value={marketId}
             onChange={(e) => setMarketId(e.target.value)}
             className="rounded-md px-2.5 py-2 text-xs focus-ring cursor-pointer"
-            style={{ background: 'var(--probex-surface-2)', color: 'var(--probex-text-primary)', border: '1px solid var(--probex-border-default)' }}
+            style={{ background: 'var(--synatra-surface-2)', color: 'var(--synatra-text-primary)', border: '1px solid var(--synatra-border-default)' }}
           >
             <option value="">
               {edges.length > 0 ? `Select from ${edges.length} detected edge${edges.length === 1 ? '' : 's'}…` : 'No edges detected right now'}
@@ -123,30 +123,30 @@ export function ManualOrderPanel() {
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-2xs uppercase tracking-wider font-semibold" style={{ color: 'var(--probex-text-muted)' }}>Size (USD)</span>
+          <span className="text-2xs uppercase tracking-wider font-semibold" style={{ color: 'var(--synatra-text-muted)' }}>Size (USD)</span>
           <input
             type="number" min={0} step={0.5} value={sizeUsd}
             onChange={(e) => setSizeUsd(Number(e.target.value))}
             className="rounded-md px-2.5 py-2 text-xs tabular-nums focus-ring"
             style={{
-              background: 'var(--probex-surface-2)',
-              color: 'var(--probex-text-primary)',
-              border: `1px solid ${overLimit ? 'var(--probex-negative)' : 'var(--probex-border-default)'}`,
+              background: 'var(--synatra-surface-2)',
+              color: 'var(--synatra-text-primary)',
+              border: `1px solid ${overLimit ? 'var(--synatra-negative)' : 'var(--synatra-border-default)'}`,
             }}
           />
           {maxSize !== null && (
-            <span className="text-2xs" style={{ color: overLimit ? 'var(--probex-negative)' : 'var(--probex-text-disabled)' }}>
+            <span className="text-2xs" style={{ color: overLimit ? 'var(--synatra-negative)' : 'var(--synatra-text-disabled)' }}>
               Guardrail: ${maxSize.toFixed(2)} — {maxBetPct}% of the configured initial bankroll (${bankroll?.toFixed(2)}). The engine applies its own {maxBetPct}% cap to the balance it fetches at submit.
             </span>
           )}
         </label>
 
         {selected && (
-          <div className="rounded-lg p-2.5 flex flex-wrap gap-x-5 gap-y-1" style={{ background: 'var(--probex-surface-2)' }}>
+          <div className="rounded-lg p-2.5 flex flex-wrap gap-x-5 gap-y-1" style={{ background: 'var(--synatra-surface-2)' }}>
             <Reading label="Direction"  value={selected.direction.toUpperCase()} />
             <Reading label="Edge"       value={`${selected.edgePct.toFixed(2)}%`} />
             <Reading label="Confidence" value={selected.confidence !== null ? `${(selected.confidence * 100).toFixed(0)}%` : '—'} />
-            <span className="text-2xs w-full" style={{ color: 'var(--probex-text-disabled)' }}>
+            <span className="text-2xs w-full" style={{ color: 'var(--synatra-text-disabled)' }}>
               Values read from the engine's current edge for this market.
             </span>
           </div>
@@ -185,8 +185,8 @@ export function ManualOrderPanel() {
 function Reading({ label, value }: { label: string; value: string }) {
   return (
     <span className="flex items-baseline gap-1.5">
-      <span className="text-2xs uppercase tracking-wider" style={{ color: 'var(--probex-text-disabled)' }}>{label}</span>
-      <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{value}</span>
+      <span className="text-2xs uppercase tracking-wider" style={{ color: 'var(--synatra-text-disabled)' }}>{label}</span>
+      <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--synatra-text-primary)' }}>{value}</span>
     </span>
   )
 }

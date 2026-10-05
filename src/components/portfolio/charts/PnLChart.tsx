@@ -16,10 +16,10 @@ export function PnLChart({ height = 200 }: { height?: number }) {
     : []
 
   // The series is cumulative REALIZED P&L, and it is signed. A fixed
-  // --probex-positive line drew an 85-dollar loss in the profit colour; the
+  // --synatra-positive line drew an 85-dollar loss in the profit colour; the
   // financial-direction band has to follow the value, not the chart's identity.
   const last = data.length > 0 ? data[data.length - 1]!.value : 0
-  const seriesColor = last < 0 ? 'var(--probex-negative)' : 'var(--probex-positive)'
+  const seriesColor = last < 0 ? 'var(--synatra-negative)' : 'var(--synatra-positive)'
 
   // Real state, not just "has rows": an errored slice is unavailable and an
   // available:false envelope is idle — both look like zero rows otherwise.

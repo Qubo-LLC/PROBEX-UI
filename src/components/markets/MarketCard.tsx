@@ -32,25 +32,25 @@ interface MarketCardProps {
 /** The engine's edge direction → accent colour (its mark on the market). */
 function edgeAccent(edge: EdgeRow | undefined): string | null {
   if (!edge) return null
-  return edge.direction.toLowerCase() === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)'
+  return edge.direction.toLowerCase() === 'yes' ? 'var(--synatra-yes)' : 'var(--synatra-no)'
 }
 
 /** The detector's read on this market, as reported: direction · edge ·
  *  confidence. Rendered only when an edge exists. */
 function EngineStrip({ edge }: { edge: EdgeRow }) {
-  const color = edge.direction.toLowerCase() === 'yes' ? 'var(--probex-yes)' : 'var(--probex-no)'
+  const color = edge.direction.toLowerCase() === 'yes' ? 'var(--synatra-yes)' : 'var(--synatra-no)'
   const conf  = edge.confidence !== null ? Math.round(edge.confidence * 100) : null
 
   return (
-    <div className="flex flex-col gap-1 rounded-md px-2 py-1.5" style={{ background: `color-mix(in srgb, ${color} 7%, var(--probex-surface-2))`, border: `1px solid color-mix(in srgb, ${color} 20%, transparent)` }}>
+    <div className="flex flex-col gap-1 rounded-md px-2 py-1.5" style={{ background: `color-mix(in srgb, ${color} 7%, var(--synatra-surface-2))`, border: `1px solid color-mix(in srgb, ${color} 20%, transparent)` }}>
       <div className="flex items-center justify-between gap-2">
         <span className="text-2xs font-black uppercase tracking-wider" style={{ color }}>
           {edge.direction.toUpperCase()} · {edge.edgePct.toFixed(1)}% edge
         </span>
-        {conf !== null && <span className="text-2xs font-mono tabular-nums" style={{ color: 'var(--probex-text-muted)' }} title="confidence, as the detector reported it">{conf}% confidence</span>}
+        {conf !== null && <span className="text-2xs font-mono tabular-nums" style={{ color: 'var(--synatra-text-muted)' }} title="confidence, as the detector reported it">{conf}% confidence</span>}
       </div>
       {conf !== null && (
-        <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-border-default)' }} aria-hidden="true">
+        <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--synatra-border-default)' }} aria-hidden="true">
           <div className="h-full rounded-full" style={{ width: `${conf}%`, background: color }} />
         </div>
       )}
@@ -90,7 +90,7 @@ export function MarketCard({ market, edge, onClick, className = '' }: MarketCard
           {category && (
             <span
               className="text-2xs font-bold uppercase tracking-wider rounded-sm px-2 py-0.5"
-              style={{ color: 'var(--probex-primary)', background: 'var(--probex-primary-dim)', border: '1px solid var(--probex-border-active)' }}
+              style={{ color: 'var(--synatra-primary)', background: 'var(--synatra-primary-dim)', border: '1px solid var(--synatra-border-active)' }}
             >
               {category}
             </span>
@@ -98,7 +98,7 @@ export function MarketCard({ market, edge, onClick, className = '' }: MarketCard
           {closed && (
             <span
               className="text-2xs font-bold uppercase tracking-wider rounded-sm px-2 py-0.5"
-              style={{ color: 'var(--probex-text-muted)', background: 'var(--probex-surface-2)', border: '1px solid var(--probex-border)' }}
+              style={{ color: 'var(--synatra-text-muted)', background: 'var(--synatra-surface-2)', border: '1px solid var(--synatra-border)' }}
               title={closeTimestamp(market.closesAt)}
             >
               {lifecycleLabel(life)}
@@ -111,7 +111,7 @@ export function MarketCard({ market, edge, onClick, className = '' }: MarketCard
       {/* Title */}
       <p
         className="text-sm font-semibold leading-snug"
-        style={{ color: 'var(--probex-text-primary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+        style={{ color: 'var(--synatra-text-primary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
       >
         {market.title}
       </p>
@@ -120,21 +120,21 @@ export function MarketCard({ market, edge, onClick, className = '' }: MarketCard
       {market.probability !== null ? (
         <ProbBars prob={market.probability} />
       ) : (
-        <p className="text-2xs" style={{ color: 'var(--probex-text-disabled)' }}>No price on the wire for this market</p>
+        <p className="text-2xs" style={{ color: 'var(--synatra-text-disabled)' }}>No price on the wire for this market</p>
       )}
 
       {edge && <EngineStrip edge={edge} />}
 
       {/* Footer: volume + closes */}
-      <div className="flex items-center justify-between text-2xs pt-2" style={{ borderTop: '1px solid var(--probex-border)', color: 'var(--probex-text-muted)' }}>
+      <div className="flex items-center justify-between text-2xs pt-2" style={{ borderTop: '1px solid var(--synatra-border)', color: 'var(--synatra-text-muted)' }}>
         {market.volume24h !== null ? (
-          <span>Vol <strong className="font-mono tabular-nums" style={{ color: 'var(--probex-text-secondary)' }}>${formatCompact(market.volume24h)}</strong></span>
+          <span>Vol <strong className="font-mono tabular-nums" style={{ color: 'var(--synatra-text-secondary)' }}>${formatCompact(market.volume24h)}</strong></span>
         ) : <span />}
         {/* "Sep 9" told an operator nothing about a 15-minute market — every one
             of them closes today. Time remaining is the fact that matters. */}
         <span
           className="font-mono tabular-nums"
-          style={{ color: closed ? 'var(--probex-text-disabled)' : 'var(--probex-text-secondary)' }}
+          style={{ color: closed ? 'var(--synatra-text-disabled)' : 'var(--synatra-text-secondary)' }}
           title={closeTimestamp(market.closesAt)}
         >
           {closes}
@@ -152,8 +152,8 @@ function ProbBars({ prob }: { prob: number }) {
   const pct = Math.round(prob * 100)
   return (
     <div className="flex flex-col gap-1">
-      <SideBar label="YES" cents={pct} color="var(--probex-yes)" />
-      <SideBar label="NO" cents={100 - pct} color="var(--probex-no)" />
+      <SideBar label="YES" cents={pct} color="var(--synatra-yes)" />
+      <SideBar label="NO" cents={100 - pct} color="var(--synatra-no)" />
     </div>
   )
 }
@@ -162,7 +162,7 @@ function SideBar({ label, cents, color }: { label: string; cents: number; color:
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-2xs font-bold tracking-wider w-6" style={{ color }}>{label}</span>
-      <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--probex-surface-2)' }}>
+      <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--synatra-surface-2)' }}>
         <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${cents}%`, background: color }} />
       </div>
       <span className="text-2xs font-bold font-mono w-8 text-right tabular-nums" style={{ color }}>{cents}¢</span>

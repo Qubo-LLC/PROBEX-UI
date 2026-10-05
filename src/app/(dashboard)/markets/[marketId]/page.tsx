@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { MarketDetailPage } from '@/components/market-detail/MarketDetailPage'
 
 export const metadata: Metadata = {
-  title: 'Market — Probex',
+  title: 'Market — Synatra',
 }
 
 export default async function MarketDetailRoute({ params }: { params: Promise<{ marketId: string }> }) {

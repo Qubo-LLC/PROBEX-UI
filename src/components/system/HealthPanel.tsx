@@ -35,7 +35,7 @@ export function HealthPanel() {
 
   if (!health) {
     return (
-      <p className="text-xs" style={{ color: 'var(--probex-text-disabled)' }}>
+      <p className="text-xs" style={{ color: 'var(--synatra-text-disabled)' }}>
         Running health check… the engine’s probe cycle takes ~5 seconds.
       </p>
     )
@@ -71,7 +71,7 @@ export function HealthPanel() {
           <span className="flex items-baseline gap-1.5">
             <span
               className="t-metric-md"
-              style={!allHealthy ? { color: 'var(--probex-warning)' } : undefined}
+              style={!allHealthy ? { color: 'var(--synatra-warning)' } : undefined}
             >
               {healthyCount}/{health.components.length}
             </span>
@@ -100,12 +100,12 @@ export function HealthPanel() {
             <Counter
               label="warnings"
               value={health.stats.warnings.toLocaleString()}
-              {...(health.stats.warnings > 0 ? { tone: 'var(--probex-warning)' } : {})}
+              {...(health.stats.warnings > 0 ? { tone: 'var(--synatra-warning)' } : {})}
             />
             <Counter
               label="errors"
               value={health.stats.errors.toLocaleString()}
-              {...(health.stats.errors > 0 ? { tone: 'var(--probex-negative)' } : {})}
+              {...(health.stats.errors > 0 ? { tone: 'var(--synatra-negative)' } : {})}
             />
             <Counter label="restarts" value={String(health.stats.restarts)} />
           </div>
@@ -174,28 +174,28 @@ export function HealthPanel() {
               style={{
                 background: c.healthy
                   ? 'transparent'
-                  : 'color-mix(in srgb, var(--probex-negative) 9%, var(--probex-surface-2))',
-                border: `1px solid ${c.healthy ? 'transparent' : 'color-mix(in srgb, var(--probex-negative) 38%, transparent)'}`,
+                  : 'color-mix(in srgb, var(--synatra-negative) 9%, var(--synatra-surface-2))',
+                border: `1px solid ${c.healthy ? 'transparent' : 'color-mix(in srgb, var(--synatra-negative) 38%, transparent)'}`,
                 borderLeftWidth: c.healthy ? '1px' : '3px',
-                borderLeftColor: c.healthy ? 'transparent' : 'var(--probex-negative)',
-                borderBottom: c.healthy ? '1px solid var(--probex-border)' : undefined,
+                borderLeftColor: c.healthy ? 'transparent' : 'var(--synatra-negative)',
+                borderBottom: c.healthy ? '1px solid var(--synatra-border)' : undefined,
                 borderRadius: c.healthy ? 0 : undefined,
               }}
             >
               <span
                 className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ background: c.healthy ? 'var(--probex-positive)' : 'var(--probex-negative)' }}
+                style={{ background: c.healthy ? 'var(--synatra-positive)' : 'var(--synatra-negative)' }}
                 aria-hidden="true"
               />
               <span
                 className="font-semibold w-28 sm:w-32 flex-shrink-0 truncate"
-                style={{ color: c.healthy ? 'var(--probex-text-secondary)' : 'var(--probex-text-primary)' }}
+                style={{ color: c.healthy ? 'var(--synatra-text-secondary)' : 'var(--synatra-text-primary)' }}
               >
                 {c.name}
               </span>
               <span
                 className="basis-full order-last sm:basis-auto sm:order-none sm:flex-1 sm:truncate pl-[18px] sm:pl-0 leading-snug"
-                style={{ color: 'var(--probex-text-muted)' }}
+                style={{ color: 'var(--synatra-text-muted)' }}
                 title={c.message}
               >
                 {c.message}
@@ -207,7 +207,7 @@ export function HealthPanel() {
                   two seconds ago. */}
               <span
                 className="tabular-nums flex-shrink-0 text-right"
-                style={{ minWidth: '5rem', color: 'var(--probex-text-disabled)' }}
+                style={{ minWidth: '5rem', color: 'var(--synatra-text-disabled)' }}
                 title={`Checked ${new Date(c.checkedAt).toLocaleString()}`}
               >
                 {formatSignalAge(c.checkedAt)}
@@ -227,10 +227,10 @@ export function HealthPanel() {
                   style={{
                     minWidth: '4.5rem',
                     color: slow
-                      ? 'var(--probex-warning)'
+                      ? 'var(--synatra-warning)'
                       : sluggish
-                        ? 'var(--probex-text-muted)'
-                        : 'var(--probex-text-disabled)',
+                        ? 'var(--synatra-text-muted)'
+                        : 'var(--synatra-text-disabled)',
                   }}
                   title={slow ? 'Responding slowly' : undefined}
                 >
@@ -245,7 +245,7 @@ export function HealthPanel() {
       {/* When nearly every check warns, the ratio is the finding. Stated only
           when it is actually high, so a healthy engine carries no extra noise. */}
       {health.stats.healthChecks > 0 && health.stats.warnings / health.stats.healthChecks >= 0.5 && (
-        <p className="text-xs" style={{ color: 'var(--probex-warning)' }}>
+        <p className="text-xs" style={{ color: 'var(--synatra-warning)' }}>
           {health.stats.warnings.toLocaleString()} of {health.stats.healthChecks.toLocaleString()} checks
           raised a warning this process — {Math.round((health.stats.warnings / health.stats.healthChecks) * 100)}% of them.
         </p>
@@ -256,12 +256,12 @@ export function HealthPanel() {
         <div className="flex flex-wrap gap-x-6 gap-y-1.5">
           {health.stats.lastError && (
             <span className="t-metadata">
-              Last error <span className="font-semibold" style={{ color: 'var(--probex-negative)' }}>{health.stats.lastError}</span>
+              Last error <span className="font-semibold" style={{ color: 'var(--synatra-negative)' }}>{health.stats.lastError}</span>
             </span>
           )}
           {health.stats.lastWarning && (
             <span className="t-metadata">
-              Last warning <span className="font-semibold" style={{ color: 'var(--probex-warning)' }}>{health.stats.lastWarning}</span>
+              Last warning <span className="font-semibold" style={{ color: 'var(--synatra-warning)' }}>{health.stats.lastWarning}</span>
             </span>
           )}
         </div>
@@ -290,7 +290,7 @@ function Counter({ label, value, tone }: { label: string; value: string; tone?: 
     <span className="flex flex-col items-end leading-tight">
       <span
         className="text-xs font-semibold tabular-nums"
-        style={{ color: tone ?? 'var(--probex-text-secondary)' }}
+        style={{ color: tone ?? 'var(--synatra-text-secondary)' }}
       >
         {value}
       </span>

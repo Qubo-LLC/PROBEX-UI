@@ -1,6 +1,6 @@
 'use client'
 
-// ProvenanceBadge — the V3 data-lineage grammar (PROBEX_V3_RESTORATION_PLAN §0,
+// ProvenanceBadge — the V3 data-lineage grammar (SYNATRA_V3_RESTORATION_PLAN §0,
 // system 1). Every value in the product can declare *how it is known*:
 //
 //   live      — polled directly from a confirmed engine endpoint
@@ -83,13 +83,13 @@ const CONFIG: Record<Provenance, { label: string; color: string; dot: boolean; p
   // provenance this badge names is the SOURCE: read from the engine's API,
   // not generated or derived. It says that now, in a source word, at
   // metadata weight. Freshness is the frame's or figure's own claim.
-  live:        { label: 'Engine',    color: 'var(--probex-text-muted)',    dot: true,  pulse: false, title: 'Read from the engine’s API — not generated locally' },
-  derived:     { label: 'Derived',   color: 'var(--probex-text-muted)',    dot: false, pulse: false, title: 'Computed from live values' },
-  idle:        { label: 'Not yet',   color: 'var(--probex-text-muted)',    dot: true,  pulse: false, title: 'The endpoint is live, but the engine has not computed this value yet' },
-  awaiting:    { label: 'Awaiting',  color: 'var(--probex-warning)',       dot: true,  pulse: false, title: 'The backing endpoint does not exist yet' },
-  stale:       { label: 'Stale',     color: 'var(--probex-text-disabled)', dot: true,  pulse: false, title: 'Last known value — the source stopped updating' },
-  synthetic:   { label: 'Synthetic', color: 'var(--probex-warning)',       dot: true,  pulse: false, title: 'Generated locally — not produced by any engine' },
-  unreachable: { label: 'No feed',   color: 'var(--probex-text-disabled)', dot: true,  pulse: false, title: 'The engine could not be reached — no value is being shown' },
+  live:        { label: 'Engine',    color: 'var(--synatra-text-muted)',    dot: true,  pulse: false, title: 'Read from the engine’s API — not generated locally' },
+  derived:     { label: 'Derived',   color: 'var(--synatra-text-muted)',    dot: false, pulse: false, title: 'Computed from live values' },
+  idle:        { label: 'Not yet',   color: 'var(--synatra-text-muted)',    dot: true,  pulse: false, title: 'The endpoint is live, but the engine has not computed this value yet' },
+  awaiting:    { label: 'Awaiting',  color: 'var(--synatra-warning)',       dot: true,  pulse: false, title: 'The backing endpoint does not exist yet' },
+  stale:       { label: 'Stale',     color: 'var(--synatra-text-disabled)', dot: true,  pulse: false, title: 'Last known value — the source stopped updating' },
+  synthetic:   { label: 'Synthetic', color: 'var(--synatra-warning)',       dot: true,  pulse: false, title: 'Generated locally — not produced by any engine' },
+  unreachable: { label: 'No feed',   color: 'var(--synatra-text-disabled)', dot: true,  pulse: false, title: 'The engine could not be reached — no value is being shown' },
 }
 
 export function ProvenanceBadge({ provenance, detail, state, className = '' }: ProvenanceBadgeProps) {
@@ -165,7 +165,7 @@ export function ProvenanceBadge({ provenance, detail, state, className = '' }: P
       )}
       <span>{c.label}</span>
       {inlineDetail && (
-        <span className="font-medium normal-case" style={{ color: 'var(--probex-text-disabled)' }}>
+        <span className="font-medium normal-case" style={{ color: 'var(--synatra-text-disabled)' }}>
           · {inlineDetail}
         </span>
       )}

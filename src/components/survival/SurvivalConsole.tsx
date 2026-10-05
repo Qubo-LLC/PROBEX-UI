@@ -34,6 +34,7 @@ import { PageHeader }     from '@/components/ui/PageHeader'
 import { ErrorState }     from '@/components/ui/ErrorState'
 import { TargetProgress } from '@/components/shared/TargetProgress'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
+import { DETECTOR_THRESHOLD_UNREPORTED, SURVIVAL_FLOOR_LABEL } from '@/lib/display/thresholds'
 
 /** /api/survival polls at MEDIUM cadence (ApplicationStateLoader). */
 const SURVIVAL_POLL_MS = 5_000
@@ -69,11 +70,11 @@ export function SurvivalConsole({ embedded = false }: EmbeddableProps = {}) {
           {/* ── A · posture ────────────────────────────────────────────── */}
           <section aria-labelledby="sv-posture" className="flex flex-col gap-3">
             <h2 id="sv-posture" className="sr-only">Survival posture</h2>
-            <p className="text-sm font-medium leading-relaxed m-0" style={{ color: 'var(--probex-text-primary)' }}>
+            <p className="text-sm font-medium leading-relaxed m-0" style={{ color: 'var(--synatra-text-primary)' }}>
               <span style={{ color: survivalStateColor(sv.state) }}>{survivalStateLabel(sv.state)}</span>
               {' — capital '}{formatCurrency(sv.currentCapital)}{', '}{sv.capitalPct.toFixed(1)}% of the {formatCurrency(sv.initialCapital)} it started with.
               {' '}The brain is {sv.kellyModifier > 1 ? 'sizing up' : sv.kellyModifier < 1 ? 'cutting size' : 'at full size'} (×{sv.kellyModifier.toFixed(2)}) and requires {formatEdgePct(sv.minEdgeThreshold, 2)} of edge.
-              {cert.certainty === 'stale' && <span style={{ color: 'var(--probex-warning)' }}> Retained — last updated {cert.staleFor}.</span>}
+              {cert.certainty === 'stale' && <span style={{ color: 'var(--synatra-warning)' }}> Retained — last updated {cert.staleFor}.</span>}
             </p>
 
             {/* The state machine, drawn. Every known state, the current one
@@ -83,7 +84,7 @@ export function SurvivalConsole({ embedded = false }: EmbeddableProps = {}) {
           </section>
 
           {/* ── B · the figures ───────────────────────────────────────────── */}
-          <section aria-labelledby="sv-figures" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+          <section aria-labelledby="sv-figures" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
             <div className="flex items-baseline justify-between gap-3 flex-wrap">
               <span className="flex items-baseline gap-2 flex-wrap">
                 <h2 id="sv-figures" className="t-section-title">Capital and response</h2>
@@ -95,16 +96,16 @@ export function SurvivalConsole({ embedded = false }: EmbeddableProps = {}) {
               <Figure label="Capital" size="lg" footnote={<span className="t-helper">{sv.capitalPct.toFixed(1)}% of {formatCurrency(sv.initialCapital)} initial</span>} {...cert}>
                 {formatCurrency(sv.currentCapital)}
               </Figure>
-              <Figure label="Kelly modifier" size="md" tone={sv.kellyModifier < 1 ? 'var(--probex-warning)' : undefined} footnote={<span className="t-helper">{sv.kellyModifier > 1 ? 'above 1× — sizing up while ahead' : sv.kellyModifier < 1 ? 'below 1× — sizing cut back' : 'full sizing'}</span>} {...cert}>
+              <Figure label="Kelly modifier" size="md" tone={sv.kellyModifier < 1 ? 'var(--synatra-warning)' : undefined} footnote={<span className="t-helper">{sv.kellyModifier > 1 ? 'above 1× — sizing up while ahead' : sv.kellyModifier < 1 ? 'below 1× — sizing cut back' : 'full sizing'}</span>} {...cert}>
                 ×{sv.kellyModifier.toFixed(2)}
               </Figure>
-              <Figure label="Edge required" size="md" footnote={<span className="t-helper">live threshold the filter applies</span>} {...cert}>
+              <Figure label={SURVIVAL_FLOOR_LABEL} size="md" title={DETECTOR_THRESHOLD_UNREPORTED} footnote={<span className="t-helper">the brain’s minimum — not the detector’s threshold</span>} {...cert}>
                 {formatEdgePct(sv.minEdgeThreshold, 2)}
               </Figure>
-              <Figure label="Today" size="md" tone={sv.dailyPnl > 0 ? 'var(--probex-positive)' : sv.dailyPnl < 0 ? 'var(--probex-negative)' : undefined} footnote={<span className="t-helper">target {formatCurrency(sv.dailyTarget)} · {formatPercent(sv.behindTargetPct / 100)} remaining</span>} {...cert}>
+              <Figure label="Today" size="md" tone={sv.dailyPnl > 0 ? 'var(--synatra-positive)' : sv.dailyPnl < 0 ? 'var(--synatra-negative)' : undefined} footnote={<span className="t-helper">target {formatCurrency(sv.dailyTarget)} · {formatPercent(sv.behindTargetPct / 100)} remaining</span>} {...cert}>
                 {formatSignedCurrency(sv.dailyPnl)}
               </Figure>
-              <Figure label="This week" size="md" tone={sv.weeklyPnl > 0 ? 'var(--probex-positive)' : sv.weeklyPnl < 0 ? 'var(--probex-negative)' : undefined} footnote={<span className="t-helper">target {formatCurrency(sv.weeklyTarget)}</span>} {...cert}>
+              <Figure label="This week" size="md" tone={sv.weeklyPnl > 0 ? 'var(--synatra-positive)' : sv.weeklyPnl < 0 ? 'var(--synatra-negative)' : undefined} footnote={<span className="t-helper">target {formatCurrency(sv.weeklyTarget)}</span>} {...cert}>
                 {formatSignedCurrency(sv.weeklyPnl)}
               </Figure>
             </div>
@@ -119,7 +120,7 @@ export function SurvivalConsole({ embedded = false }: EmbeddableProps = {}) {
           }} />
 
           {/* ── D · as reported ───────────────────────────────────────────── */}
-          <section aria-labelledby="sv-reported" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+          <section aria-labelledby="sv-reported" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
             <div className="flex items-baseline justify-between gap-3 flex-wrap">
               <span className="flex items-baseline gap-2 flex-wrap">
                 <h2 id="sv-reported" className="t-section-title">Burn, runway and recovery</h2>
@@ -173,7 +174,7 @@ function Reported({ label, value, note }: { label: string; value: string; note: 
     <div className="flex flex-col gap-0.5 min-w-0">
       <dt className="t-label truncate">{label}</dt>
       <dd className="m-0 flex flex-col min-w-0">
-        <span className="font-mono text-xs font-semibold tabular-nums" style={{ color: 'var(--probex-text-primary)' }}>{value}</span>
+        <span className="font-mono text-xs font-semibold tabular-nums" style={{ color: 'var(--synatra-text-primary)' }}>{value}</span>
         <span className="t-metadata truncate">{note}</span>
       </dd>
     </div>

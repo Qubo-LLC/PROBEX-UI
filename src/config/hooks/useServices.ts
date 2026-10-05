@@ -32,7 +32,11 @@ const POLL_LIMITS = {
   positionsHistory: 100,  // Settled Positions renders 30, Portfolio reads aggregates
   consensusHistory: 200,  // drives the consensus trend chart
   portfolioHistory: 500,  // three charts plot this; ~500 snapshots ≈ a full session
-  tradesLedger:     200,  // Capital Ledger renders 25, summary needs the whole set
+  // Capital Ledger renders 25. NOTE: the engine computes the ledger `summary`
+  // over THIS page (the first `limit` records), not the session — no limit
+  // makes it whole. Session totals come from /api/paper-stats. (Remediation
+  // spec §9; fixed engine-side on the local remediation branch, not deployed.)
+  tradesLedger:     200,
 } as const
 
 function useServiceQuery<T>(

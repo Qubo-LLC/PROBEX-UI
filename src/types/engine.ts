@@ -391,7 +391,7 @@ export interface EngineIdentity {
 
 // ─── /api/execution/status ────────────────────────────────────────────────────
 // The execution engine's own account of trading activity. This is the SOURCE OF
-// TRADING TRUTH (see PROBEX_PRODUCT_SPEC.md §6.2) — runtime.stats can be seeded
+// TRADING TRUTH (see SYNATRA_PRODUCT_SPEC.md §6.2) — runtime.stats can be seeded
 // externally via POST /api/update-stats and must not be trusted for PnL.
 
 export interface RetryStatsDTO {
@@ -714,6 +714,27 @@ export interface PaperStatsDTO {
   available:     boolean
   paper_trading: PaperTradingInnerDTO
   timestamp:     string    // ISO 8601
+  // Remediation phase 2 (engine branch `remediation/phase-1`, NOT deployed).
+  // Optional: today's deployed engine sends neither.
+  integrity?:    PaperIntegrityDTO
+  session?:      PaperSessionDTO
+}
+
+/** Engine-declared trust in the paper books (see trade_integrity.py). */
+export interface PaperIntegrityDTO {
+  state:           'VALID' | 'UNTRUSTED' | 'INVALID' | 'STALE' | 'UNAVAILABLE'
+  violations:      { code: string; count: number; examples?: string[] }[]
+  unverified?:     { code: string; count: number }[]
+  skipped?:        { code: string; reason: string }[]
+  checked_at?:     string
+  records_checked?: number
+}
+
+export interface PaperSessionDTO {
+  id:               string | null
+  legacy:           boolean
+  created_by:       Record<string, unknown> | null
+  state_load_error: string | null
 }
 
 export interface PaperTrading {
@@ -748,6 +769,10 @@ export interface PaperStats {
   available:     boolean
   paperTrading:  PaperTrading
   timestamp:     number    // epoch ms
+  /** Engine-declared integrity; null when the engine does not report it (today's deployment). */
+  integrity:     { state: PaperIntegrityDTO['state']; violations: { code: string; count: number }[] } | null
+  /** Session identity; null when the engine does not report it. */
+  session:       { id: string | null; legacy: boolean; stateLoadError: string | null } | null
 }
 
 // ─── Additional endpoint types ────────────────────────────────────────────────
@@ -764,6 +789,9 @@ export interface PositionsHistoryDTO {
   count:     number
   limit:     number
   timestamp: string  // ISO 8601
+  // engine branch (cursor contract) only — absent on the deployed engine
+  total?:    number
+  has_more?: boolean
 }
 
 export interface PositionsHistory {
@@ -772,6 +800,14 @@ export interface PositionsHistory {
   count:     number
   limit:     number
   timestamp: number  // epoch ms
+  /**
+   * Settled records in the engine's store, when the engine pages by cursor
+   * (engine branch). Null on the deployed engine, whose `count` is the page
+   * length and which reports no total.
+   */
+  total:     number | null
+  /** True/false only when the engine pages by cursor; null otherwise. */
+  hasMore:   boolean | null
 }
 
 // ─── /api/survival/patterns ──────────────────────────────────────────────────

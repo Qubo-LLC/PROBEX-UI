@@ -63,17 +63,17 @@ export function EmergencyStopPanel() {
   return (
     <div
       className="rounded-lg overflow-hidden"
-      style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-negative)' }}
+      style={{ background: 'var(--synatra-surface)', border: '1px solid var(--synatra-negative)' }}
     >
       <div
         className="px-4 py-3 flex items-center justify-between gap-3"
-        style={{ borderBottom: '1px solid var(--probex-border)' }}
+        style={{ borderBottom: '1px solid var(--synatra-border)' }}
       >
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-negative)' }}>
+          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--synatra-negative)' }}>
             Emergency Stop
           </h2>
-          <p className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
+          <p className="text-2xs" style={{ color: 'var(--synatra-text-muted)' }}>
             Halt trading and close every open position
           </p>
         </div>
@@ -81,8 +81,8 @@ export function EmergencyStopPanel() {
           <span
             className="text-2xs font-bold uppercase tracking-wider px-2 py-0.5 rounded"
             style={{
-              color: mode === 'live' ? 'var(--probex-negative)' : 'var(--probex-text-muted)',
-              border: `1px solid ${mode === 'live' ? 'var(--probex-negative)' : 'var(--probex-border-default)'}`,
+              color: mode === 'live' ? 'var(--synatra-negative)' : 'var(--synatra-text-muted)',
+              border: `1px solid ${mode === 'live' ? 'var(--synatra-negative)' : 'var(--synatra-border-default)'}`,
             }}
           >
             {mode}
@@ -98,20 +98,20 @@ export function EmergencyStopPanel() {
           <div className="flex flex-col">
             <span
               className="text-lg font-bold tabular-nums"
-              style={{ color: countUnknown ? 'var(--probex-text-disabled)' : 'var(--probex-text-primary)' }}
+              style={{ color: countUnknown ? 'var(--synatra-text-disabled)' : 'var(--synatra-text-primary)' }}
             >
               {countUnknown ? '—' : openCount}
             </span>
-            <span className="text-2xs uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>open</span>
+            <span className="text-2xs uppercase tracking-wider" style={{ color: 'var(--synatra-text-muted)' }}>open</span>
           </div>
           <div className="flex flex-col">
             <span
               className="text-lg font-bold tabular-nums"
-              style={{ color: countUnknown ? 'var(--probex-text-disabled)' : 'var(--probex-text-primary)' }}
+              style={{ color: countUnknown ? 'var(--synatra-text-disabled)' : 'var(--synatra-text-primary)' }}
             >
               {countUnknown ? '—' : formatCurrency(atRisk)}
             </span>
-            <span className="text-2xs uppercase tracking-wider" style={{ color: 'var(--probex-text-muted)' }}>at risk</span>
+            <span className="text-2xs uppercase tracking-wider" style={{ color: 'var(--synatra-text-muted)' }}>at risk</span>
           </div>
         </div>
 

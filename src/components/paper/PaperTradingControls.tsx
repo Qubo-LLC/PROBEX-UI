@@ -35,13 +35,13 @@ export function PaperTradingControls() {
   const stateKnown    = status !== null
 
   return (
-    <div className="rounded-lg overflow-hidden" style={{ background: 'var(--probex-surface)', border: '1px solid var(--probex-border)' }}>
-      <div className="px-4 py-3 flex items-center justify-between gap-3" style={{ borderBottom: '1px solid var(--probex-border)' }}>
+    <div className="rounded-lg overflow-hidden" style={{ background: 'var(--synatra-surface)', border: '1px solid var(--synatra-border)' }}>
+      <div className="px-4 py-3 flex items-center justify-between gap-3" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--probex-text-primary)' }}>
+          <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--synatra-text-primary)' }}>
             Paper Trading Controls
           </h2>
-          <p className="text-2xs" style={{ color: 'var(--probex-text-muted)' }}>
+          <p className="text-2xs" style={{ color: 'var(--synatra-text-muted)' }}>
             {stateKnown
               ? `Currently ${enabled ? 'running' : 'stopped'} · ${pendingTrades} pending · ${totalTrades} total this session`
               : 'Reading engine state…'}
@@ -84,7 +84,7 @@ export function PaperTradingControls() {
           />
         </div>
 
-        <div className="pt-3.5" style={{ borderTop: '1px solid var(--probex-border)' }}>
+        <div className="pt-3.5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
           <MutationButton
             mutation={reset}
             label="Reset Session"

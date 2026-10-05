@@ -56,7 +56,7 @@ export const env = {
 export function getServerEnv() {
   if (typeof window !== 'undefined') {
     throw new Error(
-      '[Probex] getServerEnv() called on the client. ' +
+      '[Synatra] getServerEnv() called on the client. ' +
       'Server-only environment variables must only be accessed in server components, ' +
       'API routes, or middleware.'
     )
@@ -110,12 +110,12 @@ export function validateEnv(): void {
     warnings.push(
       '  NEXT_PUBLIC_API_MODE / NEXT_PUBLIC_API_BASE_URL are set. These are inlined ' +
       'at BUILD time, which welds the artifact to one environment. Prefer the ' +
-      'runtime equivalents PROBEX_API_MODE / PROBEX_API_BASE_URL, which are read ' +
+      'runtime equivalents SYNATRA_API_MODE / SYNATRA_API_BASE_URL, which are read ' +
       'per request and let one build serve dev, staging and production.',
     )
   }
 
-  const base = process.env.PROBEX_API_BASE_URL ?? legacyBase ?? ''
+  const base = process.env.SYNATRA_API_BASE_URL ?? legacyBase ?? ''
   if (env.NODE_ENV === 'production' && base.startsWith('http://')) {
     warnings.push(
       `  API base URL is http:// (${base}). An HTTPS deployment blocks these requests ` +
@@ -125,6 +125,6 @@ export function validateEnv(): void {
   }
 
   if (warnings.length > 0) {
-    console.warn(['[Probex] Environment warnings:', ...warnings].join('\n'))
+    console.warn(['[Synatra] Environment warnings:', ...warnings].join('\n'))
   }
 }

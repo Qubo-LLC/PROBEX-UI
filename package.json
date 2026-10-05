@@ -1,8 +1,8 @@
 {
-  "name": "probex",
-  "version": "2.0.0",
+  "name": "synatra",
+  "version": "1.0.0",
   "private": true,
-  "description": "QUBO Probex — Bitcoin Prediction Intelligence Platform",
+  "description": "QUBO Synatra — Bitcoin Prediction Intelligence Platform",
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:standard": "next dev",
