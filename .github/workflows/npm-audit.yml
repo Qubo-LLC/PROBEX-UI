@@ -1,0 +1,48 @@
+# =============================================================================
+# .github/workflows/npm-audit.yml
+#
+# Fails the PR if a PRODUCTION dependency has a known high or critical
+# vulnerability (npm audit, resolved from the committed package-lock.json).
+#
+# Dev-only advisories (lint / test toolchain) are deliberately out of scope:
+# they never ship to production, so they must not block this gate.
+#
+# Pinned action SHAs (same ones used in Qubo-Probex-web-):
+#   actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955   (v4.3.0)
+#   actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  (v4.4.0)
+# =============================================================================
+
+name: Dependency audit
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# No global permissions. The job below grants only what it needs.
+permissions: {}
+
+jobs:
+  dependency-audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (locked, reproducible)
+        run: npm ci
+
+      - name: Audit production dependencies for known vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
