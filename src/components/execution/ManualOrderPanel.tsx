@@ -147,7 +147,7 @@ export function ManualOrderPanel() {
             <Reading label="Edge"       value={`${selected.edgePct.toFixed(2)}%`} />
             <Reading label="Confidence" value={selected.confidence !== null ? `${(selected.confidence * 100).toFixed(0)}%` : '—'} />
             <span className="text-2xs w-full" style={{ color: 'var(--synatra-text-disabled)' }}>
-              Values read from the engine's current edge for this market.
+              Values read from the engine&apos;s current edge for this market.
             </span>
           </div>
         )}
