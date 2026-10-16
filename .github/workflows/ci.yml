@@ -1,0 +1,61 @@
+# =============================================================================
+# .github/workflows/ci.yml
+#
+# Every PR (and every push to main) triggers a clean VM that checks out this
+# exact code and runs the checks below. All are blocking: if any fails, the PR
+# is blocked from merging once branch protection requires them.
+#
+# Currently:
+#   1. build  -> npm ci, tsc --noEmit, eslint, vitest, next build
+#
+# More jobs (npm audit, gitleaks, Snyk) are added in follow-up PRs.
+#
+# Pinned action SHAs (same ones used in Qubo-Probex-web-):
+#   actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955   (v4.3.0)
+#   actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  (v4.4.0)
+# =============================================================================
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# No global permissions. Each job below grants only what it actually needs.
+permissions: {}
+
+jobs:
+  build:
+    name: Build & lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (locked, reproducible)
+        run: npm ci
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint
+        # Blocking. Runs eslint.config.mjs (eslint-config-next, flat config).
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
