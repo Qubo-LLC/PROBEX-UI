@@ -1,0 +1,56 @@
+# =============================================================================
+# .github/workflows/gitleaks.yml
+#
+# Scans the full git history for committed secrets (API keys, tokens, etc.).
+# Uses the open-source gitleaks CLI directly: the gitleaks-action wrapper needs
+# a paid license for organization-owned repos.
+#
+# The version and its checksum are pinned so runs are reproducible and a
+# compromised "latest" release can't reach CI.
+#
+# Pinned action SHA (same one used in Qubo-Probex-web-):
+#   actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955   (v4.3.0)
+# =============================================================================
+
+name: Secret scan
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# No global permissions. The job below grants only what it needs.
+permissions: {}
+
+jobs:
+  secret-scan:
+    name: Gitleaks secret scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GITLEAKS_VERSION: '8.30.1'
+      GITLEAKS_SHA256: '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
+    steps:
+      - name: Checkout (full history, gitleaks needs it to scan past commits)
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install gitleaks (pinned version, checksum verified)
+        run: |
+          set -euo pipefail
+          curl -sSfL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            -o gitleaks.tar.gz
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks version
+
+      - name: Run gitleaks
+        # --redact keeps any finding out of the job log. If this repository is
+        # public, Actions logs are public too, so an unredacted run would print
+        # a newly-detected secret in plaintext. Exits non-zero on any finding.
+        run: ./gitleaks detect --source . --verbose --redact
