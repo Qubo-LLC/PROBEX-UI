@@ -42,7 +42,15 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies (locked, reproducible)
-        run: npm ci
+        run: |
+          node -v
+          npm -v
+          npm ci
+
+      # TEMP-DEBUG: remove once the npm ci crash is understood.
+      - name: Dump npm debug log
+        if: failure()
+        run: tail -n 100 ~/.npm/_logs/*-debug-0.log
 
       - name: Audit production dependencies for known vulnerabilities
         run: npm audit --omit=dev --audit-level=high
