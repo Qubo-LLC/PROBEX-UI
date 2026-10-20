@@ -153,6 +153,7 @@ function useMutation(
 
 export const MUTATIONS = {
   emergencyStop:    { label: 'Emergency Stop',        destructive: true,  orderFlow: false, endpoint: 'POST /api/execution/emergency-stop' },
+  clearGlobalHalt:  { label: 'Clear Halt',            destructive: true,  orderFlow: false, endpoint: 'POST /api/sleeves/global-halt/clear' },
   createOrder:      { label: 'Create Order',          destructive: true,  orderFlow: true,  endpoint: 'POST /api/execution/create' },
   closePosition:    { label: 'Close Position',        destructive: true,  orderFlow: true,  endpoint: 'POST /api/execution/close/:market_id' },
   cancelOrder:      { label: 'Cancel Order',          destructive: true,  orderFlow: true,  endpoint: 'POST /api/execution/cancel/:order_id' },
@@ -166,6 +167,11 @@ export function useEmergencyStop(onSettled?: () => void): UseMutationReturn {
     useCallback(() => services.engine.emergencyStop(), []),
     onSettled,
   )
+}
+
+/** Clears the sleeves' global halt after an emergency stop. Refused by the engine while data/STOP exists. */
+export function useClearGlobalHalt(onSettled?: () => void): UseMutationReturn {
+  return useMutation(useCallback(() => services.engine.clearGlobalHalt(), []), onSettled)
 }
 
 /**

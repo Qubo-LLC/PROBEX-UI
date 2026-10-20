@@ -16,11 +16,12 @@ import {
   toSystemMetrics, toTradesLedger, toExecutionOrders,
   toMarketsSummary, toMarketPriceHistory, toMarketDetail, toMutationResult,
 } from './dto'
-import { apiGet, apiGetHost, apiPost } from '@/lib/api/client'
+import { apiGet, apiGetHost } from '@/lib/api/client'
+import { engineWrite } from '@/lib/api/engineWrite'
 import { toLedgerPage } from '@/lib/mappers/ledger'
 import type { LedgerPage, LedgerPageDTO, LedgerPageQuery } from '@/types/ledger'
 import { toRunway, toRunwayLive } from './runwayDto'
-import type { Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
+import type { GlobalHalt, GlobalHaltDTO, Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
 import { ENDPOINTS, endpointPath, endpointPathWith } from '@/lib/api/endpoints'
 import type {
   EngineHealthDTO, EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
@@ -119,8 +120,11 @@ export class LiveEngineService implements IEngineService {
     return ok(toEngineMarkets(dto))
   }
 
+  // Positions, positions history, the trades ledger and the portfolio history/summary
+  // come from the engine's SLEEVE ledgers (/api/sleeves/*, simulated paper), not the
+  // retired PaperTrader. Same shapes, so every mapper and page is unchanged.
   async getPositions(signal?: AbortSignal): Promise<ApiResult<EnginePositions>> {
-    const dto = await apiGet<EnginePositionsDTO>(endpointPath(ENDPOINTS.positions.list), undefined, signal)
+    const dto = await apiGet<EnginePositionsDTO>(endpointPath(ENDPOINTS.runway.positions), undefined, signal)
     return ok(toEnginePositions(dto))
   }
 
@@ -196,7 +200,7 @@ export class LiveEngineService implements IEngineService {
   // ── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints ────────────────
 
   async getPositionsHistory(limit?: number, direction?: 'YES' | 'NO', signal?: AbortSignal): Promise<ApiResult<PositionsHistory>> {
-    const dto = await apiGet<PositionsHistoryDTO>(endpointPath(ENDPOINTS.positions.history), {
+    const dto = await apiGet<PositionsHistoryDTO>(endpointPath(ENDPOINTS.runway.positionsHistory), {
       ...(limit !== undefined ? { limit } : {}),
       ...(direction !== undefined ? { direction } : {}),
     }, signal)
@@ -244,7 +248,7 @@ export class LiveEngineService implements IEngineService {
 
   async getPortfolioHistory(limit?: number, signal?: AbortSignal): Promise<ApiResult<PortfolioHistory>> {
     const dto = await apiGet<PortfolioHistoryDTO>(
-      endpointPath(ENDPOINTS.portfolio.history),
+      endpointPath(ENDPOINTS.runway.portfolioHistory),
       limit !== undefined ? { limit } : undefined,
       signal,
     )
@@ -252,7 +256,7 @@ export class LiveEngineService implements IEngineService {
   }
 
   async getPortfolioSummary(signal?: AbortSignal): Promise<ApiResult<PortfolioSummary>> {
-    const dto = await apiGet<PortfolioSummaryDTO>(endpointPath(ENDPOINTS.portfolio.summary), undefined, signal)
+    const dto = await apiGet<PortfolioSummaryDTO>(endpointPath(ENDPOINTS.runway.portfolioSummary), undefined, signal)
     return ok(toPortfolioSummary(dto))
   }
 
@@ -306,7 +310,7 @@ export class LiveEngineService implements IEngineService {
   }
 
   async getTradesLedger(limit?: number, direction?: 'YES' | 'NO', signal?: AbortSignal): Promise<ApiResult<TradesLedger>> {
-    const dto = await apiGet<TradesLedgerDTO>(endpointPath(ENDPOINTS.trades.ledger), {
+    const dto = await apiGet<TradesLedgerDTO>(endpointPath(ENDPOINTS.runway.tradesLedger), {
       ...(limit !== undefined ? { limit } : {}),
       ...(direction !== undefined ? { direction } : {}),
     }, signal)
@@ -314,7 +318,7 @@ export class LiveEngineService implements IEngineService {
   }
 
   async getLedgerPage(source: 'ledger' | 'history', query: LedgerPageQuery, signal?: AbortSignal): Promise<ApiResult<LedgerPage>> {
-    const path = source === 'ledger' ? ENDPOINTS.trades.ledger : ENDPOINTS.positions.history
+    const path = source === 'ledger' ? ENDPOINTS.runway.tradesLedger : ENDPOINTS.runway.positionsHistory
     const dto = await apiGet<LedgerPageDTO>(endpointPath(path), {
       limit: query.limit,
       ...(query.beforeSeq !== undefined ? { before_seq: query.beforeSeq } : {}),
@@ -384,7 +388,7 @@ export class LiveEngineService implements IEngineService {
   // operator before calling; no gating happens here.
 
   async createOrder(input: CreateOrderInput): Promise<ApiResult<MutationResult>> {
-    const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.executionControl.create), {
+    const dto = await engineWrite<MutationResultDTO>(endpointPath(ENDPOINTS.executionControl.create), {
       market_id:    input.marketId,
       direction:    input.direction,
       size_usd:     input.sizeUsd,
@@ -396,22 +400,32 @@ export class LiveEngineService implements IEngineService {
   }
 
   async closePosition(marketId: string): Promise<ApiResult<MutationResult>> {
-    const dto = await apiPost<MutationResultDTO>(
+    const dto = await engineWrite<MutationResultDTO>(
       endpointPathWith(ENDPOINTS.executionControl.close, { market_id: marketId }),
     )
     return ok(toMutationResult(dto))
   }
 
   async cancelOrder(orderId: string): Promise<ApiResult<MutationResult>> {
-    const dto = await apiPost<MutationResultDTO>(
+    const dto = await engineWrite<MutationResultDTO>(
       endpointPathWith(ENDPOINTS.executionControl.cancel, { order_id: orderId }),
     )
     return ok(toMutationResult(dto))
   }
 
   async emergencyStop(): Promise<ApiResult<MutationResult>> {
-    const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.executionControl.emergencyStop))
+    const dto = await engineWrite<MutationResultDTO>(endpointPath(ENDPOINTS.executionControl.emergencyStop))
     return ok(toMutationResult(dto))
+  }
+
+  async clearGlobalHalt(): Promise<ApiResult<MutationResult>> {
+    const dto = await engineWrite<MutationResultDTO>(endpointPath(ENDPOINTS.runway.clearGlobalHalt))
+    return ok(toMutationResult(dto))
+  }
+
+  async getGlobalHalt(signal?: AbortSignal): Promise<ApiResult<GlobalHalt>> {
+    const dto = await apiGet<GlobalHaltDTO>(endpointPath(ENDPOINTS.runway.globalHalt), undefined, signal)
+    return ok({ halted: dto.global_halted ?? null, stopFile: dto.stop_file, sleeveStopFiles: dto.sleeve_stop_files ?? {} })
   }
 
   // ── Phase 2 (2026-08-20) — quant surface ───────────────────────────────────

@@ -27,6 +27,7 @@ import { certaintyFromSlice } from '@/components/shared/Figure'
 import { TableShell, Thead, Th, Tr, Td } from '@/components/shared/DataTable'
 import { Popover, InfoButton, PopoverText, PopoverTitle } from '@/components/ui/Popover'
 import { ROUTES } from '@/config/constants'
+import { SimulatedNote } from '@/components/shared/SimulatedNote'
 
 export function EdgeOrigins() {
   const ledgerSlice   = useApplicationStore((s) => s.engine.tradesLedger)
@@ -45,6 +46,7 @@ export function EdgeOrigins() {
 
   return (
     <section aria-labelledby="an-origins" className="flex flex-col gap-5 py-6" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
+      <SimulatedNote />
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <span className="flex items-center gap-1.5">
           <h2 id="an-origins" className="t-section-title">Where the results come from</h2>

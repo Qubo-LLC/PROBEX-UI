@@ -105,6 +105,14 @@ export const ENDPOINTS = {
   runway: {
     summary: def('GET', '/runway',      'confirmed', 'Sleeve ledgers, reserve, equity curves, activity, real-sizer views', 'Runway'),
     live:    def('GET', '/runway/live', 'confirmed', 'Current window per asset: the P2 rule\'s working quotes (visibility only)', 'Runway Live'),
+    globalHalt:      def('GET',  '/sleeves/global-halt',       'confirmed', 'Sleeves global halt (emergency stop) state', 'Global Halt'),
+    clearGlobalHalt: def('POST', '/sleeves/global-halt/clear', 'confirmed', 'Clear the sleeves global halt (operator)', 'Clear Global Halt'),
+    // The sleeve ledgers in the shapes the analytics, market and watchlist pages parse
+    tradesLedger:     def('GET', '/sleeves/trades/ledger',      'confirmed', 'Settled sleeve positions (simulated)', 'Sleeve Trades'),
+    positions:        def('GET', '/sleeves/positions',          'confirmed', 'Open sleeve positions (simulated)', 'Sleeve Positions'),
+    positionsHistory: def('GET', '/sleeves/positions/history',  'confirmed', 'Settled sleeve positions (simulated)', 'Sleeve Positions History'),
+    portfolioHistory: def('GET', '/sleeves/portfolio/history',  'confirmed', 'Combined sleeve equity (simulated)', 'Sleeve Portfolio History'),
+    portfolioSummary: def('GET', '/sleeves/portfolio/summary',  'confirmed', 'Combined sleeve summary (simulated)', 'Sleeve Portfolio Summary'),
   },
 
   // ── Execution mutations ──────────────────────────────────────────────────────

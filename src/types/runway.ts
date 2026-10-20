@@ -207,3 +207,20 @@ export interface LiveWindow {
 export interface RunwayLive {
   generatedAtMs: number; rule: string; visibilityOnly: boolean; label: string; windows: LiveWindow[]
 }
+
+// ─── Global halt (emergency stop) — /api/sleeves/global-halt ─────────────────
+
+export interface GlobalHaltDTO {
+  global_halted:     string | null
+  stop_file:         boolean
+  sleeve_stop_files: Record<string, boolean>
+  timestamp:         string
+}
+
+export interface GlobalHalt {
+  /** The halt reason, or null when the sleeves are not globally halted. */
+  halted:          string | null
+  /** data/STOP exists on the VM: the file kill path, which the dashboard cannot clear. */
+  stopFile:        boolean
+  sleeveStopFiles: Record<string, boolean>
+}

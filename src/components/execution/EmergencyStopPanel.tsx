@@ -10,7 +10,8 @@
 // when there is nothing to stop.
 
 import { useApplicationStore } from '@/store/applicationStore'
-import { useEmergencyStop, MUTATIONS } from '@/config/hooks/useMutation'
+import { useEmergencyStop, useClearGlobalHalt, MUTATIONS } from '@/config/hooks/useMutation'
+import { useGlobalHalt } from '@/config/hooks/useServices'
 import { MutationButton } from './MutationButton'
 import { parsePositionRows } from '@/lib/mappers/positions'
 import { formatCurrency } from '@/lib/utils'
@@ -27,7 +28,10 @@ function HaltIcon() {
 export function EmergencyStopPanel() {
   const positionsSlice = useApplicationStore((s) => s.engine.positions)
   const executionSlice = useApplicationStore((s) => s.engine.executionStatus)
+  const haltState      = useGlobalHalt(3_000)  // the poll picks up a stop or a clear within 3s
   const mutation       = useEmergencyStop()
+  const clear          = useClearGlobalHalt()
+  const halt           = haltState.status === 'success' ? haltState.data : null
 
   // Blast radius, from live state — never hardcoded, never guessed.
   const positions = positionsSlice.status === 'success' ? positionsSlice.data : null
@@ -59,6 +63,7 @@ export function EmergencyStopPanel() {
       : `This will close ${openCount} open position${openCount === 1 ? '' : 's'}` +
         (atRisk > 0 ? ` representing ${formatCurrency(atRisk)} of deployed capital` : '') +
         `, and halt further trading. ${mode === 'live' ? 'The engine is in LIVE mode — these are real orders.' : 'The engine is in paper mode.'}`
+  const haltText = `${blastRadius} Both sleeves (CRYPTO, EVENTS) stop opening positions until the halt is cleared.`
 
   return (
     <div
@@ -102,7 +107,7 @@ export function EmergencyStopPanel() {
             >
               {countUnknown ? '—' : openCount}
             </span>
-            <span className="text-2xs uppercase tracking-wider" style={{ color: 'var(--synatra-text-muted)' }}>open</span>
+            <span className="text-2xs uppercase tracking-wider" style={{ color: 'var(--synatra-text-muted)' }}>open · simulated</span>
           </div>
           <div className="flex flex-col">
             <span
@@ -122,17 +127,38 @@ export function EmergencyStopPanel() {
           </p>
         )}
 
+        {halt?.halted && (
+          <p role="status" className="t-helper" data-testid="global-halt" style={{ color: 'var(--synatra-negative)' }}>
+            Sleeves halted: {halt.halted}
+          </p>
+        )}
+        {halt?.stopFile && (
+          <p className="t-helper">data/STOP exists on the VM — the file kill path. Remove it over SSH to clear.</p>
+        )}
+
         <MutationButton
           mutation={mutation}
           label="Emergency Stop"
           tone="danger"
           icon={<HaltIcon />}
-          disabled={nothingToStop}
-          disabledReason="No open positions to close."
-          confirmTitle="Halt the engine and close all positions?"
-          confirmDescription={blastRadius}
+          disabled={Boolean(halt?.halted)}
+          disabledReason="The sleeves are already halted."
+          confirmTitle="Halt the sleeves and close all positions?"
+          confirmDescription={haltText}
           endpoint={MUTATIONS.emergencyStop.endpoint}
         />
+        {halt?.halted && (
+          <MutationButton
+            mutation={clear}
+            label="Clear halt"
+            tone="danger"
+            disabled={halt.stopFile}
+            disabledReason="data/STOP exists on the VM; remove it first."
+            confirmTitle="Clear the sleeves' global halt?"
+            confirmDescription="Both sleeves resume opening positions under their own risk limits."
+            endpoint={MUTATIONS.clearGlobalHalt.endpoint}
+          />
+        )}
       </div>
     </div>
   )

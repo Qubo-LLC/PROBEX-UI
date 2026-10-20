@@ -2,7 +2,7 @@
   "name": "synatra",
   "version": "1.0.0",
   "private": true,
-  "description": "QUBO Synatra — Bitcoin Prediction Intelligence Platform",
+  "description": "QUBO Synatra \u2014 Bitcoin Prediction Intelligence Platform",
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:standard": "next dev",
@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "next lint",
-    "lint:fix": "next lint --fix"
+    "lint:fix": "next lint --fix",
+    "postbuild": "node scripts/check-client-bundle.mjs"
   },
   "dependencies": {
     "@radix-ui/react-tooltip": "^1.2.7",

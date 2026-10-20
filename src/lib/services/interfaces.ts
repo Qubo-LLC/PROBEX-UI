@@ -20,7 +20,7 @@ import type {
   SystemMetrics, TradesLedger, ExecutionOrders,
   MarketsSummary, MarketPriceHistory, MarketDetail, MutationResult,
 } from '@/types/engine'
-import type { Runway, RunwayLive } from '@/types/runway'
+import type { GlobalHalt, Runway, RunwayLive } from '@/types/runway'
 
 import type {
   MathLayersStatus, MathRecommendationsEnvelope, KalmanLayer,
@@ -128,6 +128,9 @@ export interface IEngineService {
   closePosition(marketId: string):      Promise<ApiResult<MutationResult>>
   cancelOrder(orderId: string):         Promise<ApiResult<MutationResult>>
   emergencyStop():                      Promise<ApiResult<MutationResult>>
+  /** Clear the sleeves' global halt after an emergency stop (operator; via the dashboard server route). */
+  clearGlobalHalt():                    Promise<ApiResult<MutationResult>>
+  getGlobalHalt(signal?: AbortSignal):  Promise<ApiResult<GlobalHalt>>
 
   peekHealth?():           EngineHealth | null
   peekRuntime?():          EngineRuntime | null

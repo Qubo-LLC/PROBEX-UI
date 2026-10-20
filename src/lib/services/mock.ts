@@ -37,7 +37,7 @@ import type {
   MarketsSummary, MarketPriceHistory, MarketDetail, MutationResult,
 } from '@/types/engine'
 
-import type { Runway, RunwayLive } from '@/types/runway'
+import type { GlobalHalt, Runway, RunwayLive } from '@/types/runway'
 import { MOCK_RUNWAY, MOCK_RUNWAY_LIVE } from '@/mock/runway'
 
 class MockEngineService implements IEngineService {
@@ -180,6 +180,8 @@ class MockEngineService implements IEngineService {
   async getKalmanMultiAsset():      Promise<ApiResult<KalmanLayer>>                 { return ok(MOCK_KALMAN_LAYER) }
 
   async emergencyStop():      Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: emergency stop — no live positions affected')) }
+  async clearGlobalHalt(): Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: global halt cleared')) }
+  async getGlobalHalt(): Promise<ApiResult<GlobalHalt>> { return ok({ halted: null, stopFile: false, sleeveStopFiles: {} }) }
 }
 
 /** Uniform mock mutation envelope — always succeeds, always says it's a mock. */

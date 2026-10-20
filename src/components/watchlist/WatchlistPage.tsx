@@ -61,6 +61,7 @@ import { Popover, InfoButton, PopoverText, PopoverTitle } from '@/components/ui/
 import { EmptyState } from '@/components/ui/EmptyState'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
 import type { MarketSummaryItem, MarketsSummary } from '@/types/engine'
+import { SimulatedNote } from '@/components/shared/SimulatedNote'
 
 const YES = 'var(--synatra-yes)'
 const NO  = 'var(--synatra-no)'
@@ -177,6 +178,7 @@ export function WatchlistPage({ embedded = false }: EmbeddableProps = {}) {
 
   return (
     <div className={pageShell(embedded, 'gap-5')}>
+      <SimulatedNote />
       {!embedded && (
         <div>
           <h1 className="t-page-title">Watchlist</h1>

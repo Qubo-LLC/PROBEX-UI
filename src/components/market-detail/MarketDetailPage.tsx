@@ -43,6 +43,7 @@ import { MarketBook } from './MarketBook'
 import { MarketActivityFeed } from './MarketActivityFeed'
 import { MarketCharts } from './MarketCharts'
 import { RelatedMarkets } from './RelatedMarkets'
+import { SimulatedNote } from '@/components/shared/SimulatedNote'
 
 export function MarketDetailPage({ marketId }: { marketId: string }) {
   const router = useRouter()
@@ -101,6 +102,7 @@ export function MarketDetailPage({ marketId }: { marketId: string }) {
   return (
     <ProvenanceScope detail="tooltip">
     <div className="page-container flex flex-col gap-4 pb-8 animate-fade-in-up">
+      <SimulatedNote />
       {resolving ? (
         <header className="flex flex-col gap-3" aria-busy="true">
           <Skeleton height={10} width={70} />

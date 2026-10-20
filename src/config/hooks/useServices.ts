@@ -186,6 +186,11 @@ export function useEngineRunway(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getRunway(signal), () => services.engine.peekRunway?.() ?? null, [], refreshMs)
 }
 
+/** /api/sleeves/global-halt — whether the sleeves are halted (emergency stop / data/STOP). */
+export function useGlobalHalt(refreshMs?: number) {
+  return useServiceQuery((signal) => services.engine.getGlobalHalt(signal), () => null, [], refreshMs)
+}
+
 /** /api/runway/live — current windows and the P2 rule's working quotes (visibility only). */
 export function useEngineRunwayLive(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getRunwayLive(signal), () => services.engine.peekRunwayLive?.() ?? null, [], refreshMs)

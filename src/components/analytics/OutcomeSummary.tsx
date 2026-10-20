@@ -27,6 +27,7 @@ import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils
 import { expectancy } from '@/lib/mappers/analytics'
 import { Figure, certaintyFromSlice } from '@/components/shared/Figure'
 import { Popover, InfoButton, PopoverText, PopoverTitle } from '@/components/ui/Popover'
+import { SimulatedNote } from '@/components/shared/SimulatedNote'
 
 const SLOW_MS = 30_000
 const MEDIUM_MS = 5_000
@@ -57,6 +58,7 @@ export function OutcomeSummary() {
 
   return (
     <section aria-labelledby="an-outcome" className="flex flex-col gap-4 pb-6" style={{ borderBottom: '1px solid var(--synatra-border)' }}>
+      <SimulatedNote />
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <span className="flex items-center gap-1.5">
           <h2 id="an-outcome" className="t-section-title">Outcome</h2>

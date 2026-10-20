@@ -9,6 +9,7 @@ import { LiveChart, type LiveChartPoint } from '@/components/shared/LiveChart'
 import { chartStateFromSlice, staleBySeriesAge } from '@/components/shared/ChartFrame'
 import { formatCurrency } from '@/lib/utils'
 import type { PortfolioHistoryPoint } from '@/types/engine'
+import { SimulatedNote } from '@/components/shared/SimulatedNote'
 
 function toDrawdownSeries(history: PortfolioHistoryPoint[]): LiveChartPoint[] {
   let peak = -Infinity
@@ -62,6 +63,7 @@ export function PerformanceAnalytics() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <SimulatedNote className="lg:col-span-2" />
       <LiveChart
         title="Drawdown"
         subtitle="Peak-to-trough decline, measured within the retained window above"

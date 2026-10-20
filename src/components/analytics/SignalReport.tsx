@@ -27,6 +27,7 @@ import { parseSignalRows, parseHourlyRows, outcomesReconciled } from '@/lib/mapp
 import { certaintyFromSlice } from '@/components/shared/Figure'
 import { TableShell, Thead, Th, Tr, Td } from '@/components/shared/DataTable'
 import { Popover, InfoButton, PopoverText, PopoverTitle } from '@/components/ui/Popover'
+import { SimulatedNote } from '@/components/shared/SimulatedNote'
 
 export function SignalReport() {
   const summarySlice = useApplicationStore((s) => s.engine.analyticsSummary)
@@ -47,6 +48,7 @@ export function SignalReport() {
 
   return (
     <section aria-labelledby="an-signals" className="flex flex-col gap-5 pt-6">
+      <SimulatedNote />
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <span className="flex items-center gap-1.5">
           <h2 id="an-signals" className="t-section-title">Signal report</h2>
