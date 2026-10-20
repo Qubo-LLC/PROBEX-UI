@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { sizingReading, executionReading, mechanismVerdict, patternFilterReading } from './mechanism'
-import type { EngineConfig, SurvivalStatus, PaperTrading, ExecutionStatus } from '@/types/engine'
+import type { EngineConfig, SurvivalStatus, ExecutionStatus } from '@/types/engine'
+import type { Sleeve } from '@/types/runway'
+import { MOCK_RUNWAY } from '@/mock/runway'
 import type { EdgeRow } from '@/lib/mappers/edges'
 
 // Shapes from the live captures of 2026-09-15/16.
@@ -11,7 +13,8 @@ const survival = {
 } as SurvivalStatus
 
 const config = { kellyFraction: 0.5, maxBetPercent: 20, environment: 'paper' } as EngineConfig
-const paper = { totalTrades: 10, wins: 3, losses: 7, pending: 0, sessionStart: 1 } as PaperTrading
+// The sleeve ledgers: 10 settled (3 won, 7 lost), nothing open.
+const paper: Sleeve[] = [{ ...MOCK_RUNWAY.sleeves[0]!, counts: { settled: 10, won: 3, lost: 7 }, openPositions: 0 }]
 const execution = { totalTrades: 0, wins: 0, losses: 0, mode: 'paper', resolutionStats: { isRunning: true } } as unknown as ExecutionStatus
 
 describe('sizingReading', () => {
@@ -22,7 +25,7 @@ describe('sizingReading', () => {
 })
 
 describe('executionReading', () => {
-  it('reads the paper session in paper mode — not the real-order subsystem', () => {
+  it('reads the sleeve ledgers in paper mode — not the real-order subsystem', () => {
     expect(executionReading('paper', paper, execution)).toMatchObject({ kind: 'paper', trades: 10, wins: 3, losses: 7 })
   })
   it('reads the real-order subsystem in live mode', () => {

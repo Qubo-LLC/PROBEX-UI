@@ -9,27 +9,27 @@ import {
   toEngineHealth, toEngineRuntime, toEngineStats, toEngineConfig, toSurvivalStatus, toPriceHistory,
   toEngineMarkets, toEnginePositions, toEngineEvents, toEngineEdges,
   toEngineIdentity, runtimeToIdentity, toExecutionStatus,
-  toExecutionPolicy, toExecutionTrades, toPaperStats,
-  toPositionsHistory, toSurvivalPatterns,
+  toExecutionPolicy, toExecutionTrades, toPositionsHistory, toSurvivalPatterns,
   toConsensus, toConsensusBias, toConsensusHistory,
   toResearchReports, toPortfolio, toBalance, toPortfolioHistory, toPortfolioSummary, toPortfolioPerformance,
   toAnalyticsSegments, toAnalyticsSignals, toAnalyticsSummary, toAnalyticsTopSegments, toAnalyticsHourly,
-  toPaperStatus, toSystemMetrics, toTradesLedger, toExecutionOrders,
+  toSystemMetrics, toTradesLedger, toExecutionOrders,
   toMarketsSummary, toMarketPriceHistory, toMarketDetail, toMutationResult,
 } from './dto'
 import { apiGet, apiGetHost, apiPost } from '@/lib/api/client'
 import { toLedgerPage } from '@/lib/mappers/ledger'
 import type { LedgerPage, LedgerPageDTO, LedgerPageQuery } from '@/types/ledger'
+import { toRunway, toRunwayLive } from './runwayDto'
+import type { Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
 import { ENDPOINTS, endpointPath, endpointPathWith } from '@/lib/api/endpoints'
 import type {
   EngineHealthDTO, EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
   EngineMarketsDTO, EnginePositionsDTO, EngineEventsDTO, EngineEdgesDTO,
   EngineIdentityDTO, ExecutionStatusDTO,
-  ExecutionPolicyDTO, ExecutionTradesDTO, PaperStatsDTO,
-  EngineHealth, EngineRuntime, EngineStats, EngineConfig, SurvivalStatus, PriceHistory,
+  ExecutionPolicyDTO, ExecutionTradesDTO, EngineHealth, EngineRuntime, EngineStats, EngineConfig, SurvivalStatus, PriceHistory,
   EngineMarkets, EnginePositions, EngineEvents, EngineEdges,
   EngineIdentity, ExecutionStatus,
-  ExecutionPolicy, ExecutionTrades, PaperStats,
+  ExecutionPolicy, ExecutionTrades,
   PositionsHistoryDTO, PositionsHistory, SurvivalPatternsDTO, SurvivalPatterns,
   ConsensusDTO, Consensus, ConsensusBiasDTO, ConsensusBias, ConsensusHistoryDTO, ConsensusHistory,
   ResearchReportsDTO, ResearchReports,
@@ -39,7 +39,7 @@ import type {
   AnalyticsSegmentsDTO, AnalyticsSegments, AnalyticsSignalsDTO, AnalyticsSignals,
   AnalyticsSummaryDTO, AnalyticsSummary, AnalyticsTopSegmentsDTO, AnalyticsTopSegments,
   AnalyticsHourlyDTO, AnalyticsHourly,
-  PaperStatusDTO, PaperStatus, SystemMetricsDTO, SystemMetrics,
+  SystemMetricsDTO, SystemMetrics,
   TradesLedgerDTO, TradesLedger, ExecutionOrdersDTO, ExecutionOrders,
   MarketsSummaryDTO, MarketsSummary, MarketPriceHistoryDTO, MarketPriceHistory,
   MarketDetailDTO, MarketDetail,
@@ -183,9 +183,14 @@ export class LiveEngineService implements IEngineService {
     return ok(toExecutionTrades(dto))
   }
 
-  async getPaperStats(signal?: AbortSignal): Promise<ApiResult<PaperStats>> {
-    const dto = await apiGet<PaperStatsDTO>(endpointPath(ENDPOINTS.engine.paperStats), undefined, signal)
-    return ok(toPaperStats(dto))
+  async getRunway(signal?: AbortSignal): Promise<ApiResult<Runway>> {
+    const dto = await apiGet<RunwayDTO>(endpointPath(ENDPOINTS.runway.summary), undefined, signal)
+    return ok(toRunway(dto))
+  }
+
+  async getRunwayLive(signal?: AbortSignal): Promise<ApiResult<RunwayLive>> {
+    const dto = await apiGet<RunwayLiveDTO>(endpointPath(ENDPOINTS.runway.live), undefined, signal)
+    return ok(toRunwayLive(dto))
   }
 
   // ── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints ────────────────
@@ -294,10 +299,6 @@ export class LiveEngineService implements IEngineService {
     return ok(toAnalyticsHourly(dto))
   }
 
-  async getPaperStatus(signal?: AbortSignal): Promise<ApiResult<PaperStatus>> {
-    const dto = await apiGet<PaperStatusDTO>(endpointPath(ENDPOINTS.paper.status), undefined, signal)
-    return ok(toPaperStatus(dto))
-  }
 
   async getSystemMetrics(signal?: AbortSignal): Promise<ApiResult<SystemMetrics>> {
     const dto = await apiGet<SystemMetricsDTO>(endpointPath(ENDPOINTS.engine.systemMetrics), undefined, signal)
@@ -410,26 +411,6 @@ export class LiveEngineService implements IEngineService {
 
   async emergencyStop(): Promise<ApiResult<MutationResult>> {
     const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.executionControl.emergencyStop))
-    return ok(toMutationResult(dto))
-  }
-
-  async startPaperTrading(): Promise<ApiResult<MutationResult>> {
-    const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.paper.start))
-    return ok(toMutationResult(dto))
-  }
-
-  async stopPaperTrading(): Promise<ApiResult<MutationResult>> {
-    const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.paper.stop))
-    return ok(toMutationResult(dto))
-  }
-
-  async resetPaperTrading(): Promise<ApiResult<MutationResult>> {
-    const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.paper.reset))
-    return ok(toMutationResult(dto))
-  }
-
-  async resolvePaperTrades(): Promise<ApiResult<MutationResult>> {
-    const dto = await apiPost<MutationResultDTO>(endpointPath(ENDPOINTS.paper.resolve))
     return ok(toMutationResult(dto))
   }
 

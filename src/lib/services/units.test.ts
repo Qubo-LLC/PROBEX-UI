@@ -12,9 +12,9 @@
 // distinguish them, which is the only kind of evidence that settles it.
 
 import { describe, it, expect } from 'vitest'
-import { toExecutionStatus, toPaperStats, toPaperStatus, toMarketDetail, toMarketDetailItem } from './dto'
+import { toExecutionStatus, toMarketDetail, toMarketDetailItem } from './dto'
 import { toPerformanceByCategory } from './quantDto'
-import type { ExecutionStatusDTO, PaperStatsDTO, PaperStatusDTO, MarketDetailDTO } from '@/types/engine'
+import type { ExecutionStatusDTO, MarketDetailDTO } from '@/types/engine'
 import type { PerformanceByCategoryDTO } from '@/types/quant'
 
 // A win rate that is unambiguous: 74.6 as a percentage is 0.746 as a fraction,
@@ -66,40 +66,6 @@ describe('win_rate is a percentage on every surface', () => {
     expect(bucket?.winRate).toBeCloseTo(AS_FRACTION)
     // Guard the specific rendering failure: formatPercent multiplies by 100.
     expect((bucket?.winRate ?? 0) * 100).toBeLessThan(101)
-  })
-
-  it('/api/paper-stats and /api/paper/status agree with each other', () => {
-    const stats = {
-      available: true,
-      paper_trading: {
-        session_start: '2026-09-07T13:21:12Z', initial_capital: 100, current_capital: 122.38,
-        total_trades: 59, wins: 44, losses: 15, pushes: 0, pending: 2,
-        total_pnl: 22.38, win_rate: WIRE_WIN_RATE,
-        avg_win: 0, avg_loss: 0, largest_win: 0, largest_loss: 0,
-        survival_states: [], edge_buckets: {}, hourly_performance: {},
-      },
-      timestamp: '2026-09-07T20:00:00Z',
-    } as unknown as PaperStatsDTO
-
-    const status: PaperStatusDTO = {
-      available: true, enabled: true, pending_trades: 2, completed_trades: 59,
-      total_pnl: 22.38, win_rate: WIRE_WIN_RATE, timestamp: '2026-09-07T20:00:00Z',
-    }
-
-    expect(toPaperStats(stats).paperTrading.winRate).toBeCloseTo(AS_FRACTION)
-    expect(toPaperStatus(status).winRate).toBeCloseTo(AS_FRACTION)
-  })
-})
-
-describe('/api/paper/status no longer drops confirmed fields', () => {
-  it('carries total_pnl and win_rate through to the domain type', () => {
-    const dto: PaperStatusDTO = {
-      available: true, enabled: true, pending_trades: 2, completed_trades: 59,
-      total_pnl: 22.38, win_rate: WIRE_WIN_RATE, timestamp: '2026-09-07T20:00:00Z',
-    }
-    const out = toPaperStatus(dto)
-    expect(out.totalPnl).toBe(22.38)
-    expect(out.winRate).toBeCloseTo(AS_FRACTION)
   })
 })
 

@@ -148,18 +148,14 @@ function useMutation(
 // Emergency Stop is deliberately NOT order flow. It only ever REDUCES exposure,
 // and it is the one control an operator needs most precisely when the engine is
 // live — gating it would disable the safety brake exactly when it matters most.
-// Paper-session controls are not order flow either: they operate the simulator,
-// which is the in-scope subject of this cockpit.
+// The retired PaperTrader's start/stop/reset/resolve controls are removed:
+// paper trading now runs in the engine's sleeves.
 
 export const MUTATIONS = {
   emergencyStop:    { label: 'Emergency Stop',        destructive: true,  orderFlow: false, endpoint: 'POST /api/execution/emergency-stop' },
   createOrder:      { label: 'Create Order',          destructive: true,  orderFlow: true,  endpoint: 'POST /api/execution/create' },
   closePosition:    { label: 'Close Position',        destructive: true,  orderFlow: true,  endpoint: 'POST /api/execution/close/:market_id' },
   cancelOrder:      { label: 'Cancel Order',          destructive: true,  orderFlow: true,  endpoint: 'POST /api/execution/cancel/:order_id' },
-  paperStart:       { label: 'Start Paper Trading',   destructive: false, orderFlow: false, endpoint: 'POST /api/paper/start' },
-  paperStop:        { label: 'Stop Paper Trading',    destructive: false, orderFlow: false, endpoint: 'POST /api/paper/stop' },
-  paperReset:       { label: 'Reset Paper Trading',   destructive: true,  orderFlow: false, endpoint: 'POST /api/paper/reset' },
-  paperResolve:     { label: 'Resolve Paper Trades',  destructive: false, orderFlow: false, endpoint: 'POST /api/paper/resolve' },
 } as const
 
 // ─── Execution mutations ──────────────────────────────────────────────────────
@@ -213,21 +209,3 @@ export function useCancelOrder(orderId: string | null, onSettled?: () => void): 
   )
 }
 
-// ─── Paper-trading mutations ──────────────────────────────────────────────────
-
-export function useStartPaperTrading(onSettled?: () => void): UseMutationReturn {
-  return useMutation(useCallback(() => services.engine.startPaperTrading(), []), onSettled)
-}
-
-export function useStopPaperTrading(onSettled?: () => void): UseMutationReturn {
-  return useMutation(useCallback(() => services.engine.stopPaperTrading(), []), onSettled)
-}
-
-/** DESTRUCTIVE — clears the entire paper trading history. Always confirm. */
-export function useResetPaperTrading(onSettled?: () => void): UseMutationReturn {
-  return useMutation(useCallback(() => services.engine.resetPaperTrading(), []), onSettled)
-}
-
-export function useResolvePaperTrades(onSettled?: () => void): UseMutationReturn {
-  return useMutation(useCallback(() => services.engine.resolvePaperTrades(), []), onSettled)
-}

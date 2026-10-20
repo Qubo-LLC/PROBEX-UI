@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
-import { TradeLedger } from '@/components/ledger/TradeLedger'
+import { SleevesPage } from '@/components/runway/SleevesPage'
 
 export const metadata: Metadata = {
-  title: 'Trade ledger',
-  description: 'Every trade record the engine holds, and what happened to it.',
+  title: 'Ledger',
+  description: 'Every order, fill, cancel and settlement in the engine’s sleeve ledgers.',
 }
 
+// The sleeve ledgers replace the retired PaperTrader's trade ledger.
 export default function LedgerPage() {
-  return <TradeLedger />
+  return <SleevesPage title="Ledger" />
 }

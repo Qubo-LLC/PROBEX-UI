@@ -31,13 +31,11 @@ import type {
   EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, EngineConfigFilterFieldsDTO, SurvivalDTO, PriceHistoryDTO,
   EngineMarketsDTO, EnginePositionsDTO, EngineEventsDTO, EngineEdgesDTO,
   EngineIdentityDTO, ExecutionStatusDTO, RateLimitBucketDTO,
-  ExecutionPolicyDTO, ExecutionTradesDTO, PaperStatsDTO, BucketPerformanceStatDTO,
-  EngineHealth, HealthComponent, RuntimeComponents, EngineRuntime, EngineStats,
+  ExecutionPolicyDTO, ExecutionTradesDTO, EngineHealth, HealthComponent, RuntimeComponents, EngineRuntime, EngineStats,
   EngineConfig, SurvivalStatus, PriceHistory,
   EngineMarkets, EnginePositions, EngineEvents, EngineEdges,
   EngineIdentity, ExecutionStatus, RateLimitBucket,
-  ExecutionPolicy, ExecutionTrades, PaperStats, BucketPerformanceStat,
-  SurvivalState, EngineMode,
+  ExecutionPolicy, ExecutionTrades, SurvivalState, EngineMode,
   PositionsHistoryDTO, PositionsHistory,
   SurvivalPatternsDTO, SurvivalPatterns, SurvivalPatternItemDTO, SurvivalPatternItem,
   ConsensusDTO, Consensus, ConsensusBiasDTO, ConsensusBias,
@@ -49,7 +47,7 @@ import type {
   AnalyticsSegmentsDTO, AnalyticsSegments, AnalyticsSignalsDTO, AnalyticsSignals,
   AnalyticsSummaryDTO, AnalyticsSummary, AnalyticsTopSegmentsDTO, AnalyticsTopSegments,
   AnalyticsHourlyDTO, AnalyticsHourly,
-  PaperStatusDTO, PaperStatus, SystemMetricsDTO, SystemMetrics,
+  SystemMetricsDTO, SystemMetrics,
   TradesLedgerDTO, TradesLedger, ExecutionOrdersDTO, ExecutionOrders,
   MarketsSummaryDTO, MarketsSummary, MarketSummaryItemDTO, MarketSummaryItem,
   MarketPriceHistoryDTO, MarketPriceHistory, MarketHistoryPointDTO, MarketHistoryPoint,
@@ -507,52 +505,6 @@ export function toExecutionTrades(dto: ExecutionTradesDTO): ExecutionTrades {
   }
 }
 
-// ─── /api/paper-stats ───────────────────────────────────────────────────────────
-
-function toBucketPerformanceStat(dto: BucketPerformanceStatDTO): BucketPerformanceStat {
-  return { wins: dto.wins, losses: dto.losses, totalPnl: dto.total_pnl, winRate: pctToFraction(dto.win_rate) }
-}
-
-function toBucketPerformanceRecord(dto: Record<string, BucketPerformanceStatDTO>): Record<string, BucketPerformanceStat> {
-  const out: Record<string, BucketPerformanceStat> = {}
-  for (const [key, value] of Object.entries(dto)) out[key] = toBucketPerformanceStat(value)
-  return out
-}
-
-export function toPaperStats(dto: PaperStatsDTO): PaperStats {
-  const p = dto.paper_trading
-  return {
-    available: dto.available,
-    paperTrading: {
-      sessionStart:      isoToMs(p.session_start),
-      initialCapital:    p.initial_capital,
-      currentCapital:    p.current_capital,
-      totalTrades:       p.total_trades,
-      wins:              p.wins,
-      losses:            p.losses,
-      pushes:            p.pushes,
-      pending:           p.pending,
-      totalPnl:          p.total_pnl,
-      winRate:           pctToFraction(p.win_rate),
-      avgWin:            p.avg_win,
-      avgLoss:           p.avg_loss,
-      largestWin:        p.largest_win,
-      largestLoss:       p.largest_loss,
-      survivalStates:    p.survival_states.map(([iso, state]) => [isoToMs(iso), state] as [number, string]),
-      edgeBuckets:       toBucketPerformanceRecord(p.edge_buckets),
-      hourlyPerformance: toBucketPerformanceRecord(p.hourly_performance),
-    },
-    timestamp: isoToMs(dto.timestamp),
-    // Additive, optional on the wire (phase 2). Absent → null, never a default.
-    integrity: dto.integrity
-      ? { state: dto.integrity.state, violations: dto.integrity.violations.map((v) => ({ code: v.code, count: v.count })) }
-      : null,
-    session: dto.session
-      ? { id: dto.session.id, legacy: dto.session.legacy, stateLoadError: dto.session.state_load_error }
-      : null,
-  }
-}
-
 // ─── Additional endpoint adapters ─────────────────────────────────────────────
 
 export function toPositionsHistory(dto: PositionsHistoryDTO): PositionsHistory {
@@ -807,15 +759,6 @@ export function toAnalyticsTopSegments(dto: AnalyticsTopSegmentsDTO): AnalyticsT
 
 export function toAnalyticsHourly(dto: AnalyticsHourlyDTO): AnalyticsHourly {
   return { available: dto.available, hourly: dto.hourly, count: dto.count, timestamp: isoToMs(dto.timestamp) }
-}
-
-export function toPaperStatus(dto: PaperStatusDTO): PaperStatus {
-  return {
-    available: dto.available, enabled: dto.enabled, pendingTrades: dto.pending_trades,
-    completedTrades: dto.completed_trades,
-    totalPnl: dto.total_pnl, winRate: pctToFraction(dto.win_rate),
-    timestamp: isoToMs(dto.timestamp),
-  }
 }
 
 export function toSystemMetrics(dto: SystemMetricsDTO): SystemMetrics {

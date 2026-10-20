@@ -70,7 +70,9 @@ import { useApplicationStore } from '@/store/applicationStore'
 import { parseMarketRows } from '@/lib/mappers/markets'
 import { MarketArc } from './MarketArc'
 import { PerceptionArc } from './PerceptionArc'
-import { CapitalBookGroup } from './CapitalBookGroup'
+import { RunwayGroup } from '@/components/runway/RunwayGroup'
+import { CurrentWindowPanel } from '@/components/runway/CurrentWindowPanel'
+import { ActivityList } from '@/components/runway/ActivityList'
 import { EngineAttention } from './EngineAttention'
 import { MarketField } from './MarketField'
 import { marketDataSignal } from '@/lib/display/engineFocus'
@@ -146,7 +148,12 @@ export function OverviewPage() {
              This is the one CONTAINED movement of the arc, because money is a
              genuinely different subject from the market and the decision. One
              container, internally ruled — not the four-panel grid it replaces. */}
-      <CapitalBookGroup />
+      {/* The runway reads the engine's sleeve ledgers only (/api/runway). The
+             retired PaperTrader and the survival brain's capital are not shown
+             anywhere on the dashboard — no legacy section, no fallback. */}
+      <RunwayGroup />
+      <CurrentWindowPanel />
+      <ActivityList limit={25} />
 
       {/* ── Attention — an interruption, not a step in the arc ─────────────
              Present only when something is actually wrong. It sits AFTER the

@@ -27,7 +27,7 @@ export function MechanismCycle({ heading = true }: { heading?: boolean }) {
   const edges     = useApplicationStore((s) => s.engine.edges)
   const stats     = useApplicationStore((s) => s.engine.stats)
   const execution = useApplicationStore((s) => s.engine.executionStatus)
-  const paper     = useApplicationStore((s) => s.engine.paperStats)
+  const runway    = useApplicationStore((s) => s.engine.runway)
 
   const sv  = survival.data
   const cfg = config.data
@@ -41,7 +41,7 @@ export function MechanismCycle({ heading = true }: { heading?: boolean }) {
     sv, cfg,
     sizing:   sizingReading(cfg, sv),
     counters: processCounters(stats.data),
-    executed: executionReading(mode, paper.data?.paperTrading ?? null, execution.data),
+    executed: executionReading(mode, runway.data?.sleeves ?? null, execution.data),
     patterns: patternFilterReading(sv),
   })
 
@@ -66,7 +66,7 @@ export function MechanismCycle({ heading = true }: { heading?: boolean }) {
               </PopoverText>
             </Popover>
           </span>
-          <span className="t-metadata">/api/markets · /api/edges · /api/survival · /api/config · /api/paper-stats</span>
+          <span className="t-metadata">/api/markets · /api/edges · /api/survival · /api/config · /api/runway</span>
         </div>
       )}
       <DecisionPipeline stages={stages} />
@@ -160,8 +160,8 @@ export function buildStages(input: {
           : 'execution mode not yet known',
       detail: executed.kind === 'paper' ? (
         <span className="t-helper">
-          {executed.wins} won · {executed.losses} lost{executed.pending > 0 ? ` · ${executed.pending} pending` : ''} this session
-          <span className="t-metadata"> · since {new Date(executed.sessionStart).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · /api/paper-stats</span>
+          {executed.wins} won · {executed.losses} lost{executed.pending > 0 ? ` · ${executed.pending} open` : ''} in the sleeves
+          <span className="t-metadata"> · paper, research sizing · /api/runway</span>
         </span>
       ) : executed.kind === 'live' ? (
         <span className="t-helper">{executed.wins} won · {executed.losses} lost <span className="t-metadata">· /api/execution/status</span></span>

@@ -1,55 +1,26 @@
 'use client'
 
-// Execution domain — API groups "Execution Engine" and "Paper Trading Control".
+// Execution domain — API group "Execution Engine":
+//   /api/execution/{status,policy,trades,orders} + the mutation controls
+//   (emergency stop, manual order, cancel).
 //
-//   Engine → /api/execution/{status,policy,trades,orders} + the mutation
-//            controls (emergency stop, manual order, cancel)
-//   Paper  → /api/paper-stats, /api/paper/status + start/stop/reset/resolve
-//
-// Paper trading is a mode of the execution engine, not a parallel system — the
-// same order flow, the same risk limits, simulated fills. Two sidebar entries
-// implied two engines. The two tabs still answer different questions: Engine
-// is the state of the real-order subsystem (idle in paper mode); Paper Trading
-// is what the paper session has recorded.
+// The Paper Trading tab is removed: the retired PaperTrader (/api/paper-stats,
+// /api/paper/status and its start/stop/reset/resolve controls) is no longer
+// shown anywhere on the dashboard. Paper trading now runs in the engine's
+// sleeves; its runway, activity and current windows are on the Overview.
 
-import { useApplicationStore } from '@/store/applicationStore'
 import { DomainPage } from '@/components/layout/DomainPage'
 import { ExecutionConsole } from './ExecutionConsole'
-import { PaperTradingConsole } from '@/components/paper/PaperTradingConsole'
 import type { TabDef } from '@/components/ui/Tabs'
 
 export function ExecutionDomain() {
-  const statusSlice = useApplicationStore((s) => s.engine.paperStatus)
-  const paper = statusSlice.status === 'success' ? statusSlice.data : null
-
-  const tabs: TabDef[] = [
-    { id: 'engine', label: 'Engine' },
-    { id: 'paper',  label: 'Paper Trading' },
-  ]
-
+  const tabs: TabDef[] = [{ id: 'engine', label: 'Engine' }]
   return (
     <DomainPage
       title="Execution"
-      subtitle="The order-execution subsystem, and the paper session’s record"
+      subtitle="The order-execution subsystem"
       tabs={tabs}
-      actions={
-        paper ? (
-          <span
-            className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider"
-            style={{ color: paper.enabled ? 'var(--synatra-positive)' : 'var(--synatra-text-muted)' }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full inline-block"
-              style={{ background: paper.enabled ? 'var(--synatra-positive)' : 'var(--synatra-text-disabled)' }}
-              aria-hidden="true"
-            />
-            Paper {paper.enabled ? 'enabled' : 'disabled'}
-          </span>
-        ) : undefined
-      }
-      render={(active) =>
-        active === 'paper' ? <PaperTradingConsole embedded /> : <ExecutionConsole embedded />
-      }
+      render={() => <ExecutionConsole embedded />}
     />
   )
 }

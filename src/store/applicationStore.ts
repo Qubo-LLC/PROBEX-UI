@@ -23,7 +23,6 @@ import type {
   EngineIdentity,
   ExecutionStatus,
   ExecutionPolicy,
-  PaperStats,
   PositionsHistory,
   SurvivalPatterns,
   Consensus,
@@ -38,11 +37,11 @@ import type {
   AnalyticsSummary,
   AnalyticsTopSegments,
   AnalyticsHourly,
-  PaperStatus,
   SystemMetrics,
   TradesLedger,
   ExecutionOrders,
 } from '@/types/engine'
+import type { Runway, RunwayLive } from '@/types/runway'
 import type {
   MathLayersStatus,
   MathRecommendationsEnvelope,
@@ -65,7 +64,10 @@ export interface EngineEndpoints {
   identity:        ServiceState<EngineIdentity>
   executionStatus: ServiceState<ExecutionStatus>
   executionPolicy: ServiceState<ExecutionPolicy>
-  paperStats:      ServiceState<PaperStats>
+  /** /api/runway — the sleeve ledgers. The ONLY source of capital, PnL and positions. */
+  runway:          ServiceState<Runway>
+  /** /api/runway/live — current windows and the P2 rule's working quotes (visibility only). */
+  runwayLive:      ServiceState<RunwayLive>
 
   // Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints
   /** /api/portfolio — the PERSISTED capital snapshot. Distinct from
@@ -84,7 +86,6 @@ export interface EngineEndpoints {
   analyticsSummary:     ServiceState<AnalyticsSummary>
   analyticsTopSegments: ServiceState<AnalyticsTopSegments>
   analyticsHourly:      ServiceState<AnalyticsHourly>
-  paperStatus:          ServiceState<PaperStatus>
   systemMetrics:        ServiceState<SystemMetrics>
   tradesLedger:         ServiceState<TradesLedger>
   executionOrders:      ServiceState<ExecutionOrders>
@@ -158,7 +159,8 @@ const initialEndpoints: EngineEndpoints = {
   identity:        loadingState<EngineIdentity>(),
   executionStatus: loadingState<ExecutionStatus>(),
   executionPolicy: loadingState<ExecutionPolicy>(),
-  paperStats:      loadingState<PaperStats>(),
+  runway:          loadingState<Runway>(),
+  runwayLive:      loadingState<RunwayLive>(),
 
   portfolio:            loadingState<Portfolio>(),
   positionsHistory:     loadingState<PositionsHistory>(),
@@ -174,7 +176,6 @@ const initialEndpoints: EngineEndpoints = {
   analyticsSummary:     loadingState<AnalyticsSummary>(),
   analyticsTopSegments: loadingState<AnalyticsTopSegments>(),
   analyticsHourly:      loadingState<AnalyticsHourly>(),
-  paperStatus:          loadingState<PaperStatus>(),
   systemMetrics:        loadingState<SystemMetrics>(),
   tradesLedger:         loadingState<TradesLedger>(),
   executionOrders:      loadingState<ExecutionOrders>(),

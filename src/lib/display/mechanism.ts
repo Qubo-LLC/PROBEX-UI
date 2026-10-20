@@ -35,7 +35,8 @@
 //     real orders and is 0 in paper mode, while /api/paper-stats records 10
 //     paper trades. In paper mode the paper session is the execution record.
 
-import type { EngineConfig, SurvivalStatus, PaperTrading, ExecutionStatus, EngineStats, EngineMarkets, EngineEdges } from '@/types/engine'
+import type { EngineConfig, SurvivalStatus, ExecutionStatus, EngineStats, EngineMarkets, EngineEdges } from '@/types/engine'
+import type { Sleeve } from '@/types/runway'
 import { deriveEngineFocus, isHaltedState, type EngineFocusState } from './engineFocus'
 import type { EdgeRow } from '@/lib/mappers/edges'
 
@@ -65,20 +66,22 @@ export function sizingReading(cfg: EngineConfig | null, sv: SurvivalStatus | nul
 // ─── Execution record (mode-aware) ───────────────────────────────────────────
 
 export type ExecutionReading =
-  /** Paper mode: the paper session is where trades are recorded. */
-  | { kind: 'paper'; trades: number; wins: number; losses: number; pending: number; sessionStart: number }
+  /** Paper mode: the engine's sleeve ledgers are where trades are recorded. */
+  | { kind: 'paper'; trades: number; wins: number; losses: number; pending: number; sessionStart: number | null }
   /** Live mode: the real-order subsystem. `isRunning` is the resolution tracker's own flag. */
   | { kind: 'live'; trades: number; wins: number; losses: number; isRunning: boolean }
   | { kind: 'unknown' }
 
 export function executionReading(
   mode: string | null,
-  paper: PaperTrading | null,
+  sleeves: Sleeve[] | null,
   execution: ExecutionStatus | null,
 ): ExecutionReading {
   const m = (mode ?? '').toLowerCase()
-  if (m === 'paper' && paper) {
-    return { kind: 'paper', trades: paper.totalTrades, wins: paper.wins, losses: paper.losses, pending: paper.pending, sessionStart: paper.sessionStart }
+  if (m === 'paper' && sleeves) {
+    const sum = (k: string) => sleeves.reduce((n, s) => n + (s.counts[k] ?? 0), 0)
+    const pending = sleeves.reduce((n, s) => n + s.openPositions, 0)
+    return { kind: 'paper', trades: sum('settled'), wins: sum('won'), losses: sum('lost'), pending, sessionStart: null }
   }
   if (m !== 'paper' && m !== '' && execution) {
     return { kind: 'live', trades: execution.totalTrades, wins: execution.wins, losses: execution.losses, isRunning: execution.resolutionStats.isRunning }

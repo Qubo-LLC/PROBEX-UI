@@ -19,11 +19,11 @@
 
 import type { ServiceState } from '@/lib/services/response'
 import type {
-  EngineStats, EngineIdentity, SurvivalStatus, ExecutionStatus, PaperStats, EnginePositions,
+  EngineStats, EngineIdentity, SurvivalStatus, ExecutionStatus, EnginePositions,
   EngineEdges, EngineHealth, HealthComponent,
-  EngineMode, SurvivalState, RuntimeComponents, EngineHealthStatus,
+  EngineMode, RuntimeComponents, EngineHealthStatus,
 } from '@/types/engine'
-import { survivalStateSeverity, survivalStateLabel } from '@/lib/display/engine'
+import type { Runway } from '@/types/runway'
 import { selectPerformanceSource, type PerformanceView } from '@/lib/display/performanceSource'
 
 // ─── View model ───────────────────────────────────────────────────────────────
@@ -94,19 +94,6 @@ export interface CommandCenterVM {
     totalTrades:     number
   } | null
 
-  /** null while /api/survival has not resolved. */
-  capital: {
-    currentCapital: number
-    initialCapital: number
-    capitalPct:     number        // 0–1
-    state:          SurvivalState
-    dailyPnl:       number
-    dailyTarget:    number
-    dailyProgress:  number        // 0–1, capped
-    weeklyPnl:      number
-    weeklyTarget:   number
-    weeklyProgress: number        // 0–1, capped
-  } | null
 
   /** Runtime component chips (from stats aggregate); null until stats resolve. */
   runtimeComponents: RuntimeComponentChip[] | null
@@ -165,21 +152,19 @@ interface CommandCenterSlices {
   execution:  ServiceState<ExecutionStatus>
   edges:      ServiceState<EngineEdges>
   health:     ServiceState<EngineHealth>
-  paperStats: ServiceState<PaperStats>
+  /** The sleeve ledgers — the only paper books the dashboard shows. */
+  runway:     ServiceState<Runway>
   /** Position ledger — authoritative for open positions and unrealized P&L. */
   positions:  ServiceState<EnginePositions>
 }
 
-const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
-
 export function toCommandCenter(s: CommandCenterSlices): CommandCenterVM {
   const stats     = s.stats.status     === 'success' ? s.stats.data     : null
   const identity  = s.identity.status  === 'success' ? s.identity.data  : null
-  const survival  = s.survival.status  === 'success' ? s.survival.data  : null
   const execution = s.execution.status === 'success' ? s.execution.data : null
   const edges     = s.edges.status     === 'success' ? s.edges.data     : null
   const health    = s.health.status    === 'success' ? s.health.data    : null
-  const paper     = s.paperStats.status === 'success' ? s.paperStats.data : null
+  const runway    = s.runway.status     === 'success' ? s.runway.data     : null
   const positions = s.positions.status  === 'success' ? s.positions.data  : null
 
   // Mode comes from the engine's own report. `identity` is derived from
@@ -189,7 +174,7 @@ export function toCommandCenter(s: CommandCenterSlices): CommandCenterVM {
 
   const performance = selectPerformanceSource({
     engineMode,
-    paperStats:      paper,
+    runway,
     executionStatus: execution,
   })
 
@@ -211,34 +196,15 @@ export function toCommandCenter(s: CommandCenterSlices): CommandCenterVM {
   if (stats && !stats.feedConnected) {
     critical.push({ severity: 'critical', message: 'Price feed disconnected' })
   }
-  if (survival) {
-    // ─── The CONDITION, not the state name ─────────────────────────────────
-    // This used to read "Survival state: Wounded". That put a single alarming
-    // word on the Overview as if it were a global product status, which is a
-    // misreading of what it is: the survival brain's classification of the
-    // CAPITAL position, produced from P&L, burn rate and runway, and meaningful
-    // only beside those inputs. Detached from them it was neither actionable
-    // nor dismissible.
-    //
-    // The alert stays — the condition is real and the operator should see it —
-    // but it now states the actionable fact (how much capital is left) rather
-    // than the label. The engine's own word survives in `detail`, which
-    // AttentionRow renders as the row's title, so nothing is hidden from an
-    // operator who wants it.
-    //
-    // The state itself is presented in full where it can be understood:
-    // Strategy (it moves the Kelly modifier and the edge threshold), Portfolio
-    // and Survival (it is a conclusion about capital).
-    //
-    // Severity-driven so DEAD (and any future danger-class state) escalates to
-    // a critical alert instead of being silently skipped by a state whitelist.
-    const sev = survivalStateSeverity(survival.state)
-    const message = `Capital at ${survival.capitalPct.toFixed(1)}% of initial`
-    const detail = `The survival brain classifies this as ${survivalStateLabel(survival.state)}. See Strategy for the thresholds it moves, or Portfolio for the capital context.`
-    if (sev === 'danger') {
-      critical.push({ severity: 'critical', message, detail })
-    } else if (sev === 'caution') {
-      warning.push({ severity: 'warning', message, detail })
+  // Sleeve halts (drawdown stop or DEAD) — the survival condition that matters
+  // now. The global survival brain's capital belonged to the retired
+  // PaperTrader and is not shown.
+  for (const sl of runway?.sleeves ?? []) {
+    if (sl.halt.halted) {
+      const item = { message: `${sl.sleeveId} sleeve halted (${sl.halt.state.replace('_', ' ').toLowerCase()})`,
+                     ...(sl.halt.reason ? { detail: sl.halt.reason } : {}) }
+      if (sl.halt.state === 'DEAD') critical.push({ severity: 'critical', ...item })
+      else warning.push({ severity: 'warning', ...item })
     }
   }
   for (const c of health?.components ?? []) {
@@ -293,18 +259,6 @@ export function toCommandCenter(s: CommandCenterSlices): CommandCenterVM {
       totalTrades:     execution.totalTrades,
     },
 
-    capital: survival && {
-      currentCapital: survival.currentCapital,
-      initialCapital: survival.initialCapital,
-      capitalPct:     survival.capitalPct / 100,
-      state:          survival.state,
-      dailyPnl:       survival.dailyPnl,
-      dailyTarget:    survival.dailyTarget,
-      dailyProgress:  survival.dailyTarget  > 0 ? clamp01(survival.dailyPnl  / survival.dailyTarget)  : 0,
-      weeklyPnl:      survival.weeklyPnl,
-      weeklyTarget:   survival.weeklyTarget,
-      weeklyProgress: survival.weeklyTarget > 0 ? clamp01(survival.weeklyPnl / survival.weeklyTarget) : 0,
-    },
 
     runtimeComponents: stats ? toRuntimeChips(stats.runtimeComponents) : null,
     healthComponents:  health ? health.components : null,

@@ -170,9 +170,6 @@ export function StrategyConsole({ embedded = false }: EmbeddableProps = {}) {
             <Figure label="State" size="md" tone={survivalStateColor(sv.state)} title="survival.state" {...certaintyFromSlice(survival, 5_000)}>
               {survivalStateLabel(sv.state)}
             </Figure>
-            <Figure label="Capital" size="md" footnote={<span className="t-helper">{sv.capitalPct.toFixed(1)}% of {formatCurrency(sv.initialCapital)} initial</span>} {...certaintyFromSlice(survival, 5_000)}>
-              {formatCurrency(sv.currentCapital)}
-            </Figure>
             <Figure label="Kelly modifier" size="md" tone={sv.kellyModifier < 1 ? 'var(--synatra-warning)' : undefined} footnote={<span className="t-helper">{sv.kellyModifier > 1 ? 'sizing up while ahead' : sv.kellyModifier < 1 ? 'sizing cut back' : 'full sizing'}</span>} {...certaintyFromSlice(survival, 5_000)}>
               ×{sv.kellyModifier.toFixed(2)}
             </Figure>

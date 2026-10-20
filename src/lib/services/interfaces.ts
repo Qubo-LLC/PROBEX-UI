@@ -12,14 +12,15 @@ import type {
   SurvivalStatus, PriceHistory,
   EngineMarkets, EnginePositions, EngineEvents, EngineEdges,
   EngineIdentity, ExecutionStatus,
-  ExecutionPolicy, ExecutionTrades, PaperStats,
+  ExecutionPolicy, ExecutionTrades,
   PositionsHistory, SurvivalPatterns,
   Consensus, ConsensusBias, ConsensusHistory,
   ResearchReports, Portfolio, Balance, PortfolioHistory, PortfolioSummary, PortfolioPerformance,
   AnalyticsSegments, AnalyticsSignals, AnalyticsSummary, AnalyticsTopSegments, AnalyticsHourly,
-  PaperStatus, SystemMetrics, TradesLedger, ExecutionOrders,
+  SystemMetrics, TradesLedger, ExecutionOrders,
   MarketsSummary, MarketPriceHistory, MarketDetail, MutationResult,
 } from '@/types/engine'
+import type { Runway, RunwayLive } from '@/types/runway'
 
 import type {
   MathLayersStatus, MathRecommendationsEnvelope, KalmanLayer,
@@ -68,7 +69,10 @@ export interface IEngineService {
   getExecutionStatus(signal?: AbortSignal): Promise<ApiResult<ExecutionStatus>>
   getExecutionPolicy(signal?: AbortSignal): Promise<ApiResult<ExecutionPolicy>>
   getExecutionTrades(signal?: AbortSignal): Promise<ApiResult<ExecutionTrades>>
-  getPaperStats(signal?: AbortSignal): Promise<ApiResult<PaperStats>>
+  /** /api/runway — the sleeve ledgers (replaces /api/paper-stats). */
+  getRunway(signal?: AbortSignal): Promise<ApiResult<Runway>>
+  /** /api/runway/live — current windows and the P2 rule's working quotes (visibility only). */
+  getRunwayLive(signal?: AbortSignal): Promise<ApiResult<RunwayLive>>
 
   // ── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints ────────────────
   getPositionsHistory(limit?: number, direction?: 'YES' | 'NO', signal?: AbortSignal): Promise<ApiResult<PositionsHistory>>
@@ -88,7 +92,6 @@ export interface IEngineService {
   /** segment_type and metric are REQUIRED by the backend — omitting them 422s. */
   getAnalyticsTopSegments(segmentType?: AnalyticsSegmentType, metric?: AnalyticsMetric, limit?: number, signal?: AbortSignal): Promise<ApiResult<AnalyticsTopSegments>>
   getAnalyticsHourly(signal?: AbortSignal): Promise<ApiResult<AnalyticsHourly>>
-  getPaperStatus(signal?: AbortSignal): Promise<ApiResult<PaperStatus>>
   getSystemMetrics(signal?: AbortSignal): Promise<ApiResult<SystemMetrics>>
   getTradesLedger(limit?: number, direction?: 'YES' | 'NO', signal?: AbortSignal): Promise<ApiResult<TradesLedger>>
   /**
@@ -125,11 +128,6 @@ export interface IEngineService {
   closePosition(marketId: string):      Promise<ApiResult<MutationResult>>
   cancelOrder(orderId: string):         Promise<ApiResult<MutationResult>>
   emergencyStop():                      Promise<ApiResult<MutationResult>>
-  startPaperTrading():                  Promise<ApiResult<MutationResult>>
-  stopPaperTrading():                   Promise<ApiResult<MutationResult>>
-  /** DESTRUCTIVE — clears all paper trading history. */
-  resetPaperTrading():                  Promise<ApiResult<MutationResult>>
-  resolvePaperTrades():                 Promise<ApiResult<MutationResult>>
 
   peekHealth?():           EngineHealth | null
   peekRuntime?():          EngineRuntime | null
@@ -145,7 +143,8 @@ export interface IEngineService {
   peekExecutionStatus?():  ExecutionStatus | null
   peekExecutionPolicy?():  ExecutionPolicy | null
   peekExecutionTrades?():  ExecutionTrades | null
-  peekPaperStats?():       PaperStats | null
+  peekRunway?():           Runway | null
+  peekRunwayLive?():       RunwayLive | null
 
   peekPositionsHistory?():     PositionsHistory | null
   peekSurvivalPatterns?():     SurvivalPatterns | null
@@ -163,7 +162,6 @@ export interface IEngineService {
   peekAnalyticsSummary?():     AnalyticsSummary | null
   peekAnalyticsTopSegments?(): AnalyticsTopSegments | null
   peekAnalyticsHourly?():      AnalyticsHourly | null
-  peekPaperStatus?():          PaperStatus | null
   peekSystemMetrics?():        SystemMetrics | null
   peekTradesLedger?():         TradesLedger | null
   peekExecutionOrders?():      ExecutionOrders | null

@@ -45,7 +45,8 @@ import {
   useEngineIdentity,
   useEngineExecutionStatus,
   useEngineExecutionPolicy,
-  useEnginePaperStats,
+  useEngineRunway,
+  useEngineRunwayLive,
   useEnginePositionsHistory,
   useEngineSurvivalPatterns,
   useEngineConsensus,
@@ -59,7 +60,6 @@ import {
   useEngineAnalyticsSummary,
   useEngineAnalyticsTopSegments,
   useEngineAnalyticsHourly,
-  useEnginePaperStatus,
   useEngineSystemMetrics,
   useEngineTradesLedger,
   useEnginePortfolio,
@@ -86,7 +86,9 @@ export function ApplicationStateLoader() {
   const events          = useEngineEvents(MEDIUM_MS)
   const edges           = useEngineEdges(MARKET_POLL_MS)
   const executionStatus = useEngineExecutionStatus(MEDIUM_MS)
-  const paperStats      = useEnginePaperStats(MEDIUM_MS)
+  // The sleeve runway replaces /api/paper-stats and /api/paper/status (retired PaperTrader).
+  const runway          = useEngineRunway(MEDIUM_MS)
+  const runwayLive      = useEngineRunwayLive(FAST_MS)
   const runtime         = useEngineRuntime(SLOW_MS)
   const health          = useEngineHealth(SLOW_MS)
   const config          = useEngineConfig(SLOW_MS)
@@ -98,7 +100,6 @@ export function ApplicationStateLoader() {
   const consensusBias        = useEngineConsensusBias(MEDIUM_MS)
   const balance              = useEngineBalance(MEDIUM_MS)
   const executionOrders      = useEngineExecutionOrders(MEDIUM_MS)
-  const paperStatus          = useEnginePaperStatus(MEDIUM_MS)
   const tradesLedger         = useEngineTradesLedger(MEDIUM_MS)
   // Capital is operational state, not history: MEDIUM, alongside balance.
   const portfolio            = useEnginePortfolio(MEDIUM_MS)
@@ -135,13 +136,13 @@ export function ApplicationStateLoader() {
   useEffect(() => { updateEngine({ identity }) },        [identity,        updateEngine])
   useEffect(() => { updateEngine({ executionStatus }) }, [executionStatus, updateEngine])
   useEffect(() => { updateEngine({ executionPolicy }) }, [executionPolicy, updateEngine])
-  useEffect(() => { updateEngine({ paperStats }) },      [paperStats,      updateEngine])
+  useEffect(() => { updateEngine({ runway }) },          [runway,          updateEngine])
+  useEffect(() => { updateEngine({ runwayLive }) },      [runwayLive,      updateEngine])
 
   useEffect(() => { updateEngine({ consensus }) },            [consensus,            updateEngine])
   useEffect(() => { updateEngine({ consensusBias }) },        [consensusBias,        updateEngine])
   useEffect(() => { updateEngine({ balance }) },              [balance,              updateEngine])
   useEffect(() => { updateEngine({ executionOrders }) },      [executionOrders,      updateEngine])
-  useEffect(() => { updateEngine({ paperStatus }) },          [paperStatus,          updateEngine])
   useEffect(() => { updateEngine({ tradesLedger }) },         [tradesLedger,         updateEngine])
   useEffect(() => { updateEngine({ portfolio }) },            [portfolio,            updateEngine])
   useEffect(() => { updateEngine({ positionsHistory }) },     [positionsHistory,     updateEngine])

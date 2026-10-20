@@ -181,8 +181,14 @@ export function useEngineExecutionPolicy(refreshMs?: number) {
 }
 
 /** /api/paper-stats — paper-trading session performance. */
-export function useEnginePaperStats(refreshMs?: number) {
-  return useServiceQuery((signal) => services.engine.getPaperStats(signal), () => services.engine.peekPaperStats?.() ?? null, [], refreshMs)
+/** /api/runway — the sleeve ledgers; the only source of capital, PnL and positions on the dashboard. */
+export function useEngineRunway(refreshMs?: number) {
+  return useServiceQuery((signal) => services.engine.getRunway(signal), () => services.engine.peekRunway?.() ?? null, [], refreshMs)
+}
+
+/** /api/runway/live — current windows and the P2 rule's working quotes (visibility only). */
+export function useEngineRunwayLive(refreshMs?: number) {
+  return useServiceQuery((signal) => services.engine.getRunwayLive(signal), () => services.engine.peekRunwayLive?.() ?? null, [], refreshMs)
 }
 
 // ─── Additional engine endpoint hooks ────────────────────────────────────────
@@ -266,9 +272,6 @@ export function useEngineAnalyticsHourly(refreshMs?: number) {
 }
 
 /** /api/paper/status — current paper trading enable/pending/completed status. */
-export function useEnginePaperStatus(refreshMs?: number) {
-  return useServiceQuery((signal) => services.engine.getPaperStatus(signal), () => services.engine.peekPaperStatus?.() ?? null, [], refreshMs)
-}
 
 /** /api/system/metrics — process-level uptime/memory/CPU diagnostics. */
 export function useEngineSystemMetrics(refreshMs?: number) {
@@ -384,14 +387,14 @@ export function useCommandCenter(): CommandCenterVM {
   const execution = useApplicationStore((s) => s.engine.executionStatus)
   const edges     = useApplicationStore((s) => s.engine.edges)
   const health    = useApplicationStore((s) => s.engine.health)
-  // Added for mode-aware performance provenance: in paper mode the execution
-  // surface is not the performance surface. See lib/display/performanceSource.
-  const paperStats = useApplicationStore((s) => s.engine.paperStats)
+  // Mode-aware performance provenance: in paper mode the sleeve ledgers are the
+  // performance surface (never the retired PaperTrader). See performanceSource.
+  const runway     = useApplicationStore((s) => s.engine.runway)
   // Position ledger — authoritative for open positions (see exposureSource).
   const positions  = useApplicationStore((s) => s.engine.positions)
   return useMemo(
-    () => toCommandCenter({ stats, identity, survival, execution, edges, health, paperStats, positions }),
-    [stats, identity, survival, execution, edges, health, paperStats, positions],
+    () => toCommandCenter({ stats, identity, survival, execution, edges, health, runway, positions }),
+    [stats, identity, survival, execution, edges, health, runway, positions],
   )
 }
 

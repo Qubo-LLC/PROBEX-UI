@@ -43,11 +43,12 @@
 //   • The existence of a second, disagreeing surface is NEVER hidden. When the
 //     surfaces conflict the cockpit says so rather than silently preferring one.
 
-import type { EngineMode, ExecutionStatus, PaperStats } from '@/types/engine'
+import type { EngineMode, ExecutionStatus } from '@/types/engine'
+import type { Runway } from '@/types/runway'
 
 /** Which set of books a figure came from. */
 export type PerformanceSurface =
-  /** The paper simulator's accounting — /api/paper-stats. */
+  /** The engine's sleeve ledgers (paper, research sizing) — /api/runway. */
   | 'paper'
   /** The live order-flow engine's accounting — /api/execution/status. */
   | 'live'
@@ -106,19 +107,21 @@ export interface PerformanceView {
   conflict: string | null
 }
 
-const PAPER_ENDPOINT = '/api/paper-stats'
+const PAPER_ENDPOINT = '/api/runway'
 const LIVE_ENDPOINT  = '/api/execution/status'
 
-function paperMetrics(p: PaperStats): PerformanceMetrics {
-  const t = p.paperTrading
+/** The sleeves' combined books: settled positions, realized PnL, equity incl. the reserve. */
+function paperMetrics(r: Runway): PerformanceMetrics {
+  const sum = (k: string) => r.sleeves.reduce((n, s) => n + (s.counts[k] ?? 0), 0)
+  const wins = sum('won'), losses = sum('lost')
   return {
-    totalTrades: t.totalTrades,
-    wins:        t.wins,
-    losses:      t.losses,
-    winRate:     t.winRate,
-    totalPnl:    t.totalPnl,
-    balance:     t.currentCapital,
-    pending:     t.pending,
+    totalTrades: sum('settled'),
+    wins,
+    losses,
+    winRate:     wins + losses > 0 ? wins / (wins + losses) : 0,
+    totalPnl:    r.combined?.realizedPnl ?? 0,
+    balance:     r.combined ? r.combined.equity + r.combined.reserve : null,
+    pending:     r.combined?.openPositions ?? null,
   }
 }
 
@@ -166,8 +169,8 @@ function detectConflict(
 export interface PerformanceSourceInput {
   /** The engine's own declared execution mode; null until confirmed. */
   engineMode:      EngineMode | null
-  /** Resolved /api/paper-stats, or null while loading/errored. */
-  paperStats:      PaperStats | null
+  /** Resolved /api/runway (the sleeve ledgers), or null while loading/errored. */
+  runway:          Runway | null
   /** Resolved /api/execution/status, or null while loading/errored. */
   executionStatus: ExecutionStatus | null
 }
@@ -181,9 +184,9 @@ export interface PerformanceSourceInput {
  * conflation this module removes.
  */
 export function selectPerformanceSource(input: PerformanceSourceInput): PerformanceView {
-  const { engineMode, paperStats, executionStatus } = input
+  const { engineMode, runway, executionStatus } = input
 
-  const paper = paperStats      === null ? null : paperMetrics(paperStats)
+  const paper = runway          === null ? null : paperMetrics(runway)
   const live  = executionStatus === null ? null : liveMetrics(executionStatus)
 
   // ── Mode unconfirmed ──────────────────────────────────────────────────────
@@ -207,9 +210,9 @@ export function selectPerformanceSource(input: PerformanceSourceInput): Performa
       return {
         provenance: {
           surface:  'unknown',
-          label:    'Paper session',
+          label:    'Paper, research sizing',
           endpoint: PAPER_ENDPOINT,
-          note:     'The engine is trading on paper; its session results have not been received yet.',
+          note:     'The engine is trading on paper in its sleeves; the sleeve ledgers have not been received yet.',
         },
         metrics:     null,
         counterpart: null,
@@ -219,9 +222,9 @@ export function selectPerformanceSource(input: PerformanceSourceInput): Performa
     return {
       provenance: {
         surface:  'paper',
-        label:    'Paper session',
+        label:    'Paper, research sizing',
         endpoint: PAPER_ENDPOINT,
-        note:     'Simulated results from the paper-trading session. No real capital is at risk and no live orders have been placed.',
+        note:     'Simulated results from the sleeve ledgers (CRYPTO, EVENTS): paper positions at a fixed research size. No real capital is at risk and no live orders have been placed.',
       },
       metrics: paper,
       counterpart: live === null ? null : {
@@ -230,7 +233,7 @@ export function selectPerformanceSource(input: PerformanceSourceInput): Performa
         endpoint: LIVE_ENDPOINT,
         metrics:  live,
       },
-      conflict: live === null ? null : detectConflict(paper, live, 'The paper session', 'the live execution engine'),
+      conflict: live === null ? null : detectConflict(paper, live, 'The sleeve ledgers', 'the live execution engine'),
     }
   }
 

@@ -10,12 +10,11 @@ import {
   MOCK_ENGINE_CONFIG, MOCK_SURVIVAL_STATUS, MOCK_PRICE_HISTORY,
   MOCK_ENGINE_MARKETS, MOCK_ENGINE_POSITIONS, MOCK_ENGINE_EVENTS, MOCK_ENGINE_EDGES,
   MOCK_ENGINE_IDENTITY, MOCK_EXECUTION_STATUS,
-  MOCK_EXECUTION_POLICY, MOCK_EXECUTION_TRADES, MOCK_PAPER_STATS,
-  MOCK_POSITIONS_HISTORY, MOCK_SURVIVAL_PATTERNS,
+  MOCK_EXECUTION_POLICY, MOCK_EXECUTION_TRADES, MOCK_POSITIONS_HISTORY, MOCK_SURVIVAL_PATTERNS,
   MOCK_CONSENSUS, MOCK_CONSENSUS_BIAS, MOCK_CONSENSUS_HISTORY,
   MOCK_RESEARCH_REPORTS, MOCK_PORTFOLIO, MOCK_BALANCE, MOCK_PORTFOLIO_HISTORY, MOCK_PORTFOLIO_SUMMARY, MOCK_PORTFOLIO_PERFORMANCE,
   MOCK_ANALYTICS_SEGMENTS, MOCK_ANALYTICS_SIGNALS, MOCK_ANALYTICS_SUMMARY, MOCK_ANALYTICS_TOP_SEGMENTS, MOCK_ANALYTICS_HOURLY,
-  MOCK_PAPER_STATUS, MOCK_SYSTEM_METRICS, MOCK_TRADES_LEDGER, MOCK_EXECUTION_ORDERS,
+  MOCK_SYSTEM_METRICS, MOCK_TRADES_LEDGER, MOCK_EXECUTION_ORDERS,
   MOCK_MARKETS_SUMMARY, mockMarketPriceHistory, mockMarketDetail,
   MOCK_MATH_LAYERS_STATUS, MOCK_MATH_RECOMMENDATIONS, MOCK_KALMAN_LAYER,
   MOCK_BAYESIAN_LAYER, MOCK_BRIER_LAYER, MOCK_SHAPLEY_LAYER,
@@ -29,14 +28,17 @@ import type {
   EngineHealth, EngineRuntime, EngineStats, EngineConfig, SurvivalStatus, PriceHistory,
   EngineMarkets, EnginePositions, EngineEvents, EngineEdges,
   EngineIdentity, ExecutionStatus,
-  ExecutionPolicy, ExecutionTrades, PaperStats,
+  ExecutionPolicy, ExecutionTrades,
   PositionsHistory, SurvivalPatterns,
   Consensus, ConsensusBias, ConsensusHistory,
   ResearchReports, Portfolio, Balance, PortfolioHistory, PortfolioSummary, PortfolioPerformance,
   AnalyticsSegments, AnalyticsSignals, AnalyticsSummary, AnalyticsTopSegments, AnalyticsHourly,
-  PaperStatus, SystemMetrics, TradesLedger, ExecutionOrders,
+  SystemMetrics, TradesLedger, ExecutionOrders,
   MarketsSummary, MarketPriceHistory, MarketDetail, MutationResult,
 } from '@/types/engine'
+
+import type { Runway, RunwayLive } from '@/types/runway'
+import { MOCK_RUNWAY, MOCK_RUNWAY_LIVE } from '@/mock/runway'
 
 class MockEngineService implements IEngineService {
   peekHealth():          EngineHealth    { return MOCK_ENGINE_HEALTH }
@@ -53,7 +55,8 @@ class MockEngineService implements IEngineService {
   peekExecutionStatus(): ExecutionStatus { return MOCK_EXECUTION_STATUS }
   peekExecutionPolicy(): ExecutionPolicy { return MOCK_EXECUTION_POLICY }
   peekExecutionTrades(): ExecutionTrades { return MOCK_EXECUTION_TRADES }
-  peekPaperStats():      PaperStats      { return MOCK_PAPER_STATS }
+  peekRunway():          Runway          { return MOCK_RUNWAY }
+  peekRunwayLive():      RunwayLive      { return MOCK_RUNWAY_LIVE }
 
   peekPositionsHistory():     PositionsHistory     { return MOCK_POSITIONS_HISTORY }
   peekSurvivalPatterns():     SurvivalPatterns     { return MOCK_SURVIVAL_PATTERNS }
@@ -71,7 +74,6 @@ class MockEngineService implements IEngineService {
   peekAnalyticsSummary():     AnalyticsSummary     { return MOCK_ANALYTICS_SUMMARY }
   peekAnalyticsTopSegments(): AnalyticsTopSegments { return MOCK_ANALYTICS_TOP_SEGMENTS }
   peekAnalyticsHourly():      AnalyticsHourly      { return MOCK_ANALYTICS_HOURLY }
-  peekPaperStatus():          PaperStatus          { return MOCK_PAPER_STATUS }
   peekSystemMetrics():        SystemMetrics        { return MOCK_SYSTEM_METRICS }
   peekTradesLedger():         TradesLedger         { return MOCK_TRADES_LEDGER }
   peekExecutionOrders():      ExecutionOrders      { return MOCK_EXECUTION_ORDERS }
@@ -90,7 +92,8 @@ class MockEngineService implements IEngineService {
   async getExecutionStatus(): Promise<ApiResult<ExecutionStatus>> { return ok(MOCK_EXECUTION_STATUS) }
   async getExecutionPolicy(): Promise<ApiResult<ExecutionPolicy>> { return ok(MOCK_EXECUTION_POLICY) }
   async getExecutionTrades(): Promise<ApiResult<ExecutionTrades>> { return ok(MOCK_EXECUTION_TRADES) }
-  async getPaperStats():      Promise<ApiResult<PaperStats>>      { return ok(MOCK_PAPER_STATS) }
+  async getRunway():          Promise<ApiResult<Runway>>          { return ok(MOCK_RUNWAY) }
+  async getRunwayLive():      Promise<ApiResult<RunwayLive>>      { return ok(MOCK_RUNWAY_LIVE) }
 
   async getPositionsHistory():     Promise<ApiResult<PositionsHistory>>     { return ok(MOCK_POSITIONS_HISTORY) }
   async getSurvivalPatterns():     Promise<ApiResult<SurvivalPatterns>>     { return ok(MOCK_SURVIVAL_PATTERNS) }
@@ -108,7 +111,6 @@ class MockEngineService implements IEngineService {
   async getAnalyticsSummary():     Promise<ApiResult<AnalyticsSummary>>     { return ok(MOCK_ANALYTICS_SUMMARY) }
   async getAnalyticsTopSegments(): Promise<ApiResult<AnalyticsTopSegments>> { return ok(MOCK_ANALYTICS_TOP_SEGMENTS) }
   async getAnalyticsHourly():      Promise<ApiResult<AnalyticsHourly>>      { return ok(MOCK_ANALYTICS_HOURLY) }
-  async getPaperStatus():          Promise<ApiResult<PaperStatus>>          { return ok(MOCK_PAPER_STATUS) }
   async getSystemMetrics():        Promise<ApiResult<SystemMetrics>>        { return ok(MOCK_SYSTEM_METRICS) }
   async getTradesLedger():         Promise<ApiResult<TradesLedger>>         { return ok(MOCK_TRADES_LEDGER) }
   // Mock mode models the DEPLOYED contract (capped, page-scoped summary) —
@@ -178,10 +180,6 @@ class MockEngineService implements IEngineService {
   async getKalmanMultiAsset():      Promise<ApiResult<KalmanLayer>>                 { return ok(MOCK_KALMAN_LAYER) }
 
   async emergencyStop():      Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: emergency stop — no live positions affected')) }
-  async startPaperTrading():  Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: paper trading started')) }
-  async stopPaperTrading():   Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: paper trading stopped')) }
-  async resetPaperTrading():  Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: paper trading reset')) }
-  async resolvePaperTrades(): Promise<ApiResult<MutationResult>> { return ok(mockMutation('Mock: paper trades resolved')) }
 }
 
 /** Uniform mock mutation envelope — always succeeds, always says it's a mock. */

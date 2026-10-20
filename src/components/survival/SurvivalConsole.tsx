@@ -1,182 +1,77 @@
 'use client'
 
-// SurvivalConsole — the capital-protection half of the mechanism.
+// Survival — capital protection, per SLEEVE, from the engine's sleeve ledgers
+// (/api/runway).
 //
-// Operator questions, in order:
-//   1. What state is the survival brain in, and what is it doing about it?
-//   2. How much capital is there, against what it started with?
-//   3. Am I on target?
-//   4. What does the engine report about burn, runway and recovery?
+// Each sleeve has its own survival state. A drawdown of 20% of its allocation
+// below its high-water mark (DRAWDOWN_STOP), or equity below 10% of its
+// allocation (DEAD), halts that sleeve only; both are sticky until the operator
+// resets them, and open positions still settle.
 //
-// Reads /api/survival from ApplicationStore.
-//
-// ─── What changed (2026-09-16) ───────────────────────────────────────────────
-// Six StatCards and three Cards became one posture sentence, a row of Figures
-// with their own certainty, the state strip (kept — it is the state machine,
-// drawn), the target bars (shared TargetProgress) and a ledger of the fields
-// the engine reports as-is. The per-state prose ("sizing sharply reduced,
-// only strong edges accepted") was the dashboard describing what it assumed
-// the brain does in each state; the wire reports what the brain is doing NOW
-// — kelly_modifier and min_edge_threshold — so that is what the page says.
-//
-// Truth rules kept: daysOfRunway is null when there is no burn — shown as
-// "not applicable", never a number; behind_target_pct is the engine's
-// "target remaining" (100 = the full target remains); daily_burn_rate,
-// avg_win_size and recovery_trades_needed are shown as reported, with their
-// source, because other endpoints disagree with them (see project memory on
-// the three accounting surfaces) and this page does not adjudicate.
+// The global survival brain's capital, daily/weekly targets, burn rate and
+// runway are no longer shown: they were the retired PaperTrader's books. The
+// brain itself still runs in the engine, unchanged, for that retired path.
 
 import { useApplicationStore } from '@/store/applicationStore'
-import { formatCurrency, formatSignedCurrency, formatPercent } from '@/lib/utils'
-import { formatEdgePct, survivalStateColor, survivalStateLabel, SURVIVAL_STATES } from '@/lib/display/engine'
-import { Figure, certaintyFromSlice } from '@/components/shared/Figure'
-import { PageHeader }     from '@/components/ui/PageHeader'
-import { ErrorState }     from '@/components/ui/ErrorState'
-import { TargetProgress } from '@/components/shared/TargetProgress'
+import { formatCurrency } from '@/lib/utils'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { Meter } from '@/components/ui/Panel'
 import { pageShell, type EmbeddableProps } from '@/components/ui/pageShell'
-import { DETECTOR_THRESHOLD_UNREPORTED, SURVIVAL_FLOOR_LABEL } from '@/lib/display/thresholds'
+import type { Sleeve } from '@/types/runway'
 
-/** /api/survival polls at MEDIUM cadence (ApplicationStateLoader). */
-const SURVIVAL_POLL_MS = 5_000
+const DRAWDOWN_STOP_PCT = 20
+const DEAD_PCT = 10
 
 export function SurvivalConsole({ embedded = false }: EmbeddableProps = {}) {
-  const slice = useApplicationStore((s) => s.engine.survival)
-  const sv    = slice.data
-  const cert  = certaintyFromSlice(slice, SURVIVAL_POLL_MS)
+  const slice = useApplicationStore((s) => s.engine.runway)
+  const runway = slice.status === 'success' ? slice.data : null
 
   return (
     <div className={pageShell(embedded, 'gap-5')}>
       {!embedded && (
         <PageHeader
           title="Survival"
-          subtitle="Capital protection — the state the brain is in, and how it is sizing in response"
+          subtitle="Capital protection per sleeve — drawdown stop and DEAD, each halting only its own sleeve"
         />
       )}
 
-      {slice.status === 'error' && !sv && (
-        <ErrorState
-          title="The survival brain did not answer"
-          description={slice.error?.message ?? 'No response from /api/survival.'}
-          fullPage={false}
-        />
+      {slice.status === 'error' && !runway && (
+        <ErrorState title="The sleeve ledgers did not answer" description={slice.error?.message ?? 'No response from /api/runway.'} fullPage={false} />
       )}
+      {!runway && slice.status !== 'error' && <p className="t-description">Waiting for /api/runway.</p>}
 
-      {!sv && slice.status !== 'error' && (
-        <p className="t-description">Waiting for /api/survival.</p>
-      )}
-
-      {sv && (
-        <>
-          {/* ── A · posture ────────────────────────────────────────────── */}
-          <section aria-labelledby="sv-posture" className="flex flex-col gap-3">
-            <h2 id="sv-posture" className="sr-only">Survival posture</h2>
-            <p className="text-sm font-medium leading-relaxed m-0" style={{ color: 'var(--synatra-text-primary)' }}>
-              <span style={{ color: survivalStateColor(sv.state) }}>{survivalStateLabel(sv.state)}</span>
-              {' — capital '}{formatCurrency(sv.currentCapital)}{', '}{sv.capitalPct.toFixed(1)}% of the {formatCurrency(sv.initialCapital)} it started with.
-              {' '}The brain is {sv.kellyModifier > 1 ? 'sizing up' : sv.kellyModifier < 1 ? 'cutting size' : 'at full size'} (×{sv.kellyModifier.toFixed(2)}) and requires {formatEdgePct(sv.minEdgeThreshold, 2)} of edge.
-              {cert.certainty === 'stale' && <span style={{ color: 'var(--synatra-warning)' }}> Retained — last updated {cert.staleFor}.</span>}
-            </p>
-
-            {/* The state machine, drawn. Every known state, the current one
-                lit; an unrecognised state is appended so it can never be
-                invisible on its own page. */}
-            <StateStrip state={sv.state} />
-          </section>
-
-          {/* ── B · the figures ───────────────────────────────────────────── */}
-          <section aria-labelledby="sv-figures" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
-            <div className="flex items-baseline justify-between gap-3 flex-wrap">
-              <span className="flex items-baseline gap-2 flex-wrap">
-                <h2 id="sv-figures" className="t-section-title">Capital and response</h2>
-                <span className="t-description">what the brain has and what it is doing with it</span>
-              </span>
-              <span className="t-metadata">/api/survival</span>
-            </div>
-            <div className="flex items-start gap-x-8 gap-y-3 flex-wrap">
-              <Figure label="Capital" size="lg" footnote={<span className="t-helper">{sv.capitalPct.toFixed(1)}% of {formatCurrency(sv.initialCapital)} initial</span>} {...cert}>
-                {formatCurrency(sv.currentCapital)}
-              </Figure>
-              <Figure label="Kelly modifier" size="md" tone={sv.kellyModifier < 1 ? 'var(--synatra-warning)' : undefined} footnote={<span className="t-helper">{sv.kellyModifier > 1 ? 'above 1× — sizing up while ahead' : sv.kellyModifier < 1 ? 'below 1× — sizing cut back' : 'full sizing'}</span>} {...cert}>
-                ×{sv.kellyModifier.toFixed(2)}
-              </Figure>
-              <Figure label={SURVIVAL_FLOOR_LABEL} size="md" title={DETECTOR_THRESHOLD_UNREPORTED} footnote={<span className="t-helper">the brain’s minimum — not the detector’s threshold</span>} {...cert}>
-                {formatEdgePct(sv.minEdgeThreshold, 2)}
-              </Figure>
-              <Figure label="Today" size="md" tone={sv.dailyPnl > 0 ? 'var(--synatra-positive)' : sv.dailyPnl < 0 ? 'var(--synatra-negative)' : undefined} footnote={<span className="t-helper">target {formatCurrency(sv.dailyTarget)} · {formatPercent(sv.behindTargetPct / 100)} remaining</span>} {...cert}>
-                {formatSignedCurrency(sv.dailyPnl)}
-              </Figure>
-              <Figure label="This week" size="md" tone={sv.weeklyPnl > 0 ? 'var(--synatra-positive)' : sv.weeklyPnl < 0 ? 'var(--synatra-negative)' : undefined} footnote={<span className="t-helper">target {formatCurrency(sv.weeklyTarget)}</span>} {...cert}>
-                {formatSignedCurrency(sv.weeklyPnl)}
-              </Figure>
-            </div>
-          </section>
-
-          {/* ── C · targets ───────────────────────────────────────────────── */}
-          <TargetProgress capital={{
-            dailyPnl:     sv.dailyPnl,
-            dailyTarget:  sv.dailyTarget,
-            weeklyPnl:    sv.weeklyPnl,
-            weeklyTarget: sv.weeklyTarget,
-          }} />
-
-          {/* ── D · as reported ───────────────────────────────────────────── */}
-          <section aria-labelledby="sv-reported" className="flex flex-col gap-3 pt-5" style={{ borderTop: '1px solid var(--synatra-border)' }}>
-            <div className="flex items-baseline justify-between gap-3 flex-wrap">
-              <span className="flex items-baseline gap-2 flex-wrap">
-                <h2 id="sv-reported" className="t-section-title">Burn, runway and recovery</h2>
-                <span className="t-description">the brain’s own figures, shown as reported — other endpoints account differently and this page does not reconcile them</span>
-              </span>
-              <span className="t-metadata">/api/survival</span>
-            </div>
-            <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-2 m-0">
-              <Reported label="Daily burn rate" value={formatCurrency(sv.dailyBurnRate)} note="daily_burn_rate" />
-              <Reported label="Runway" value={sv.daysOfRunway !== null ? `${Math.floor(sv.daysOfRunway)}d` : 'not applicable'} note={sv.daysOfRunway !== null ? 'days_of_runway at this burn' : 'days_of_runway is null'} />
-              <Reported label="Recovery trades" value={String(sv.recoveryTradesNeeded)} note={sv.recoveryTradesNeeded > 0 ? 'wins needed to recover' : 'nothing to recover'} />
-              <Reported label="Avg win size" value={sv.avgWinSize > 0 ? formatCurrency(sv.avgWinSize) : '0'} note="avg_win_size" />
-            </dl>
-          </section>
-        </>
+      {runway && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {runway.sleeves.map((s) => <SleeveSurvival key={s.sleeveId} s={s} />)}
+        </div>
       )}
     </div>
   )
 }
 
-function StateStrip({ state }: { state: string }) {
-  const active = String(state).toUpperCase()
-  const tiles: readonly string[] = SURVIVAL_STATES.includes(active as typeof SURVIVAL_STATES[number])
-    ? SURVIVAL_STATES
-    : [...SURVIVAL_STATES, active]
+function SleeveSurvival({ s }: { s: Sleeve }) {
+  const ddPct = s.drawdownPct ?? 0
+  const deadLine = s.allocation * DEAD_PCT / 100
   return (
-    <ol className="flex items-center gap-1 flex-wrap list-none m-0 p-0" aria-label="Survival state machine">
-      {tiles.map((s) => {
-        const isCurrent = s === active
-        return (
-          <li
-            key={s}
-            aria-current={isCurrent ? 'step' : undefined}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1 whitespace-nowrap"
-            style={{
-              background: isCurrent ? `color-mix(in srgb, ${survivalStateColor(s)} 12%, transparent)` : 'transparent',
-              opacity: isCurrent ? 1 : 0.45,
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: survivalStateColor(s) }} aria-hidden="true" />
-            <span className="t-label" style={{ color: isCurrent ? survivalStateColor(s) : undefined }}>{survivalStateLabel(s)}</span>
-          </li>
-        )
-      })}
-    </ol>
-  )
-}
-
-function Reported({ label, value, note }: { label: string; value: string; note: string }) {
-  return (
-    <div className="flex flex-col gap-0.5 min-w-0">
-      <dt className="t-label truncate">{label}</dt>
-      <dd className="m-0 flex flex-col min-w-0">
-        <span className="font-mono text-xs font-semibold tabular-nums" style={{ color: 'var(--synatra-text-primary)' }}>{value}</span>
-        <span className="t-metadata truncate">{note}</span>
-      </dd>
-    </div>
+    <section className="rounded-lg px-4 py-3" style={{ border: '1px solid var(--synatra-border)' }} data-testid={`survival-${s.sleeveId}`}>
+      <div className="flex items-baseline justify-between">
+        <h2 className="t-section-title">{s.sleeveId}</h2>
+        <span style={{ color: s.halt.halted ? 'var(--synatra-negative)' : 'var(--synatra-positive)' }}>
+          {s.halt.halted ? `Halted · ${s.halt.state.replace('_', ' ').toLowerCase()}` : 'Trading'}
+        </span>
+      </div>
+      {s.halt.reason && <p className="t-description mt-1">{s.halt.reason}</p>}
+      <div className="mt-3 text-sm flex flex-col gap-2">
+        <Meter
+          value={Math.max(0, Math.min(1, ddPct / DRAWDOWN_STOP_PCT))}
+          color={ddPct >= DRAWDOWN_STOP_PCT ? 'var(--synatra-negative)' : ddPct >= DRAWDOWN_STOP_PCT / 2 ? 'var(--synatra-warning)' : 'var(--synatra-primary)'}
+          ariaLabel={`${s.sleeveId} drawdown against the ${DRAWDOWN_STOP_PCT}% stop`}
+          label={<span>Drawdown {formatCurrency(s.drawdown)} ({ddPct.toFixed(1)}% of allocation; stop at {DRAWDOWN_STOP_PCT}%)</span>}
+        />
+        <div>Equity {formatCurrency(s.equity)} of {formatCurrency(s.allocation)} · high-water mark {formatCurrency(s.highWaterMark)}</div>
+        <div className="t-description">DEAD below {formatCurrency(deadLine)} ({DEAD_PCT}% of allocation)</div>
+      </div>
+    </section>
   )
 }

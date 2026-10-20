@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
-import { PositionsConsole } from '@/components/positions/PositionsConsole'
+import { SleevesPage } from '@/components/runway/SleevesPage'
 
 export const metadata: Metadata = {
   title: 'Positions',
-  description: 'Capital currently deployed by the engine, and resolution outcomes.',
+  description: 'Open positions and settlements in the engine’s sleeves (paper, research sizing).',
 }
 
+// The sleeve ledgers replace the retired PaperTrader's position ledger.
 export default function PositionsPage() {
-  return <PositionsConsole />
+  return <SleevesPage title="Positions" />
 }

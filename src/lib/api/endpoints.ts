@@ -47,7 +47,6 @@ export const ENDPOINTS = {
     executionStatus:  def('GET',  '/execution/status', 'confirmed', 'Engine execution status',     'Execution Status'),
     executionPolicy:  def('GET',  '/execution/policy', 'confirmed', 'Execution order-flow policy',  'Execution Policy'),
     executionTrades:  def('GET',  '/execution/trades', 'confirmed', 'Execution active/closed trades', 'Execution Trades'),
-    paperStats:       def('GET',  '/paper-stats',      'confirmed', 'Paper trading session stats',  'Paper Trading Stats'),
     // NOTE: /health is at the host root, NOT under the /api base prefix.
     // Use apiGetHost() from lib/api/client instead of the normal apiGet().
     health:           def('GET',  '/health',    'confirmed', 'Engine health probe',             'Health'),
@@ -99,17 +98,13 @@ export const ENDPOINTS = {
     history: def('GET', '/positions/history', 'confirmed', 'Positions history (envelope only — items empty so far)', 'Positions History'),
   },
 
-  // ── Paper-trading control ────────────────────────────────────────────────────
-  // status is a confirmed GET. start/stop/reset/resolve are deployed POST
-  // mutations (405 on GET), left contract-pending until a mutation layer exists.
-  // 2026-07-25: all four mutations verified live (405 on GET = route registered,
-  // wrong method) and are now wired through the mutation layer in live.ts.
-  paper: {
-    status:  def('GET',  '/paper/status',  'confirmed', 'Paper trading status',  'Paper Status'),
-    start:   def('POST', '/paper/start',   'confirmed', 'Start paper trading',   'Start Paper Trading'),
-    stop:    def('POST', '/paper/stop',    'confirmed', 'Stop paper trading',    'Stop Paper Trading'),
-    reset:   def('POST', '/paper/reset',   'confirmed', 'Reset paper trading (DESTRUCTIVE — clears history)', 'Reset Paper Trading'),
-    resolve: def('POST', '/paper/resolve', 'confirmed', 'Resolve paper trades',  'Resolve Paper Trades'),
+  // ── Sleeve runway (sleeve-based paper trading) ───────────────────────────────
+  // Built by the engine from its sleeve ledgers only (src/runway.py). These
+  // replace /paper-stats and /paper/* entirely: the retired PaperTrader is no
+  // longer read anywhere in the dashboard.
+  runway: {
+    summary: def('GET', '/runway',      'confirmed', 'Sleeve ledgers, reserve, equity curves, activity, real-sizer views', 'Runway'),
+    live:    def('GET', '/runway/live', 'confirmed', 'Current window per asset: the P2 rule\'s working quotes (visibility only)', 'Runway Live'),
   },
 
   // ── Execution mutations ──────────────────────────────────────────────────────

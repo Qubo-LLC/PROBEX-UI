@@ -1,26 +1,22 @@
 import { describe, it, expect } from 'vitest'
 import { selectPerformanceSource } from './performanceSource'
-import type { ExecutionStatus, PaperStats } from '@/types/engine'
+import type { ExecutionStatus } from '@/types/engine'
+import type { Runway } from '@/types/runway'
+import { MOCK_RUNWAY } from '@/mock/runway'
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 // Numbers are the real 2026-09-07 live capture, converted through the same DTO
 // conventions the adapters apply (win_rate 74.6 → 0.746). They are used because
 // they are the case that exposed the defect, not to pin the backend's contract.
 
-function paper(over: Partial<PaperStats['paperTrading']> = {}): PaperStats {
+/** The sleeve ledgers with the same totals as the 2026-09-07 capture: 59 settled
+ *  (44 won, 15 lost), +22.38 realized, equity 122.38, 2 open. */
+function paper(): Runway {
   return {
-    available: true,
-    paperTrading: {
-      sessionStart: 0, initialCapital: 100, currentCapital: 122.38,
-      totalTrades: 59, wins: 44, losses: 15, pushes: 0, pending: 2,
-      totalPnl: 22.38, winRate: 0.746,
-      avgWin: 0, avgLoss: 0, largestWin: 0, largestLoss: 0,
-      survivalStates: [], edgeBuckets: {}, hourlyPerformance: {},
-      ...over,
-    },
-    timestamp: 0,
-    integrity: null,
-    session: null,
+    ...MOCK_RUNWAY,
+    sleeves: [{ ...MOCK_RUNWAY.sleeves[0]!, counts: { settled: 59, won: 44, lost: 15 } }],
+    combined: { allocation: 100, cash: 117.38, equity: 122.38, openPositions: 2, openExposure: 5,
+                realizedPnl: 22.38, unrealizedPnl: 0, drawdown: 0, reserve: 0 },
   }
 }
 
@@ -47,7 +43,7 @@ function execution(over: Partial<ExecutionStatus> = {}): ExecutionStatus {
 describe('paper mode', () => {
   it('reads the PAPER books, not the live execution surface', () => {
     const v = selectPerformanceSource({
-      engineMode: 'paper', paperStats: paper(), executionStatus: execution(),
+      engineMode: 'paper', runway: paper(), executionStatus: execution(),
     })
 
     expect(v.provenance.surface).toBe('paper')
@@ -61,23 +57,23 @@ describe('paper mode', () => {
     // no live order has been placed. The Overview printed that as "$0.00 total
     // P&L" while the Portfolio page showed +$22.38 from the paper surface.
     const v = selectPerformanceSource({
-      engineMode: 'paper', paperStats: paper(), executionStatus: execution(),
+      engineMode: 'paper', runway: paper(), executionStatus: execution(),
     })
     expect(v.metrics?.totalPnl).not.toBe(0)
   })
 
   it('labels the figures as simulated — never as universal truth', () => {
     const v = selectPerformanceSource({
-      engineMode: 'paper', paperStats: paper(), executionStatus: execution(),
+      engineMode: 'paper', runway: paper(), executionStatus: execution(),
     })
-    expect(v.provenance.label).toBe('Paper session')
+    expect(v.provenance.label).toBe('Paper, research sizing')
     expect(v.provenance.note).toMatch(/simulated/i)
     expect(v.provenance.note).toMatch(/no real capital/i)
   })
 
   it('keeps the live surface visible as a separate counterpart', () => {
     const v = selectPerformanceSource({
-      engineMode: 'paper', paperStats: paper(), executionStatus: execution(),
+      engineMode: 'paper', runway: paper(), executionStatus: execution(),
     })
     expect(v.counterpart?.surface).toBe('live')
     expect(v.counterpart?.metrics.totalTrades).toBe(0)
@@ -87,7 +83,7 @@ describe('paper mode', () => {
 
   it('does not cry wolf: an idle live surface is the expected state', () => {
     const v = selectPerformanceSource({
-      engineMode: 'paper', paperStats: paper(), executionStatus: execution(),
+      engineMode: 'paper', runway: paper(), executionStatus: execution(),
     })
     expect(v.conflict).toBeNull()
   })
@@ -95,7 +91,7 @@ describe('paper mode', () => {
   it('DOES report a conflict when both surfaces claim to have traded', () => {
     const v = selectPerformanceSource({
       engineMode: 'paper',
-      paperStats: paper(),
+      runway: paper(),
       executionStatus: execution({ totalTrades: 62, totalPnl: 0 }),
     })
     expect(v.conflict).toContain('59')
@@ -105,7 +101,7 @@ describe('paper mode', () => {
 
   it('withholds figures when the paper surface has not resolved', () => {
     const v = selectPerformanceSource({
-      engineMode: 'paper', paperStats: null, executionStatus: execution(),
+      engineMode: 'paper', runway: null, executionStatus: execution(),
     })
     // It must NOT silently fall back to the live surface's zeros.
     expect(v.metrics).toBeNull()
@@ -117,7 +113,7 @@ describe('live mode', () => {
   it('reads the live execution surface', () => {
     const v = selectPerformanceSource({
       engineMode: 'live',
-      paperStats: paper(),
+      runway: paper(),
       executionStatus: execution({ mode: 'live', totalTrades: 12, wins: 8, losses: 4, winRate: 0.667, totalPnl: 41.2 }),
     })
     expect(v.provenance.surface).toBe('live')
@@ -128,7 +124,7 @@ describe('live mode', () => {
   it('demotes the paper books to counterpart — never blended in', () => {
     const v = selectPerformanceSource({
       engineMode: 'live',
-      paperStats: paper(),
+      runway: paper(),
       executionStatus: execution({ mode: 'live', totalTrades: 12, totalPnl: 41.2 }),
     })
     expect(v.counterpart?.surface).toBe('paper')
@@ -137,7 +133,7 @@ describe('live mode', () => {
 
   it('withholds figures when the live surface has not resolved', () => {
     const v = selectPerformanceSource({
-      engineMode: 'live', paperStats: paper(), executionStatus: null,
+      engineMode: 'live', runway: paper(), executionStatus: null,
     })
     expect(v.metrics).toBeNull()
   })
@@ -146,7 +142,7 @@ describe('live mode', () => {
 describe('unconfirmed mode', () => {
   it('shows nothing rather than guessing which books to read', () => {
     const v = selectPerformanceSource({
-      engineMode: null, paperStats: paper(), executionStatus: execution(),
+      engineMode: null, runway: paper(), executionStatus: execution(),
     })
     expect(v.metrics).toBeNull()
     expect(v.counterpart).toBeNull()
@@ -157,7 +153,7 @@ describe('unconfirmed mode', () => {
     // Paper has 59 trades and live has none — tempting, and wrong: inferring
     // mode from data is exactly the conflation this module removes.
     const v = selectPerformanceSource({
-      engineMode: null, paperStats: paper(), executionStatus: execution(),
+      engineMode: null, runway: paper(), executionStatus: execution(),
     })
     expect(v.provenance.surface).toBe('unknown')
   })
@@ -168,7 +164,7 @@ describe('provenance is always stated', () => {
     ['paper' as const, paper(), execution()],
     ['live'  as const, paper(), execution({ mode: 'live' })],
   ])('%s mode names its endpoint and carries a note', (mode, p, e) => {
-    const v = selectPerformanceSource({ engineMode: mode, paperStats: p, executionStatus: e })
+    const v = selectPerformanceSource({ engineMode: mode, runway: p, executionStatus: e })
     expect(v.provenance.endpoint).toMatch(/^\/api\//)
     expect(v.provenance.label.length).toBeGreaterThan(0)
     expect(v.provenance.note.length).toBeGreaterThan(0)
