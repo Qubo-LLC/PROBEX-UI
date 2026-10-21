@@ -55,14 +55,28 @@ describe('RunwayGroup', () => {
     expect(badge.textContent).toContain('drawdown stop')
   })
 
-  it('toggles to the $50 real-sizer view with its skip reasons, kept apart from research figures', () => {
+  it('defaults the real sizer to live actual, with its balance source, kept apart from research figures', () => {
     seed(MOCK_RUNWAY)
     render(<RunwayGroup />)
-    fireEvent.click(screen.getByRole('radio', { name: '$50 view · real sizer' }))
-    const view = screen.getByTestId('view-live_50')
-    expect(view.textContent).toContain('real sizer')
+    const radios = screen.getAllByRole('radio').map((r) => r.textContent)
+    expect(radios).toEqual(['Live actual · real sizer', '$100 design minimum · real sizer', '$100 paper · real sizer'])
+    expect(screen.getByRole('radio', { name: 'Live actual · real sizer' }).getAttribute('aria-checked')).toBe('true')
+    const view = screen.getByTestId('view-live_actual')
+    expect(view.textContent).toContain('$52.74')
+    expect(screen.getByTestId('view-source-live_actual').textContent).toContain('pUSD balance')
     expect(screen.getByLabelText('Skip reasons').textContent).toContain('min_size_edge_too_small: 3')
-    expect(screen.queryByTestId('sleeve-CRYPTO')).toBeNull()
+    expect(screen.getByTestId('sleeve-CRYPTO')).toBeTruthy()  // the sleeve book stays; sizer figures are separate
+    expect(screen.getByTestId('real-sizer').querySelector('[data-testid="sleeve-CRYPTO"]')).toBeNull()
+  })
+
+  it('toggles to the $100 design minimum and $100 paper views; the superseded $50 view is not offered', () => {
+    seed(MOCK_RUNWAY)
+    render(<RunwayGroup />)
+    fireEvent.click(screen.getByRole('radio', { name: '$100 design minimum · real sizer' }))
+    expect(screen.getByTestId('view-design_min_100').textContent).toContain('$100')
+    fireEvent.click(screen.getByRole('radio', { name: '$100 paper · real sizer' }))
+    expect(screen.getByTestId('view-paper_100')).toBeTruthy()
+    expect(screen.queryByRole('radio', { name: /\$50/ })).toBeNull()
   })
 
   it('says it is waiting rather than showing any other capital figure', () => {

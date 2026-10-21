@@ -42,7 +42,7 @@ function toActivity(a: ActivityDTO): Activity {
 
 function toSizerView(v: SizerViewDTO): SizerView {
   return { equityStart: v.equity_start, equity: v.equity, placed: v.placed, skipped: v.skipped ?? {},
-           pnl: v.pnl, curve: toCurve(v.curve), sizing: v.sizing }
+           pnl: v.pnl, curve: toCurve(v.curve), sizing: v.sizing, balanceSource: v.balance_source ?? null }
 }
 
 export function toRunway(d: RunwayDTO): Runway {
