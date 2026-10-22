@@ -9,7 +9,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-import { checkPassword, hashPassword, loginBlocked, readSession, recordLoginFailure, signSession, SESSION_COOKIE } from './session'
+import { checkPassword, hashPassword, loginBlocked, readSession, recordLoginFailure, signSession, verifyLogin, SESSION_COOKIE } from './session'
 import { mintEngineToken } from './engineToken'
 import { allowedEnginePath } from './engineWrites'
 import { isPublicPath, middleware } from '../middleware'
@@ -32,6 +32,24 @@ describe('sessions', () => {
     expect(spec).not.toContain('s3cret')
     expect(checkPassword('s3cret-pass-1234', spec)).toBe(true)
     expect(checkPassword('wrong', spec)).toBe(false)
+  })
+
+  it('verifies the configured user and rejects a wrong password', () => {
+    expect(verifyLogin('operator', 'correct horse battery')).toBe(true)
+    expect(verifyLogin('operator', 'wrong')).toBe(false)
+    expect(verifyLogin('nobody', 'correct horse battery')).toBe(false)
+  })
+
+  it('tolerates incidental whitespace around the submitted username, never around the password', () => {
+    // The setup script trims the username before storing it; a request's
+    // username comes from a browser form/JSON field with no such guarantee
+    // (autofill, a password manager, a pasted trailing newline). This must
+    // still match. The password is a secret verbatim value, not an
+    // identifier — it must NOT be trimmed, or a password that legitimately
+    // starts/ends with a space would silently become a different password.
+    expect(verifyLogin('  operator\t', 'correct horse battery')).toBe(true)
+    expect(verifyLogin('operator', ' correct horse battery')).toBe(false)
+    expect(verifyLogin('operator', 'correct horse battery ')).toBe(false)
   })
 
   it('signs a session that cannot be forged, expires, and dies with its user', () => {

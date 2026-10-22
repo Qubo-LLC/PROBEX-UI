@@ -70,6 +70,7 @@ import { useApplicationStore } from '@/store/applicationStore'
 import { parseMarketRows } from '@/lib/mappers/markets'
 import { MarketArc } from './MarketArc'
 import { PerceptionArc } from './PerceptionArc'
+import { FinancialSummary } from './FinancialSummary'
 import { RunwayGroup } from '@/components/runway/RunwayGroup'
 import { CurrentWindowPanel } from '@/components/runway/CurrentWindowPanel'
 import { ActivityList } from '@/components/runway/ActivityList'
@@ -147,7 +148,18 @@ export function OverviewPage() {
 
              This is the one CONTAINED movement of the arc, because money is a
              genuinely different subject from the market and the decision. One
-             container, internally ruled — not the four-panel grid it replaces. */}
+             container, internally ruled — not the four-panel grid it replaces.
+
+             FinancialSummary leads: realized/unrealized/total P&L (mode-selected,
+             never blended across surfaces — lib/display/performanceSource.ts),
+             answered BEFORE the detailed Runway instrument panel beneath it. An
+             operator should learn "did it make money" in one glance — not by
+             reading the toggleable sizer-view table. Capital/exposure/sleeve
+             detail is deliberately NOT repeated here — RunwayGroup already
+             states it, and restating it was adding a page, not simplifying
+             one. */}
+      <FinancialSummary />
+
       {/* The runway reads the engine's sleeve ledgers only (/api/runway). The
              retired PaperTrader and the survival brain's capital are not shown
              anywhere on the dashboard — no legacy section, no fallback. */}

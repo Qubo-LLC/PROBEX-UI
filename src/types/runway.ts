@@ -77,6 +77,10 @@ export interface SizerViewDTO {
   pnl:          number
   curve:        CurvePointDTO[]
   sizing:       string
+  label?:          string
+  balance_source?: string
+  default?:        boolean
+  deprecated?:     boolean
 }
 
 export interface RunwayDTO {
@@ -171,6 +175,8 @@ export interface Activity {
 export interface SizerView {
   equityStart: number; equity: number; placed: number; skipped: Record<string, number>
   pnl: number; curve: CurvePoint[]; sizing: string
+  /** Where the view's starting balance comes from (live actual: the pUSD balance in live). */
+  balanceSource: string | null
 }
 
 export interface RunwayCombined {

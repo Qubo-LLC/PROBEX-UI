@@ -8,9 +8,10 @@
 // section and no fallback. Every figure here comes from /api/runway, which the
 // engine builds from data/sleeves (src/runway.py).
 //
-// Research sizing is labelled wherever its figures appear. The $100 paper and
-// $50 live views — the same fills re-sized by the real risk sizer — sit beside
-// it as a toggle, never mixed into the research figures.
+// Research sizing is labelled wherever its figures appear. The real-sizer views —
+// the same fills re-sized by the real risk sizer — sit beside it as a toggle, never
+// mixed into the research figures (scope v7.2 §1.5): live actual (the default; the
+// actual balance, $52.74 at rollout), the $100 design minimum, and $100 paper.
 
 import { useState } from 'react'
 import { useApplicationStore } from '@/store/applicationStore'
@@ -19,20 +20,25 @@ import { Figure } from '@/components/shared/Figure'
 import type { Runway, Sleeve } from '@/types/runway'
 import { EquityCurves } from './EquityCurves'
 
-export type SizingView = 'research' | 'paper_100' | 'live_50'
+export type SizerViewKey = 'live_actual' | 'design_min_100' | 'paper_100'
+export type SizingView = 'research' | SizerViewKey
+export const SIZER_VIEWS: SizerViewKey[] = ['live_actual', 'design_min_100', 'paper_100']
 
 export const VIEW_LABELS: Record<SizingView, string> = {
-  research:  'Paper, research sizing',
-  paper_100: '$100 view · real sizer',
-  live_50:   '$50 view · real sizer',
+  live_actual:    'Live actual · real sizer',
+  design_min_100: '$100 design minimum · real sizer',
+  paper_100:      '$100 paper · real sizer',
+  research:       'Paper, research sizing',
 }
+
+export const DEFAULT_VIEW: SizerViewKey = 'live_actual'
 
 const tone = (v: number) =>
   v > 0 ? 'var(--synatra-positive)' : v < 0 ? 'var(--synatra-negative)' : undefined
 
 export function RunwayGroup() {
   const slice = useApplicationStore((s) => s.engine.runway)
-  const [view, setView] = useState<SizingView>('research')
+  const [view, setView] = useState<SizerViewKey>(DEFAULT_VIEW)
   const runway = slice.status === 'success' ? slice.data : null
 
   return (
@@ -43,7 +49,6 @@ export function RunwayGroup() {
     >
       <div className="flex items-baseline justify-between gap-3 flex-wrap mb-4">
         <h2 id="arc-runway" className="t-section-title">Runway</h2>
-        <SizingToggle value={view} onChange={setView} />
       </div>
 
       {runway === null ? (
@@ -53,21 +58,28 @@ export function RunwayGroup() {
           certainty="absent"
           absentReason={slice.status === 'error' ? 'The engine did not answer /api/runway' : 'Waiting for the sleeve ledgers'}
         />
-      ) : view === 'research' ? (
-        <ResearchBook runway={runway} />
       ) : (
-        <SizerViewBook runway={runway} view={view} />
+        <>
+          <ResearchBook runway={runway} />
+          <EquityCurves runway={runway} view="research" />
+          <div className="mt-5" data-testid="real-sizer">
+            <div className="flex items-baseline justify-between gap-3 flex-wrap mb-3">
+              <h3 className="t-label">Real sizer</h3>
+              <SizingToggle value={view} onChange={setView} />
+            </div>
+            <SizerViewBook runway={runway} view={view} />
+            <EquityCurves runway={runway} view={view} />
+          </div>
+        </>
       )}
-
-      {runway !== null && <EquityCurves runway={runway} view={view} />}
     </section>
   )
 }
 
-export function SizingToggle({ value, onChange }: { value: SizingView; onChange: (v: SizingView) => void }) {
+export function SizingToggle({ value, onChange }: { value: SizerViewKey; onChange: (v: SizerViewKey) => void }) {
   return (
-    <div role="radiogroup" aria-label="Sizing view" className="flex gap-1 text-xs">
-      {(Object.keys(VIEW_LABELS) as SizingView[]).map((v) => (
+    <div role="radiogroup" aria-label="Real-sizer view" className="flex gap-1 text-xs">
+      {SIZER_VIEWS.map((v) => (
         <button
           key={v}
           type="button"
@@ -165,7 +177,7 @@ function SleeveRow({ s }: { s: Sleeve }) {
   )
 }
 
-function SizerViewBook({ runway, view }: { runway: Runway; view: Exclude<SizingView, 'research'> }) {
+function SizerViewBook({ runway, view }: { runway: Runway; view: SizerViewKey }) {
   const v = runway.views[view]
   if (!v) {
     return <p className="t-description">The engine did not report the {VIEW_LABELS[view]}.</p>
@@ -176,6 +188,7 @@ function SizerViewBook({ runway, view }: { runway: Runway; view: Exclude<SizingV
       <p className="t-description mb-3">
         <span className="font-semibold">{VIEW_LABELS[view]}</span> — the CRYPTO sleeve&apos;s fills re-sized by the
         engine&apos;s real risk sizer ({v.sizing}) on a {formatCurrency(v.equityStart)} book.
+        {v.balanceSource && <span data-testid={`view-source-${view}`}> Balance: {v.balanceSource}.</span>}
       </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
         <Stat label="Equity" value={formatCurrency(v.equity)} />

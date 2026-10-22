@@ -49,6 +49,12 @@ export const MOCK_RUNWAY_DTO: RunwayDTO = {
       pnl: null, research_sizing: true, position_id: 'C2' },
   ],
   views: {
+    live_actual: { equity_start: 52.74, equity: 52.74, placed: 0, skipped: { min_size_edge_too_small: 3 }, pnl: 0, curve: [],
+                   sizing: 'real sizer (src/risk.py)', label: 'live actual', default: true,
+                   balance_source: 'LIVE_ACTUAL_BALANCE (paper: no wallet is read; live reads the pUSD balance)' },
+    design_min_100: { equity_start: 100, equity: 100, placed: 0, skipped: { min_size_edge_too_small: 3 }, pnl: 0, curve: [],
+                      sizing: 'real sizer (src/risk.py)', label: '$100 design minimum',
+                      balance_source: 'design minimum (scope §3B.3, ladder step 1b)' },
     paper_100: { equity_start: 100, equity: 100, placed: 0, skipped: { min_size_edge_too_small: 3 }, pnl: 0, curve: [],
                  sizing: 'real sizer (src/risk.py)' },
     live_50: { equity_start: 50, equity: 50, placed: 0, skipped: { min_size_edge_too_small: 3 }, pnl: 0, curve: [],
