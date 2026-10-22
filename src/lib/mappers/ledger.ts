@@ -140,3 +140,63 @@ export function describeSummaryScope(scope: SummaryScope | null): string {
   }
   return `All ${scope.count.toLocaleString()} records matching the filters${scope.sessionId ? ` in session ${scope.sessionId}` : ''}.`
 }
+
+// ─── Derived views for the trade-ledger table and chart ──────────────────────
+
+export interface CumulativePnlPoint { tsMs: number; cumulativePnl: number }
+
+/**
+ * Cumulative realized P&L across SETTLED items only, ordered by close time.
+ *
+ * An open item has no realized figure to accumulate (its `pnl` is null by
+ * construction — see toLedgerItem), and an item with no `closedAt` cannot be
+ * placed on a timeline, so both are excluded rather than guessed into a
+ * position. This is real, chronologically-ordered data derived from the
+ * records actually on screen in the ledger table — never a manufactured
+ * curve from a single summary number.
+ */
+export function buildCumulativeRealizedSeries(items: readonly LedgerItem[]): CumulativePnlPoint[] {
+  const settled = items
+    .filter((i): i is LedgerItem & { pnl: number; closedAt: number } =>
+      i.status === 'settled' && i.pnl !== null && i.closedAt !== null)
+    .sort((a, b) => a.closedAt - b.closedAt)
+
+  let running = 0
+  return settled.map((i) => {
+    running += i.pnl
+    return { tsMs: i.closedAt, cumulativePnl: running }
+  })
+}
+
+export interface WinRateBreakdown {
+  wins:     number
+  losses:   number
+  /** Break-even settlements (the engine's PUSH/CANCELLED outcome) — excluded
+   *  from both sides of the rate, not folded into losses. */
+  pushes:   number
+  /** null when there are no decided (win/loss) trades to rate. */
+  winRate:  number | null
+}
+
+/**
+ * Win rate over settled items, with an explicit, documented treatment of
+ * break-even trades: a push is neither a win nor a loss, so it is excluded
+ * from BOTH the numerator and the denominator. Folding it into losses (or
+ * dropping it silently with no count shown) would misstate the rate either
+ * way — this keeps the push count visible instead.
+ *
+ * `outcome` (PUSH/CANCELLED) is only reported on the engine's cursor branch;
+ * the deployed engine's plain boolean `won` has no break-even case at all, so
+ * on deployed data `pushes` is always 0 and this reduces to a plain win rate.
+ */
+export function winRateBreakdown(items: readonly LedgerItem[]): WinRateBreakdown {
+  let wins = 0, losses = 0, pushes = 0
+  for (const i of items) {
+    if (i.status !== 'settled') continue
+    if (i.outcome === 'PUSH' || i.outcome === 'CANCELLED') { pushes++; continue }
+    if (i.won === true) wins++
+    else if (i.won === false) losses++
+  }
+  const decided = wins + losses
+  return { wins, losses, pushes, winRate: decided > 0 ? wins / decided : null }
+}

@@ -288,6 +288,22 @@ export function useEngineTradesLedger(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getTradesLedger(POLL_LIMITS.tradesLedger, undefined, signal), () => services.engine.peekTradesLedger?.() ?? null, [], refreshMs)
 }
 
+/**
+ * Individual settled sleeve-trade records (richer than useEngineTradesLedger:
+ * per-item open/close timestamps, outcome/push handling where the engine
+ * reports it, and an honest page-vs-session summary scope — see
+ * lib/mappers/ledger.ts). Not in ApplicationStateLoader's polling set — this
+ * is for pages that actually browse trade history, not the global store.
+ */
+export function useEngineLedgerPage(limit: number, refreshMs?: number) {
+  return useServiceQuery(
+    (signal) => services.engine.getLedgerPage('ledger', { limit }, signal),
+    () => null,
+    [limit],
+    refreshMs,
+  )
+}
+
 /** /api/execution/orders — all orders (active + closed) envelope. */
 export function useEngineExecutionOrders(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getExecutionOrders(undefined, signal), () => services.engine.peekExecutionOrders?.() ?? null, [], refreshMs)

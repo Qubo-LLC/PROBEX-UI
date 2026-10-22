@@ -67,6 +67,16 @@ export interface PerformanceMetrics {
   /** 0–1. Normalised from the wire's 0–100 by the DTO adapters. */
   winRate:     number
   totalPnl:    number
+  /**
+   * Settled-position P&L, when the surface reports one SEPARATELY from
+   * unrealized. Null, not 0, when the surface does not split it out — the paper
+   * surface (sleeve ledgers) reports both; the live surface (/api/execution/status)
+   * reports only a single combined `total_pnl` with no realized/unrealized split.
+   * Never derive this by subtracting; only report what the surface actually sent.
+   */
+  realizedPnl:   number | null
+  /** Open-position mark-to-market P&L. Same null-means-unreported rule as above. */
+  unrealizedPnl: number | null
   /** Account balance, when the selected surface reports one. */
   balance:     number | null
   /** Trades opened but not yet resolved, when the surface reports it. */
@@ -119,7 +129,13 @@ function paperMetrics(r: Runway): PerformanceMetrics {
     wins,
     losses,
     winRate:     wins + losses > 0 ? wins / (wins + losses) : 0,
+    // Historical note: this field has always meant "realized P&L from settled
+    // positions", not realized+unrealized — kept as-is since other callers
+    // already depend on that meaning. Use realizedPnl/unrealizedPnl below for a
+    // figure that states which one it is.
     totalPnl:    r.combined?.realizedPnl ?? 0,
+    realizedPnl:   r.combined?.realizedPnl ?? null,
+    unrealizedPnl: r.combined?.unrealizedPnl ?? null,
     balance:     r.combined ? r.combined.equity + r.combined.reserve : null,
     pending:     r.combined?.openPositions ?? null,
   }
@@ -132,6 +148,11 @@ function liveMetrics(e: ExecutionStatus): PerformanceMetrics {
     losses:      e.losses,
     winRate:     e.winRate,
     totalPnl:    e.totalPnl,
+    // /api/execution/status reports one combined total_pnl and does not split it
+    // into realized/unrealized — null, not a guess, so a caller cannot invent a
+    // breakdown the live surface never sent.
+    realizedPnl:   null,
+    unrealizedPnl: null,
     balance:     e.balance,
     // The execution surface has no pending concept — it reports positions, not
     // unresolved trades. Null rather than 0: we do not know, and zero would

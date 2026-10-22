@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { appendOlderPage, describeSummaryScope, toLedgerItem, toLedgerPage } from './ledger'
+import { appendOlderPage, buildCumulativeRealizedSeries, describeSummaryScope, toLedgerItem, toLedgerPage, winRateBreakdown } from './ledger'
 import {
   canLoadMoreCapped, describePaging, openedAfterClose, relationshipFor, searchLoaded, statusLabel,
 } from '@/lib/display/ledgerView'
@@ -177,6 +177,49 @@ describe('relationshipFor — engine mode fallback (deployed contract has no per
   it('a record’s own mode wins over the engine mode', () => {
     const live = toLedgerItem(settledDTO({ mode: 'live', order_id: '0xorder' }))
     expect(relationshipFor(live, 'paper').find((s) => s.step === 'Order')).toEqual({ step: 'Order', status: 'recorded', text: '0xorder' })
+  })
+})
+
+describe('buildCumulativeRealizedSeries — real records, chronologically ordered, never manufactured', () => {
+  it('accumulates settled pnl in close-time order regardless of input order', () => {
+    const early = toLedgerItem(settledDTO({ closed_at: '2026-10-01T10:00:00', pnl: 5 }))
+    const late  = toLedgerItem(settledDTO({ closed_at: '2026-10-01T12:00:00', pnl: -2 }))
+    // Fed out of order on purpose — the function must sort, not trust input order.
+    const series = buildCumulativeRealizedSeries([late, early])
+    expect(series).toEqual([
+      { tsMs: early.closedAt, cumulativePnl: 5 },
+      { tsMs: late.closedAt, cumulativePnl: 3 },
+    ])
+  })
+
+  it('excludes open records (no realized pnl to accumulate) and anything with no closedAt', () => {
+    const open = toLedgerItem(settledDTO({ status: 'open', closed_at: null, exit_price: null, pnl: null, pnl_percent: null, won: null }))
+    const settled = toLedgerItem(settledDTO({ closed_at: '2026-10-01T12:00:00', pnl: 7 }))
+    expect(buildCumulativeRealizedSeries([open, settled])).toEqual([{ tsMs: settled.closedAt, cumulativePnl: 7 }])
+  })
+
+  it('returns an empty series rather than a single fabricated point', () => {
+    expect(buildCumulativeRealizedSeries([])).toEqual([])
+  })
+})
+
+describe('winRateBreakdown — push is neither a win nor a loss', () => {
+  it('excludes a push from both sides of the rate', () => {
+    const won  = toLedgerItem(settledDTO({ won: true }))
+    const lost = toLedgerItem(settledDTO({ won: false }))
+    const push = toLedgerItem(settledDTO({ won: null, outcome: 'PUSH', pnl: 0, pnl_percent: 0 }))
+    const b = winRateBreakdown([won, lost, push])
+    expect(b).toEqual({ wins: 1, losses: 1, pushes: 1, winRate: 0.5 })
+  })
+
+  it('returns a null rate rather than 0 when nothing has been decided yet', () => {
+    const push = toLedgerItem(settledDTO({ won: null, outcome: 'CANCELLED', pnl: 0, pnl_percent: 0 }))
+    expect(winRateBreakdown([push]).winRate).toBeNull()
+  })
+
+  it('ignores open records entirely', () => {
+    const open = toLedgerItem(settledDTO({ status: 'open', closed_at: null, exit_price: null, pnl: null, pnl_percent: null, won: null }))
+    expect(winRateBreakdown([open])).toEqual({ wins: 0, losses: 0, pushes: 0, winRate: null })
   })
 })
 

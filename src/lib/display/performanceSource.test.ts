@@ -81,6 +81,14 @@ describe('paper mode', () => {
     expect(v.metrics?.totalTrades).toBe(59)
   })
 
+  it('reports realized and unrealized P&L separately from the sleeve ledgers', () => {
+    const v = selectPerformanceSource({
+      engineMode: 'paper', runway: paper(), executionStatus: execution(),
+    })
+    expect(v.metrics?.realizedPnl).toBe(22.38)
+    expect(v.metrics?.unrealizedPnl).toBe(0)
+  })
+
   it('does not cry wolf: an idle live surface is the expected state', () => {
     const v = selectPerformanceSource({
       engineMode: 'paper', runway: paper(), executionStatus: execution(),
@@ -119,6 +127,16 @@ describe('live mode', () => {
     expect(v.provenance.surface).toBe('live')
     expect(v.metrics?.totalPnl).toBe(41.2)
     expect(v.provenance.note).toMatch(/capital actually at risk/i)
+  })
+
+  it('does not invent a realized/unrealized split the live surface never sent', () => {
+    const v = selectPerformanceSource({
+      engineMode: 'live',
+      runway: paper(),
+      executionStatus: execution({ mode: 'live', totalTrades: 12, totalPnl: 41.2 }),
+    })
+    expect(v.metrics?.realizedPnl).toBeNull()
+    expect(v.metrics?.unrealizedPnl).toBeNull()
   })
 
   it('demotes the paper books to counterpart — never blended in', () => {

@@ -52,7 +52,17 @@ export function checkPassword(password: string, spec: string): boolean {
 }
 
 export function verifyLogin(user: string, password: string): boolean {
-  const spec = users().get(user)
+  // The setup script trims the username before storing it as the map key
+  // (scripts/set-dashboard-login.mjs), but a request's `user` comes straight
+  // from the submitted JSON/form field with no trimming. Browser autofill,
+  // a password manager, or a trailing newline from a paste can attach
+  // incidental whitespace to that field; Map.get() is an exact match, so an
+  // untrimmed lookup here silently falls through to "unknown user" — never
+  // a password mismatch — and reports the identical 401 either way. Trimming
+  // only the username (never the password, which is a secret verbatim value,
+  // not an identifier) closes that gap without touching anything
+  // security-relevant.
+  const spec = users().get(user.trim())
   if (!spec) {
     // spend the same time on unknown users
     checkPassword(password, 'scrypt:16384:8:1:AAAAAAAAAAAAAAAAAAAAAA:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')

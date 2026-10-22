@@ -20,8 +20,20 @@
 // state carrier at the row's edge (the side colour), expansion inline.
 //
 // Nothing here is new data. Every field the detail card showed is on the
-// wire today (/api/positions), joined to /api/edges and the markets cache.
+// wire, joined to /api/edges and the markets cache.
 // Fields the wire does not carry — a thesis, a target, a stop — stay absent.
+//
+// ─── Simulated, not live (corrected — this claimed otherwise until the
+// Financial Performance & Trade Transparency redesign) ──────────────────────
+// This table's data comes from the `positions` store slice, which the
+// dashboard-login/sleeve-write commit (38701d76) rewired from the live
+// order-flow engine's /api/positions to the engine's simulated sleeve book
+// (/api/sleeves/positions — "same shapes", per that commit, which is why
+// nothing here needed changing except this claim). As of that rewiring there
+// is no wired path to individual LIVE position records anywhere in the
+// dashboard — only live aggregate counters with no per-position detail. The
+// caller renders a SimulatedNote above this table; it is not optional
+// decoration, it is the correction for what this comment used to say.
 
 import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
@@ -36,6 +48,7 @@ import { formatEdgePct } from '@/lib/display/engine'
 import { MARKET_DETAIL_PATH } from '@/config/constants'
 import { useClosePosition, MUTATIONS } from '@/config/hooks/useMutation'
 import { MutationButton } from '@/components/execution/MutationButton'
+import { SimulatedNote } from '@/components/shared/SimulatedNote'
 
 const YES_COLOR = 'var(--synatra-yes)'
 const NO_COLOR  = 'var(--synatra-no)'
@@ -60,7 +73,9 @@ export function PositionTable({ positions, edgeMap, closesAtByMarketId, stale = 
   const COLS = 7
 
   return (
-    <TableShell label="Open positions">
+    <div className="flex flex-col gap-3">
+      <SimulatedNote />
+      <TableShell label="Open positions">
       <Thead>
         <Th align="left" dense grow>Position</Th>
         <Th align="right" dense hideBelow="md">Entry → now</Th>
@@ -186,7 +201,8 @@ export function PositionTable({ positions, edgeMap, closesAtByMarketId, stale = 
           )
         })}
       </tbody>
-    </TableShell>
+      </TableShell>
+    </div>
   )
 }
 
@@ -280,8 +296,19 @@ function PositionEvidence({
           label="Close position"
           tone="danger"
           size="sm"
-          disabled={p.marketId === null}
-          disabledReason="This position has no market id, so it cannot be closed from here."
+          // ⚠️ Disabled unconditionally here, not just when marketId is null.
+          // MUTATIONS.closePosition POSTs to /execution/close/:market_id — the
+          // LIVE execution engine's manual close — and there is no sleeve-
+          // specific close mutation anywhere in the registry. Since this
+          // table's `positions` prop now comes from the engine's SIMULATED
+          // sleeve book (/api/sleeves/positions — see the header comment),
+          // wiring that button live would send a real live-execution close
+          // for a position this table did not actually show, which is exactly
+          // the "simulated action presented as real-money" risk this redesign
+          // was told to avoid. Re-enable only once a sleeve-specific close
+          // mutation exists, or this table is pointed at genuine live data.
+          disabled
+          disabledReason="This is a simulated sleeve position; there is no live-matching close action available from here."
           confirmTitle="Close this position now?"
           confirmDescription={
             `Closes the ${p.side.toUpperCase()} position on "${p.marketTitle ?? p.id}" at the current market price` +
