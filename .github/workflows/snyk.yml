@@ -1,0 +1,44 @@
+# =============================================================================
+# .github/workflows/snyk.yml
+#
+# Runs a Snyk dependency scan on every PR and push to main and fails on
+# high or critical findings in production dependencies. Snyk excludes
+# devDependencies by default (no --dev flag), matching the npm audit gate.
+#
+# Requires the repository secret SNYK_TOKEN (Snyk API token). Without it the
+# scan step fails with an authentication error.
+#
+# Same pinned action SHAs as Qubo-Probex-web-:
+#   actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955   (v4.3.0)
+#   snyk/actions/node@12140f4059e244892ae643824a95459a102120dd
+# =============================================================================
+
+name: Snyk
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# No global permissions. The job below grants only what it needs.
+permissions: {}
+
+jobs:
+  snyk-reachability:
+    name: Snyk reachability scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+
+      - name: Snyk scan (high and critical only)
+        uses: snyk/actions/node@12140f4059e244892ae643824a95459a102120dd
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
