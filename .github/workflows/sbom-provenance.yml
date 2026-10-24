@@ -1,0 +1,124 @@
+# =============================================================================
+# .github/workflows/sbom-provenance.yml
+#
+# Runs on every push/PR to main. Produces two things:
+#   1. An SBOM (Software Bill of Materials), a complete list of every
+#      dependency this app uses, in SPDX format.
+#   2. A signed SLSA provenance attestation for the build output, proof of
+#      exactly which commit/workflow produced it.
+#
+# This workflow builds a tarball of the Next.js output (.next), so it uses
+# SLSA's "generic artifact" track. If the app is containerized later, switch
+# the provenance job to SLSA's container track and add image signing.
+#
+# Pinned versions (same as Qubo-Probex-web-):
+#   actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955   (v4.3.0)
+#   actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  (v4.4.0)
+#   anchore/sbom-action@274555f23948494da9248b45cbd44ad133002e12
+#   actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+#   slsa-framework/slsa-github-generator@v2.1.0
+# =============================================================================
+
+name: SBOM & Provenance
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# No global permissions. Each job below grants only what it needs.
+permissions: {}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # JOB 1: Generate SBOM
+  # ---------------------------------------------------------------------------
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+
+      - name: Generate SBOM (SPDX format)
+        uses: anchore/sbom-action@274555f23948494da9248b45cbd44ad133002e12 # v0.17.x
+        with:
+          path: .
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM as build artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4.x
+        with:
+          name: sbom
+          path: sbom.spdx.json
+
+  # ---------------------------------------------------------------------------
+  # JOB 2: Build and package artifact
+  # Builds the app and packages the output into one file so the provenance
+  # job has something concrete to attest to.
+  # ---------------------------------------------------------------------------
+  build-artifact:
+    name: Build and package artifact
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Package build output
+        run: tar -czf build-artifact.tar.gz .next
+
+      - name: Generate checksum digest
+        id: hash
+        run: |
+          # The SLSA generator requires base64-encoded `sha256sum` output
+          # ("<hex>  <filename>"), NOT a bare "sha256:<hex>" string.
+          sha256sum build-artifact.tar.gz > build-artifact.tar.gz.sha256
+          echo "hashes=$(base64 -w0 < build-artifact.tar.gz.sha256)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4.x
+        with:
+          name: build-artifact
+          path: |
+            build-artifact.tar.gz
+            build-artifact.tar.gz.sha256
+
+  # ---------------------------------------------------------------------------
+  # JOB 3: SLSA provenance attestation
+  # Generates a signed statement proving which commit/workflow run produced
+  # build-artifact.tar.gz.
+  # ---------------------------------------------------------------------------
+  provenance:
+    name: Generate SLSA provenance
+    needs: [build-artifact]
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses] -- SLSA generator must be tag-pinned; its OIDC/Sigstore trust chain and internal path resolution depend on the release tag, not a raw commit SHA. See https://github.com/slsa-framework/slsa-github-generator
+    with:
+      base64-subjects: "${{ needs.build-artifact.outputs.hashes }}"
