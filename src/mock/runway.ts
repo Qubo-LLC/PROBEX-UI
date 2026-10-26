@@ -2,7 +2,7 @@
 // the engine's src/runway.py; values are illustrative only.
 
 import { toEventsPositions, toRunway, toRunwayLive } from '@/lib/services/runwayDto'
-import type { EventsPositions, EventsPositionsDTO, RunwayDTO, RunwayLiveDTO } from '@/types/runway'
+import type { EventsPositions, EventsPositionsDTO, RankingDTO, RunwayDTO, RunwayLiveDTO, ShadowDTO } from '@/types/runway'
 
 const T0 = 1792420200
 
@@ -95,3 +95,26 @@ export const MOCK_EVENTS_POSITIONS_DTO: EventsPositionsDTO = {
 }
 
 export const MOCK_EVENTS_POSITIONS: EventsPositions = toEventsPositions(MOCK_EVENTS_POSITIONS_DTO)
+
+const shadowAccount = (equity: number, skipped: number) => ({
+  settings: { kelly_fraction: 0.25, max_bet_pct: 5, total_exposure_pct: 25, correlated_exposure_pct: 10, drawdown_stop_pct: 20 },
+  state: { cash: equity - 3, start: 52.38, realized_pnl: equity - 52.38, halted: null, positions: [{}], counts: { signals: 3 } },
+  equity_curve: [{ ts: 1793030000, equity: 52.38 }, { ts: 1793033600, equity }],
+  trades: [{ type: 'fill', ts: 1793030000, account: 'X', strategy_id: 'e_cal', market_id: '1', token: 'no', price: 0.3, shares: 5, cost: 1.5, question: 'Q1?' }],
+  skipped: [{ type: 'skip', ts: 1793031000, account: 'X', strategy_id: 'e_mm', market_id: '2', reason: 'min_size_edge_too_small', question: 'Q2?' }],
+  skipped_by_reason: { min_size_edge_too_small: skipped }, orders_built: 3,
+})
+
+export const MOCK_SHADOW: ShadowDTO = {
+  label: 'shadow-live (paper): live code path, no key, no order sent',
+  accounts: { SHADOW_LIVE_CONS: shadowAccount(52.9, 4), SHADOW_LIVE_AGGR: shadowAccount(53.6, 1) },
+}
+
+export const MOCK_RANKING: RankingDTO = {
+  updated: '2026-10-26', rules: 'structural > risk premium > statistical; then edge x capacity', passed: [],
+  candidates: [
+    { id: 'E-ARB', tier: 'structural', status: 'testing', target_n: 30, n: 0, entries: 0, edge_cents: null, ci_cents: null, capacity_usd_day: null, evidence: 'pending' },
+    { id: 'E-END', tier: 'risk_premium', status: 'retired', target_n: null, n: null, edge_cents: -1.63, ci_cents: [-3.18, -0.17], capacity_usd_day: null, evidence: 'holdout failed' },
+    { id: 'E-CAL', tier: 'statistical', status: 'testing', target_n: 400, n: 3, entries: 9, edge_cents: 2.3, ci_cents: [0.51, 4.08], capacity_usd_day: null, evidence: 'holdout pass' },
+  ],
+}

@@ -201,6 +201,16 @@ export function useEngineEventsPositions(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getEventsPositions(signal), () => null, [], refreshMs)
 }
 
+/** /api/shadow — shadow-live accounts (read-only). */
+export function useEngineShadow(refreshMs?: number) {
+  return useServiceQuery((signal) => services.engine.getShadow(signal), () => null, [], refreshMs)
+}
+
+/** /api/strategies/ranking — the daily strategy ranking table. */
+export function useEngineRanking(refreshMs?: number) {
+  return useServiceQuery((signal) => services.engine.getRanking(signal), () => null, [], refreshMs)
+}
+
 // ─── Additional engine endpoint hooks ────────────────────────────────────────
 
 /** /api/positions/history — historical closed positions (envelope only; items empty so far). */

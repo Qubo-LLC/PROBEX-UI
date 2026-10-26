@@ -8,7 +8,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { useApplicationStore } from '@/store/applicationStore'
 import { loadingState, ok, toServiceState } from '@/lib/services/response'
-import { MOCK_EVENTS_POSITIONS, MOCK_RUNWAY, MOCK_RUNWAY_DTO, MOCK_RUNWAY_LIVE } from '@/mock/runway'
+import { MOCK_EVENTS_POSITIONS, MOCK_RANKING, MOCK_RUNWAY, MOCK_RUNWAY_DTO, MOCK_RUNWAY_LIVE, MOCK_SHADOW } from '@/mock/runway'
 import { toRunway } from '@/lib/services/runwayDto'
 import type { Runway, RunwayLive } from '@/types/runway'
 import { RunwayGroup } from './RunwayGroup'
@@ -16,6 +16,8 @@ import { ActivityList } from './ActivityList'
 import { CurrentWindowPanel } from './CurrentWindowPanel'
 import { mergeCurves } from './EquityCurves'
 import { EventsPositionsTable } from './EventsPositionsPanel'
+import { ShadowLiveView } from './ShadowLivePanel'
+import { RankingTable } from './RankingPanel'
 
 function seed(runway: Runway | null, live: RunwayLive | null = MOCK_RUNWAY_LIVE) {
   useApplicationStore.setState((s) => ({
@@ -122,6 +124,26 @@ describe('EventsPositionsTable', () => {
     expect(rows[0]!.querySelector('a')!.getAttribute('href')).toBe('https://polymarket.com/event/x')
     expect(rows[1]!.textContent).toContain('settled (No)')
     expect(screen.getByTestId('events-positions-summary').textContent).toContain('1 open')
+  })
+})
+
+describe('ShadowLiveView', () => {
+  it('shows both accounts side by side with equity, orders built and skipped reasons', () => {
+    render(<ShadowLiveView data={MOCK_SHADOW} />)
+    expect(screen.getByTestId('shadow-SHADOW_LIVE_CONS').textContent).toContain('Conservative')
+    expect(screen.getByTestId('shadow-SHADOW_LIVE_AGGR').textContent).toContain('Aggressive')
+    expect(screen.getAllByTestId('shadow-skips')[0]!.textContent).toContain('min_size_edge_too_small: 4')
+    expect(screen.getAllByTestId('shadow-equity')[1]!.textContent).toContain('53.6')
+  })
+})
+
+describe('RankingTable', () => {
+  it('lists status, n vs target, edge with its CI and evidence', () => {
+    render(<RankingTable data={MOCK_RANKING} />)
+    const rows = screen.getAllByTestId('ranking-row')
+    expect(rows[1]!.textContent).toContain('retired')
+    expect(rows[1]!.textContent).toContain('-1.63¢')
+    expect(rows[2]!.textContent).toContain('3 / 400')
   })
 })
 

@@ -259,3 +259,23 @@ export interface EventsPositions {
   generatedAtMs: number; positions: EventsPosition[]; open: number; settled: number; openCost: number
   unrealizedPnl: number; realizedPnl: number; priceSource: string; label: string
 }
+
+// ─── /api/shadow (shadow-live, scope §3B.4) and /api/strategies/ranking (§3B.6) ───
+
+export interface ShadowRowDTO {
+  type: string; ts: number; account: string; strategy_id?: string; market_id?: string; token?: string
+  price?: number; shares?: number; cost?: number; pnl?: number; equity?: number; reason?: string; question?: string
+}
+export interface ShadowAccountDTO {
+  settings: Record<string, number>
+  state: { cash: number; start: number; realized_pnl: number; halted: string | null; positions: unknown[]; counts: Record<string, number> } | null
+  equity_curve: { ts: number; equity: number }[]
+  trades: ShadowRowDTO[]; skipped: ShadowRowDTO[]; skipped_by_reason: Record<string, number>; orders_built: number
+}
+export interface ShadowDTO { label: string; accounts: Record<string, ShadowAccountDTO> }
+
+export interface RankingRowDTO {
+  id: string; tier: string; status: 'passed' | 'testing' | 'retired'; target_n: number | null; n: number | null
+  entries?: number; edge_cents: number | null; ci_cents: [number, number] | null; capacity_usd_day: number | null; evidence: string
+}
+export interface RankingDTO { updated: string; rules: string; candidates: RankingRowDTO[]; passed: string[] }

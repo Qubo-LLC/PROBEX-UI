@@ -21,7 +21,7 @@ import { engineWrite } from '@/lib/api/engineWrite'
 import { toLedgerPage } from '@/lib/mappers/ledger'
 import type { LedgerPage, LedgerPageDTO, LedgerPageQuery } from '@/types/ledger'
 import { toEventsPositions, toRunway, toRunwayLive } from './runwayDto'
-import type { EventsPositions, EventsPositionsDTO, GlobalHalt, GlobalHaltDTO, Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
+import type { EventsPositions, EventsPositionsDTO, RankingDTO, ShadowDTO, GlobalHalt, GlobalHaltDTO, Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
 import { ENDPOINTS, endpointPath, endpointPathWith } from '@/lib/api/endpoints'
 import type {
   EngineHealthDTO, EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
@@ -200,6 +200,14 @@ export class LiveEngineService implements IEngineService {
   async getEventsPositions(signal?: AbortSignal): Promise<ApiResult<EventsPositions>> {
     const dto = await apiGet<EventsPositionsDTO>(endpointPath(ENDPOINTS.runway.eventsPositions), undefined, signal)
     return ok(toEventsPositions(dto))
+  }
+
+  async getShadow(signal?: AbortSignal): Promise<ApiResult<ShadowDTO>> {
+    return ok(await apiGet<ShadowDTO>(endpointPath(ENDPOINTS.runway.shadow), undefined, signal))
+  }
+
+  async getRanking(signal?: AbortSignal): Promise<ApiResult<RankingDTO>> {
+    return ok(await apiGet<RankingDTO>(endpointPath(ENDPOINTS.runway.ranking), undefined, signal))
   }
 
   // ── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints ────────────────
