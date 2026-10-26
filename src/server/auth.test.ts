@@ -13,6 +13,7 @@ import { checkPassword, hashPassword, loginBlocked, readSession, recordLoginFail
 import { mintEngineToken } from './engineToken'
 import { allowedEnginePath } from './engineWrites'
 import { isPublicPath, middleware } from '../middleware'
+import { clientAddress } from './clientAddress'
 import { POST as engineWrite } from '../app/api/engine/[...path]/route'
 
 const KEY = randomBytes(48).toString('base64url')
@@ -63,6 +64,14 @@ describe('sessions', () => {
     expect(readSession(`${p}.AAAA`, now)).toBeNull()
     process.env.DASHBOARD_USERS = ''
     expect(readSession(c, now + 10)).toBeNull()
+  })
+
+  it('keys the login rate limit on the address nginx appended, not on a client-supplied hop', () => {
+    const req = (xff: string) => new NextRequest('https://example.test/dashboard/api/auth/login/',
+                                                 { method: 'POST', headers: { 'x-forwarded-for': xff } })
+    expect(clientAddress(req('203.0.113.9'))).toBe('203.0.113.9')
+    expect(clientAddress(req('1.2.3.4, 203.0.113.9'))).toBe('203.0.113.9')
+    expect(clientAddress(req('9.9.9.9, 203.0.113.9'))).toBe('203.0.113.9')  // a rotated fake first hop changes nothing
   })
 
   it('rate-limits failed logins per address', () => {

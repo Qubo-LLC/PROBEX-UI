@@ -4,13 +4,11 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { loginBlocked, recordLoginFailure, SESSION_COOKIE, SESSION_TTL_SECONDS, signSession, verifyLogin } from '@/server/session'
 import { BASE_PATH } from '@/config/constants'
+import { clientAddress } from '@/server/clientAddress'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-function clientAddress(req: NextRequest): string {
-  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
-}
 
 export async function POST(req: NextRequest) {
   const addr = clientAddress(req)
