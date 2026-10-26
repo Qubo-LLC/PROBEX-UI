@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
     const form = await req.formData()
     user = String(form.get('username') ?? ''); password = String(form.get('password') ?? '')
   }
+  user = user.trim()  // verifyLogin matches the trimmed name; the session must carry the same name
   let ok = false
   try {
     ok = Boolean(user && password && verifyLogin(user, password))
