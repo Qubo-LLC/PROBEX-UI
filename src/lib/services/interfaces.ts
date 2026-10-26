@@ -20,7 +20,7 @@ import type {
   SystemMetrics, TradesLedger, ExecutionOrders,
   MarketsSummary, MarketPriceHistory, MarketDetail, MutationResult,
 } from '@/types/engine'
-import type { GlobalHalt, Runway, RunwayLive } from '@/types/runway'
+import type { EventsPositions, GlobalHalt, Runway, RunwayLive } from '@/types/runway'
 
 import type {
   MathLayersStatus, MathRecommendationsEnvelope, KalmanLayer,
@@ -73,6 +73,8 @@ export interface IEngineService {
   getRunway(signal?: AbortSignal): Promise<ApiResult<Runway>>
   /** /api/runway/live — current windows and the P2 rule's working quotes (visibility only). */
   getRunwayLive(signal?: AbortSignal): Promise<ApiResult<RunwayLive>>
+  /** /api/sleeves/events/positions — EVENTS positions with market, price and PnL (read-only). */
+  getEventsPositions(signal?: AbortSignal): Promise<ApiResult<EventsPositions>>
 
   // ── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints ────────────────
   getPositionsHistory(limit?: number, direction?: 'YES' | 'NO', signal?: AbortSignal): Promise<ApiResult<PositionsHistory>>

@@ -8,13 +8,14 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { useApplicationStore } from '@/store/applicationStore'
 import { loadingState, ok, toServiceState } from '@/lib/services/response'
-import { MOCK_RUNWAY, MOCK_RUNWAY_DTO, MOCK_RUNWAY_LIVE } from '@/mock/runway'
+import { MOCK_EVENTS_POSITIONS, MOCK_RUNWAY, MOCK_RUNWAY_DTO, MOCK_RUNWAY_LIVE } from '@/mock/runway'
 import { toRunway } from '@/lib/services/runwayDto'
 import type { Runway, RunwayLive } from '@/types/runway'
 import { RunwayGroup } from './RunwayGroup'
 import { ActivityList } from './ActivityList'
 import { CurrentWindowPanel } from './CurrentWindowPanel'
 import { mergeCurves } from './EquityCurves'
+import { EventsPositionsTable } from './EventsPositionsPanel'
 
 function seed(runway: Runway | null, live: RunwayLive | null = MOCK_RUNWAY_LIVE) {
   useApplicationStore.setState((s) => ({
@@ -105,6 +106,22 @@ describe('CurrentWindowPanel', () => {
     expect(card.textContent).toContain('BUY 5 @ 0.49')
     expect(card.textContent).toContain('mid outside 0.15–0.85')
     expect(screen.getByText(/visibility only, not orders/)).toBeTruthy()
+  })
+})
+
+describe('EventsPositionsTable', () => {
+  it('lists each position with its market link, strategy, side, entry, size, cost, price, PnL and resolution date', () => {
+    render(<EventsPositionsTable data={MOCK_EVENTS_POSITIONS} />)
+    const rows = screen.getAllByTestId('events-position')
+    expect(rows).toHaveLength(2)
+    expect(rows[0]!.textContent).toContain('E-CAL')
+    expect(rows[0]!.textContent).toContain('NO')
+    expect(rows[0]!.textContent).toContain('0.630')
+    expect(rows[0]!.textContent).toContain('0.700')
+    expect(rows[0]!.textContent).toContain('2026-11-04')
+    expect(rows[0]!.querySelector('a')!.getAttribute('href')).toBe('https://polymarket.com/event/x')
+    expect(rows[1]!.textContent).toContain('settled (No)')
+    expect(screen.getByTestId('events-positions-summary').textContent).toContain('1 open')
   })
 })
 

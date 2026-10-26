@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { RunwayGroup } from './RunwayGroup'
 import { ActivityList } from './ActivityList'
 import { CurrentWindowPanel } from './CurrentWindowPanel'
+import { EventsPositionsPanel } from './EventsPositionsPanel'
 
 export function SleevesPage({ title = 'Capital & book' }: { title?: string }) {
   return (
@@ -20,6 +21,7 @@ export function SleevesPage({ title = 'Capital & book' }: { title?: string }) {
       <PageHeader title={title} subtitle="The engine's sleeve ledgers — paper, research sizing" />
       <RunwayGroup />
       <OpenPositions />
+      <EventsPositionsPanel />
       <CurrentWindowPanel />
       <ActivityList limit={500} />
     </div>

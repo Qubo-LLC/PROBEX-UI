@@ -3,7 +3,7 @@
 
 import type {
   Activity, ActivityDTO, CurvePoint, CurvePointDTO, LiveWindowDTO, LiveWindow, Runway, RunwayDTO,
-  RunwayLive, RunwayLiveDTO, Sleeve, SleeveDTO, SizerView, SizerViewDTO,
+  EventsPositions, EventsPositionsDTO, RunwayLive, RunwayLiveDTO, Sleeve, SleeveDTO, SizerView, SizerViewDTO,
 } from '@/types/runway'
 
 const SLEEVE_ORDER = ['CRYPTO', 'EVENTS', 'HOUSE']
@@ -76,4 +76,18 @@ function toLiveWindow(w: LiveWindowDTO): LiveWindow {
 export function toRunwayLive(d: RunwayLiveDTO): RunwayLive {
   return { generatedAtMs: Math.round(d.generated_at * 1000), rule: d.rule, visibilityOnly: d.visibility_only,
            label: d.label, windows: (d.windows ?? []).map(toLiveWindow) }
+}
+
+export function toEventsPositions(d: EventsPositionsDTO): EventsPositions {
+  return {
+    generatedAtMs: Math.round(d.generated_at * 1000), open: d.open, settled: d.settled, openCost: d.open_cost,
+    unrealizedPnl: d.unrealized_pnl, realizedPnl: d.realized_pnl, priceSource: d.price_source, label: d.label,
+    positions: (d.positions ?? []).map((p) => ({
+      positionId: p.position_id, marketId: p.market_id, question: p.question, url: p.url, strategyId: p.strategy_id,
+      side: p.side, entryPrice: p.entry_price, shares: p.shares, cost: p.cost, currentPrice: p.current_price,
+      resolutionDate: p.resolution_date, openedAtMs: Math.round(p.opened_at * 1000), status: p.status,
+      unrealizedPnl: p.unrealized_pnl, realizedPnl: p.realized_pnl, outcome: p.outcome ?? null,
+      umaStatus: p.uma_status,
+    })),
+  }
 }

@@ -113,6 +113,7 @@ export const ENDPOINTS = {
     positionsHistory: def('GET', '/sleeves/positions/history',  'confirmed', 'Settled sleeve positions (simulated)', 'Sleeve Positions History'),
     portfolioHistory: def('GET', '/sleeves/portfolio/history',  'confirmed', 'Combined sleeve equity (simulated)', 'Sleeve Portfolio History'),
     portfolioSummary: def('GET', '/sleeves/portfolio/summary',  'confirmed', 'Combined sleeve summary (simulated)', 'Sleeve Portfolio Summary'),
+    eventsPositions:  def('GET', '/sleeves/events/positions',   'confirmed', 'EVENTS positions: market, side, entry, price, PnL, resolution (paper)', 'Events Positions'),
   },
 
   // ── Execution mutations ──────────────────────────────────────────────────────

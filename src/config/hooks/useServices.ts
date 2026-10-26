@@ -196,6 +196,11 @@ export function useEngineRunwayLive(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getRunwayLive(signal), () => services.engine.peekRunwayLive?.() ?? null, [], refreshMs)
 }
 
+/** /api/sleeves/events/positions — the Events positions panel (read-only; not in the global polling set). */
+export function useEngineEventsPositions(refreshMs?: number) {
+  return useServiceQuery((signal) => services.engine.getEventsPositions(signal), () => null, [], refreshMs)
+}
+
 // ─── Additional engine endpoint hooks ────────────────────────────────────────
 
 /** /api/positions/history — historical closed positions (envelope only; items empty so far). */

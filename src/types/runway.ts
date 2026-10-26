@@ -230,3 +230,32 @@ export interface GlobalHalt {
   stopFile:        boolean
   sleeveStopFiles: Record<string, boolean>
 }
+
+// ─── /api/sleeves/events/positions (the Events positions panel; read-only) ───
+
+export interface EventsPositionDTO {
+  position_id: string; market_id: string; question: string | null; url: string | null
+  strategy_id: string | null; side: string; entry_price: number; shares: number; cost: number
+  current_price: number | null; resolution_date: string | null; opened_at: number
+  gamma_closed: boolean | null; uma_status: string | null; status: 'open' | 'settled'
+  unrealized_pnl: number | null; realized_pnl: number | null; settled_at?: number; outcome?: string | null
+}
+
+export interface EventsPositionsDTO {
+  sleeve_id: string; simulated: boolean; label: string; generated_at: number
+  positions: EventsPositionDTO[]; open: number; settled: number; open_cost: number
+  unrealized_pnl: number; realized_pnl: number; price_source: string
+}
+
+export interface EventsPosition {
+  positionId: string; marketId: string; question: string | null; url: string | null
+  strategyId: string | null; side: string; entryPrice: number; shares: number; cost: number
+  currentPrice: number | null; resolutionDate: string | null; openedAtMs: number
+  status: 'open' | 'settled'; unrealizedPnl: number | null; realizedPnl: number | null
+  outcome: string | null; umaStatus: string | null
+}
+
+export interface EventsPositions {
+  generatedAtMs: number; positions: EventsPosition[]; open: number; settled: number; openCost: number
+  unrealizedPnl: number; realizedPnl: number; priceSource: string; label: string
+}

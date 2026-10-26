@@ -20,8 +20,8 @@ import { apiGet, apiGetHost } from '@/lib/api/client'
 import { engineWrite } from '@/lib/api/engineWrite'
 import { toLedgerPage } from '@/lib/mappers/ledger'
 import type { LedgerPage, LedgerPageDTO, LedgerPageQuery } from '@/types/ledger'
-import { toRunway, toRunwayLive } from './runwayDto'
-import type { GlobalHalt, GlobalHaltDTO, Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
+import { toEventsPositions, toRunway, toRunwayLive } from './runwayDto'
+import type { EventsPositions, EventsPositionsDTO, GlobalHalt, GlobalHaltDTO, Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
 import { ENDPOINTS, endpointPath, endpointPathWith } from '@/lib/api/endpoints'
 import type {
   EngineHealthDTO, EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
@@ -195,6 +195,11 @@ export class LiveEngineService implements IEngineService {
   async getRunwayLive(signal?: AbortSignal): Promise<ApiResult<RunwayLive>> {
     const dto = await apiGet<RunwayLiveDTO>(endpointPath(ENDPOINTS.runway.live), undefined, signal)
     return ok(toRunwayLive(dto))
+  }
+
+  async getEventsPositions(signal?: AbortSignal): Promise<ApiResult<EventsPositions>> {
+    const dto = await apiGet<EventsPositionsDTO>(endpointPath(ENDPOINTS.runway.eventsPositions), undefined, signal)
+    return ok(toEventsPositions(dto))
   }
 
   // ── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints ────────────────

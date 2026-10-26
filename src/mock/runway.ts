@@ -1,8 +1,8 @@
 // Mock /api/runway and /api/runway/live for development and tests. Shapes follow
 // the engine's src/runway.py; values are illustrative only.
 
-import { toRunway, toRunwayLive } from '@/lib/services/runwayDto'
-import type { RunwayDTO, RunwayLiveDTO } from '@/types/runway'
+import { toEventsPositions, toRunway, toRunwayLive } from '@/lib/services/runwayDto'
+import type { EventsPositions, EventsPositionsDTO, RunwayDTO, RunwayLiveDTO } from '@/types/runway'
 
 const T0 = 1792420200
 
@@ -77,3 +77,21 @@ export const MOCK_RUNWAY_LIVE_DTO: RunwayLiveDTO = {
 
 export const MOCK_RUNWAY = toRunway(MOCK_RUNWAY_DTO)
 export const MOCK_RUNWAY_LIVE = toRunwayLive(MOCK_RUNWAY_LIVE_DTO)
+
+export const MOCK_EVENTS_POSITIONS_DTO: EventsPositionsDTO = {
+  sleeve_id: 'EVENTS', simulated: true, label: 'paper', generated_at: 1793030000,
+  positions: [
+    { position_id: 'EVENTS-000003', market_id: '4951227', question: 'Will X happen by Nov 4?', url: 'https://polymarket.com/event/x',
+      strategy_id: 'e_cal', side: 'NO', entry_price: 0.63, shares: 5, cost: 3.1966, current_price: 0.7,
+      resolution_date: '2026-11-04T00:00:00Z', opened_at: 1792500000, gamma_closed: false, uma_status: null,
+      status: 'open', unrealized_pnl: 0.3034, realized_pnl: null },
+    { position_id: 'EVENTS-000001', market_id: '5824120', question: 'Will Y happen by Oct 20?', url: 'https://polymarket.com/event/y',
+      strategy_id: 'e_mm', side: 'YES', entry_price: 0.031, shares: 50, cost: 1.55, current_price: 0,
+      resolution_date: '2026-10-20T12:00:00Z', opened_at: 1792480000, gamma_closed: true, uma_status: 'resolved',
+      status: 'settled', unrealized_pnl: null, realized_pnl: -1.55, settled_at: 1793030000, outcome: 'No' },
+  ],
+  open: 1, settled: 1, open_cost: 3.1966, unrealized_pnl: 0.3034, realized_pnl: -1.55,
+  price_source: 'Gamma outcomePrices (cached 60s)',
+}
+
+export const MOCK_EVENTS_POSITIONS: EventsPositions = toEventsPositions(MOCK_EVENTS_POSITIONS_DTO)
