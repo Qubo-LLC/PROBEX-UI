@@ -279,3 +279,10 @@ export interface RankingRowDTO {
   entries?: number; edge_cents: number | null; ci_cents: [number, number] | null; capacity_usd_day: number | null; evidence: string
 }
 export interface RankingDTO { updated: string; rules: string; candidates: RankingRowDTO[]; passed: string[] }
+
+// ─── /api/research/ledgers (v7.8 item 3): active candidates' research and paper ledgers ───
+export interface ResearchLedgerDTO {
+  id: string; name: string; status: string; n: number; target: number
+  ev_per_dollar: number | null; ci: [number | null, number | null] | null; pnl: number | null; unit: string; note: string
+}
+export interface ResearchLedgersDTO { available: boolean; ts?: number; note?: string; ledgers: ResearchLedgerDTO[] }

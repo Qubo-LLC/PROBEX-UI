@@ -14,7 +14,7 @@ import { RunwayGroup } from './RunwayGroup'
 import { ActivityList } from './ActivityList'
 import { CurrentWindowPanel } from './CurrentWindowPanel'
 import { EventsPositionsPanel } from './EventsPositionsPanel'
-import { RankingPanel } from './RankingPanel'
+import { LedgersPanel, RankingPanel } from './RankingPanel'
 import { ShadowLivePanel } from './ShadowLivePanel'
 
 export function SleevesPage({ title = 'Capital & book' }: { title?: string }) {
@@ -25,6 +25,7 @@ export function SleevesPage({ title = 'Capital & book' }: { title?: string }) {
       <OpenPositions />
       <EventsPositionsPanel />
       <ShadowLivePanel />
+      <LedgersPanel />
       <RankingPanel />
       <CurrentWindowPanel />
       <ActivityList limit={500} />

@@ -211,6 +211,11 @@ export function useEngineRanking(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getRanking(signal), () => null, [], refreshMs)
 }
 
+/** /api/research/ledgers — active candidates' research and paper ledgers (v7.8 item 3). */
+export function useResearchLedgers(refreshMs?: number) {
+  return useServiceQuery((signal) => services.engine.getResearchLedgers(signal), () => null, [], refreshMs)
+}
+
 // ─── Additional engine endpoint hooks ────────────────────────────────────────
 
 /** /api/positions/history — historical closed positions (envelope only; items empty so far). */

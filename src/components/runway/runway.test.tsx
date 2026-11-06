@@ -8,7 +8,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { useApplicationStore } from '@/store/applicationStore'
 import { loadingState, ok, toServiceState } from '@/lib/services/response'
-import { MOCK_EVENTS_POSITIONS, MOCK_RANKING, MOCK_RUNWAY, MOCK_RUNWAY_DTO, MOCK_RUNWAY_LIVE, MOCK_SHADOW } from '@/mock/runway'
+import { MOCK_EVENTS_POSITIONS, MOCK_LEDGERS, MOCK_RANKING, MOCK_RUNWAY, MOCK_RUNWAY_DTO, MOCK_RUNWAY_LIVE, MOCK_SHADOW } from '@/mock/runway'
 import { toRunway } from '@/lib/services/runwayDto'
 import type { Runway, RunwayLive } from '@/types/runway'
 import { RunwayGroup } from './RunwayGroup'
@@ -17,7 +17,7 @@ import { CurrentWindowPanel } from './CurrentWindowPanel'
 import { mergeCurves } from './EquityCurves'
 import { EventsPositionsTable } from './EventsPositionsPanel'
 import { ShadowLiveView } from './ShadowLivePanel'
-import { RankingTable } from './RankingPanel'
+import { LedgersTable, RankingTable, splitRanking } from './RankingPanel'
 
 function seed(runway: Runway | null, live: RunwayLive | null = MOCK_RUNWAY_LIVE) {
   useApplicationStore.setState((s) => ({
@@ -134,6 +134,25 @@ describe('ShadowLiveView', () => {
     expect(screen.getByTestId('shadow-SHADOW_LIVE_AGGR').textContent).toContain('Aggressive')
     expect(screen.getAllByTestId('shadow-skips')[0]!.textContent).toContain('min_size_edge_too_small: 4')
     expect(screen.getAllByTestId('shadow-equity')[1]!.textContent).toContain('53.6')
+  })
+})
+
+describe('Ranking split and research ledgers (v7.8)', () => {
+  it('keeps retired strategies out of the active view and lists them in the retired tab', () => {
+    const active = splitRanking(MOCK_RANKING, 'active').candidates
+    const retired = splitRanking(MOCK_RANKING, 'retired').candidates
+    expect(active.every((c) => c.status !== 'retired')).toBe(true)
+    expect(retired.length).toBeGreaterThan(0)
+    expect(retired.every((c) => c.status === 'retired')).toBe(true)
+    expect(active.length + retired.length).toBe(MOCK_RANKING.candidates.length)
+  })
+  it('shows each ledger with n vs target and profit per $ with its CI', () => {
+    render(<LedgersTable data={MOCK_LEDGERS} />)
+    const rows = screen.getAllByTestId('ledger-row')
+    expect(rows[0]!.textContent).toContain('16 / 100')
+    expect(rows[0]!.textContent).toContain('-1.03%')
+    expect(rows[0]!.textContent).toContain('[-7.43%, +0.23%]')
+    expect(rows[2]!.textContent).toContain('NOT STARTED')
   })
 })
 

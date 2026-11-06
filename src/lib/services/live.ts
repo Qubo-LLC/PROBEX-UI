@@ -21,7 +21,7 @@ import { engineWrite } from '@/lib/api/engineWrite'
 import { toLedgerPage } from '@/lib/mappers/ledger'
 import type { LedgerPage, LedgerPageDTO, LedgerPageQuery } from '@/types/ledger'
 import { toEventsPositions, toRunway, toRunwayLive } from './runwayDto'
-import type { EventsPositions, EventsPositionsDTO, RankingDTO, ShadowDTO, GlobalHalt, GlobalHaltDTO, Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
+import type { EventsPositions, EventsPositionsDTO, RankingDTO, ResearchLedgersDTO, ShadowDTO, GlobalHalt, GlobalHaltDTO, Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
 import { ENDPOINTS, endpointPath, endpointPathWith } from '@/lib/api/endpoints'
 import type {
   EngineHealthDTO, EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
@@ -208,6 +208,10 @@ export class LiveEngineService implements IEngineService {
 
   async getRanking(signal?: AbortSignal): Promise<ApiResult<RankingDTO>> {
     return ok(await apiGet<RankingDTO>(endpointPath(ENDPOINTS.runway.ranking), undefined, signal))
+  }
+
+  async getResearchLedgers(signal?: AbortSignal): Promise<ApiResult<ResearchLedgersDTO>> {
+    return ok(await apiGet<ResearchLedgersDTO>(endpointPath(ENDPOINTS.runway.researchLedgers), undefined, signal))
   }
 
   // ── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints ────────────────

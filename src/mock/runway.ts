@@ -2,7 +2,7 @@
 // the engine's src/runway.py; values are illustrative only.
 
 import { toEventsPositions, toRunway, toRunwayLive } from '@/lib/services/runwayDto'
-import type { EventsPositions, EventsPositionsDTO, RankingDTO, RunwayDTO, RunwayLiveDTO, ShadowDTO } from '@/types/runway'
+import type { ResearchLedgersDTO, EventsPositions, EventsPositionsDTO, RankingDTO, RunwayDTO, RunwayLiveDTO, ShadowDTO } from '@/types/runway'
 
 const T0 = 1792420200
 
@@ -116,5 +116,18 @@ export const MOCK_RANKING: RankingDTO = {
     { id: 'E-ARB', tier: 'structural', status: 'testing', target_n: 30, n: 0, entries: 0, edge_cents: null, ci_cents: null, capacity_usd_day: null, evidence: 'pending' },
     { id: 'E-END', tier: 'risk_premium', status: 'retired', target_n: null, n: null, edge_cents: -1.63, ci_cents: [-3.18, -0.17], capacity_usd_day: null, evidence: 'holdout failed' },
     { id: 'E-CAL', tier: 'statistical', status: 'testing', target_n: 400, n: 3, entries: 9, edge_cents: 2.3, ci_cents: [0.51, 4.08], capacity_usd_day: null, evidence: 'holdout pass' },
+  ],
+}
+
+export const MOCK_LEDGERS: ResearchLedgersDTO = {
+  available: true, ts: 1793900000,
+  note: 'Paper and research ledgers only; no real orders.',
+  ledgers: [
+    { id: 'ARB', name: 'Real-time arbitrage (taker, structural, $52.74 tier)', status: 'PAPER (log + paper fills)', n: 16, target: 100,
+      ev_per_dollar: -0.0103, ci: [-0.0743, 0.0023], pnl: -0.84, unit: 'per $', note: '671 opportunities logged' },
+    { id: 'E-REWARDS-v2', name: 'Liquidity rewards (maker, 40 markets)', status: 'FORWARD PAPER (pre-registered)', n: 159, target: 300,
+      ev_per_dollar: 0.00002, ci: [-0.0031, 0.0024], pnl: 0.31, unit: 'per $ of quoted capital per market-day', note: 'verdict at n' },
+    { id: 'E-WX', name: 'Weather vs NWS / ECMWF (maker)', status: 'NOT STARTED', n: 0, target: 300,
+      ev_per_dollar: null, ci: null, pnl: null, unit: 'per $', note: 'item 6' },
   ],
 }
