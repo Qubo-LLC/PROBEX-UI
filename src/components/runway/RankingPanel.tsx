@@ -71,6 +71,8 @@ export function splitRanking(data: RankingDTO, tab: 'active' | 'retired'): Ranki
   return { ...data, candidates: data.candidates.filter((c) => (tab === 'retired') === (c.status === 'retired')) }
 }
 
+const GROUP_ORDER: Record<string, number> = { crypto: 0, arbitrage: 1, events: 2 }   // crypto first (operator, 6 Nov)
+
 const pct = (x: number | null | undefined) => (x === null || x === undefined ? '—' : `${x >= 0 ? '+' : ''}${(100 * x).toFixed(2)}%`)
 
 export function LedgersTable({ data }: { data: ResearchLedgersDTO }) {
@@ -79,18 +81,20 @@ export function LedgersTable({ data }: { data: ResearchLedgersDTO }) {
       <table className="w-full text-sm" aria-label="Research ledgers">
         <thead>
           <tr className="t-label text-left">
-            <th className="py-1 pr-3">Ledger</th><th className="py-1 pr-3">Status</th><th className="py-1 pr-3 text-right">n / target</th>
-            <th className="py-1 pr-3 text-right">Profit per $</th><th className="py-1 pr-3">95% CI</th><th className="py-1">Note</th>
+            <th className="py-1 pr-3">Ledger</th><th className="py-1 pr-3">Group</th><th className="py-1 pr-3">Status</th><th className="py-1 pr-3 text-right">n / target</th>
+            <th className="py-1 pr-3 text-right">Profit per $</th><th className="py-1 pr-3">95% CI</th><th className="py-1 pr-3 text-right">Fill rate</th><th className="py-1">Note</th>
           </tr>
         </thead>
         <tbody>
-          {data.ledgers.map((l) => (
+          {[...data.ledgers].sort((a, b) => (GROUP_ORDER[a.group ?? 'events'] ?? 2) - (GROUP_ORDER[b.group ?? 'events'] ?? 2)).map((l) => (
             <tr key={l.id} data-testid="ledger-row">
               <td className="py-1 pr-3" title={l.name}>{l.id}</td>
+              <td className="py-1 pr-3">{l.group ?? 'events'}</td>
               <td className="py-1 pr-3">{l.status}</td>
               <td className="py-1 pr-3 text-right">{l.n} / {l.target}</td>
               <td className="py-1 pr-3 text-right" title={l.unit}>{pct(l.ev_per_dollar)}</td>
               <td className="py-1 pr-3">{l.ci && l.ci[0] !== null ? `[${pct(l.ci[0])}, ${pct(l.ci[1])}]` : '—'}</td>
+              <td className="py-1 pr-3 text-right">{l.fill_rate === null || l.fill_rate === undefined ? '—' : `${(100 * l.fill_rate).toFixed(0)}%`}</td>
               <td className="py-1 max-w-[28rem]">{l.note}</td>
             </tr>
           ))}

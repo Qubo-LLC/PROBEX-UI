@@ -123,6 +123,8 @@ export const MOCK_LEDGERS: ResearchLedgersDTO = {
   available: true, ts: 1793900000,
   note: 'Paper and research ledgers only; no real orders.',
   ledgers: [
+    { id: 'C-PAIR', name: 'Up/Down pair as maker legs (passive replay)', status: 'RESEARCH (not trading): replay', n: 120, target: 300,
+      ev_per_dollar: -0.012, ci: [-0.02, -0.004], pnl: -3.1, unit: 'per $', note: 'replay', fill_rate: 0.72, group: 'crypto' },
     { id: 'ARB', name: 'Real-time arbitrage (taker, structural, $52.74 tier)', status: 'PAPER (log + paper fills)', n: 16, target: 100,
       ev_per_dollar: -0.0103, ci: [-0.0743, 0.0023], pnl: -0.84, unit: 'per $', note: '671 opportunities logged' },
     { id: 'E-REWARDS-v2', name: 'Liquidity rewards (maker, 40 markets)', status: 'FORWARD PAPER (pre-registered)', n: 159, target: 300,

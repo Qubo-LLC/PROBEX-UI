@@ -284,5 +284,6 @@ export interface RankingDTO { updated: string; rules: string; candidates: Rankin
 export interface ResearchLedgerDTO {
   id: string; name: string; status: string; n: number; target: number
   ev_per_dollar: number | null; ci: [number | null, number | null] | null; pnl: number | null; unit: string; note: string
+  fill_rate?: number | null; group?: 'crypto' | 'arbitrage' | 'events'
 }
 export interface ResearchLedgersDTO { available: boolean; ts?: number; note?: string; ledgers: ResearchLedgerDTO[] }

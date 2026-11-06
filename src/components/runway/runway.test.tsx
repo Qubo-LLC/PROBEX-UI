@@ -149,10 +149,13 @@ describe('Ranking split and research ledgers (v7.8)', () => {
   it('shows each ledger with n vs target and profit per $ with its CI', () => {
     render(<LedgersTable data={MOCK_LEDGERS} />)
     const rows = screen.getAllByTestId('ledger-row')
-    expect(rows[0]!.textContent).toContain('16 / 100')
-    expect(rows[0]!.textContent).toContain('-1.03%')
-    expect(rows[0]!.textContent).toContain('[-7.43%, +0.23%]')
-    expect(rows[2]!.textContent).toContain('NOT STARTED')
+    expect(rows[0]!.textContent).toContain('C-PAIR')                 // crypto candidates first
+    expect(rows[0]!.textContent).toContain('research (not trading)'.toUpperCase().slice(0, 8))
+    expect(rows[0]!.textContent).toContain('72%')
+    expect(rows[1]!.textContent).toContain('16 / 100')
+    expect(rows[1]!.textContent).toContain('-1.03%')
+    expect(rows[1]!.textContent).toContain('[-7.43%, +0.23%]')
+    expect(rows[3]!.textContent).toContain('NOT STARTED')
   })
 })
 
