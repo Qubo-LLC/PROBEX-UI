@@ -286,4 +286,14 @@ export interface ResearchLedgerDTO {
   ev_per_dollar: number | null; ci: [number | null, number | null] | null; pnl: number | null; unit: string; note: string
   fill_rate?: number | null; group?: 'crypto' | 'arbitrage' | 'events'
 }
+// ─── /api/recommendations/gate (operator 7 Nov item 3c): one record per booked or rejected signal ───
+export interface GateRecordDTO {
+  ts: number; sleeve_id: string; strategy_id: string; market_id: string; question: string; side: string
+  p_lcb: number | null; price: number | null; price_plus_fee: number | null; net_edge: number | null
+  decision: 'book' | 'reject'; reason: string
+}
+export interface GateDTO {
+  records: GateRecordDTO[]
+  summary_24h: Record<string, { signals: number; booked: number; rejected: number; rejected_share: number | null; reasons: Record<string, number> }>
+}
 export interface ResearchLedgersDTO { available: boolean; ts?: number; note?: string; ledgers: ResearchLedgerDTO[] }

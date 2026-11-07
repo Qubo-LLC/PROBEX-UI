@@ -21,7 +21,7 @@ import { engineWrite } from '@/lib/api/engineWrite'
 import { toLedgerPage } from '@/lib/mappers/ledger'
 import type { LedgerPage, LedgerPageDTO, LedgerPageQuery } from '@/types/ledger'
 import { toEventsPositions, toRunway, toRunwayLive } from './runwayDto'
-import type { EventsPositions, EventsPositionsDTO, RankingDTO, ResearchLedgersDTO, ShadowDTO, GlobalHalt, GlobalHaltDTO, Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
+import type { EventsPositions, EventsPositionsDTO, GateDTO, RankingDTO, ResearchLedgersDTO, ShadowDTO, GlobalHalt, GlobalHaltDTO, Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
 import { ENDPOINTS, endpointPath, endpointPathWith } from '@/lib/api/endpoints'
 import type {
   EngineHealthDTO, EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
@@ -208,6 +208,10 @@ export class LiveEngineService implements IEngineService {
 
   async getRanking(signal?: AbortSignal): Promise<ApiResult<RankingDTO>> {
     return ok(await apiGet<RankingDTO>(endpointPath(ENDPOINTS.runway.ranking), undefined, signal))
+  }
+
+  async getGateRecords(signal?: AbortSignal): Promise<ApiResult<GateDTO>> {
+    return ok(await apiGet<GateDTO>(endpointPath(ENDPOINTS.runway.gateRecords), { limit: 500 }, signal))
   }
 
   async getResearchLedgers(signal?: AbortSignal): Promise<ApiResult<ResearchLedgersDTO>> {

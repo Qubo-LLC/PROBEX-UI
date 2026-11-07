@@ -137,6 +137,18 @@ describe('ShadowLiveView', () => {
   })
 })
 
+describe('Gate record next to each position (operator 7 Nov item 3c)', () => {
+  it('shows the decision, reason and net edge for the position\'s market', () => {
+    const pos = MOCK_EVENTS_POSITIONS.positions[0]!
+    const rec = { ts: 1, sleeve_id: 'EVENTS', strategy_id: 'e_cal', market_id: pos.marketId, question: '', side: 'YES',
+      p_lcb: 0.5, price: 0.4, price_plus_fee: 0.41, net_edge: 0.09, decision: 'reject' as const, reason: 'strategy_side_bucket_not_passed' }
+    render(<EventsPositionsTable data={MOCK_EVENTS_POSITIONS} gate={{ [pos.marketId]: rec }} />)
+    const cell = screen.getAllByTestId('gate-cell')[0]!
+    expect(cell.textContent).toContain('reject: strategy side bucket not passed')
+    expect(cell.textContent).toContain('net +9.00¢')
+  })
+})
+
 describe('Ranking split and research ledgers (v7.8)', () => {
   it('keeps retired strategies out of the active view and lists them in the retired tab', () => {
     const active = splitRanking(MOCK_RANKING, 'active').candidates

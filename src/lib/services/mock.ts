@@ -37,7 +37,7 @@ import type {
   MarketsSummary, MarketPriceHistory, MarketDetail, MutationResult,
 } from '@/types/engine'
 
-import type { EventsPositions, GlobalHalt, RankingDTO, ResearchLedgersDTO, Runway, RunwayLive, ShadowDTO } from '@/types/runway'
+import type { EventsPositions, GlobalHalt, GateDTO, RankingDTO, ResearchLedgersDTO, Runway, RunwayLive, ShadowDTO } from '@/types/runway'
 import { MOCK_EVENTS_POSITIONS, MOCK_LEDGERS, MOCK_RANKING, MOCK_RUNWAY, MOCK_RUNWAY_LIVE, MOCK_SHADOW } from '@/mock/runway'
 
 class MockEngineService implements IEngineService {
@@ -98,6 +98,7 @@ class MockEngineService implements IEngineService {
   async getShadow():          Promise<ApiResult<ShadowDTO>>       { return ok(MOCK_SHADOW) }
   async getRanking():         Promise<ApiResult<RankingDTO>>      { return ok(MOCK_RANKING) }
   async getResearchLedgers(): Promise<ApiResult<ResearchLedgersDTO>> { return ok(MOCK_LEDGERS) }
+  async getGateRecords():     Promise<ApiResult<GateDTO>>         { return ok({ records: [], summary_24h: {} }) }
 
   async getPositionsHistory():     Promise<ApiResult<PositionsHistory>>     { return ok(MOCK_POSITIONS_HISTORY) }
   async getSurvivalPatterns():     Promise<ApiResult<SurvivalPatterns>>     { return ok(MOCK_SURVIVAL_PATTERNS) }

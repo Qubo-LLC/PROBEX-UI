@@ -211,6 +211,11 @@ export function useEngineRanking(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getRanking(signal), () => null, [], refreshMs)
 }
 
+/** /api/recommendations/gate — the latest gate decision per market (v7.8 item 3c). */
+export function useGateRecords(refreshMs?: number) {
+  return useServiceQuery((signal) => services.engine.getGateRecords(signal), () => null, [], refreshMs)
+}
+
 /** /api/research/ledgers — active candidates' research and paper ledgers (v7.8 item 3). */
 export function useResearchLedgers(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getResearchLedgers(signal), () => null, [], refreshMs)

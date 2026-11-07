@@ -5,7 +5,8 @@
 // link, strategy, side, entry, size, cost, the current market price (Gamma), the
 // unrealized PnL (open) or realized PnL (settled), and the resolution date.
 
-import { useEngineEventsPositions } from '@/config/hooks/useServices'
+import { useEngineEventsPositions, useGateRecords } from '@/config/hooks/useServices'
+import type { GateRecordDTO } from '@/types/runway'
 import { formatCurrency } from '@/lib/utils'
 import type { EventsPositions } from '@/types/runway'
 
@@ -17,7 +18,14 @@ function pnl(v: number | null) {
   return <span className={cls}>{v >= 0 ? '+' : '−'}{formatCurrency(Math.abs(v))}</span>
 }
 
-export function EventsPositionsTable({ data }: { data: EventsPositions }) {
+/** The gate's decision for a position's market: booked or rejected, the deciding reason and the net edge at p_lcb. */
+function gateCell(r: GateRecordDTO | undefined) {
+  if (!r) return '—'
+  const net = r.net_edge === null ? '' : ` · net ${r.net_edge >= 0 ? '+' : ''}${(100 * r.net_edge).toFixed(2)}¢`
+  return `${r.decision}: ${r.reason.replace(/_/g, ' ')}${net}`
+}
+
+export function EventsPositionsTable({ data, gate = {} }: { data: EventsPositions; gate?: Record<string, GateRecordDTO> }) {
   return (
     <>
       <p className="t-description mb-2" data-testid="events-positions-summary">
@@ -32,7 +40,7 @@ export function EventsPositionsTable({ data }: { data: EventsPositions }) {
               <th className="py-1 pr-3">Market</th><th className="py-1 pr-3">Strategy</th><th className="py-1 pr-3">Side</th>
               <th className="py-1 pr-3 text-right">Entry</th><th className="py-1 pr-3 text-right">Size</th>
               <th className="py-1 pr-3 text-right">Cost</th><th className="py-1 pr-3 text-right">Price now</th>
-              <th className="py-1 pr-3 text-right">PnL</th><th className="py-1 pr-3">Resolves (UTC)</th><th className="py-1">Status</th>
+              <th className="py-1 pr-3 text-right">PnL</th><th className="py-1 pr-3">Resolves (UTC)</th><th className="py-1 pr-3">Status</th><th className="py-1">Gate (recommendation)</th>
             </tr>
           </thead>
           <tbody>
@@ -51,7 +59,8 @@ export function EventsPositionsTable({ data }: { data: EventsPositions }) {
                 <td className="py-1 pr-3 text-right">{p.currentPrice === null ? '—' : p.currentPrice.toFixed(3)}</td>
                 <td className="py-1 pr-3 text-right">{pnl(p.status === 'open' ? p.unrealizedPnl : p.realizedPnl)}</td>
                 <td className="py-1 pr-3">{p.resolutionDate ? p.resolutionDate.slice(0, 10) : '—'}</td>
-                <td className="py-1">{p.status === 'open' ? 'open' : `settled${p.outcome ? ` (${p.outcome})` : ''}`}</td>
+                <td className="py-1 pr-3">{p.status === 'open' ? 'open' : `settled${p.outcome ? ` (${p.outcome})` : ''}`}</td>
+                <td className="py-1 max-w-[18rem]" data-testid="gate-cell">{gateCell(gate[p.marketId])}</td>
               </tr>
             ))}
           </tbody>
@@ -65,6 +74,9 @@ export function EventsPositionsTable({ data }: { data: EventsPositions }) {
 export function EventsPositionsPanel() {
   const slice = useEngineEventsPositions(60_000)
   const data = slice.status === 'success' ? slice.data : null
+  const gs = useGateRecords(120_000)
+  const gate: Record<string, GateRecordDTO> = {}
+  if (gs.status === 'success' && gs.data) for (const r of gs.data.records) if (r.sleeve_id === 'EVENTS') gate[r.market_id] ??= r
   return (
     <section aria-labelledby="events-positions" className="mt-6" data-testid="events-positions-panel">
       <div className="flex items-baseline justify-between gap-3 mb-2">
@@ -78,7 +90,7 @@ export function EventsPositionsPanel() {
       ) : data.positions.length === 0 ? (
         <p className="t-description">No EVENTS positions in this epoch.</p>
       ) : (
-        <EventsPositionsTable data={data} />
+        <EventsPositionsTable data={data} gate={gate} />
       )}
     </section>
   )
