@@ -24,7 +24,7 @@ const DATA: AlphaDTO = {
 
 describe('ALPHA sleeves', () => {
   it('shows the sleeve figures labelled paper, with win rate next to break-even', () => {
-    render(<AlphaSleeveCard id="ALPHA-EVENTS" s={DATA.sleeves['ALPHA-EVENTS']} />)
+    render(<AlphaSleeveCard id="ALPHA-EVENTS" s={DATA.sleeves['ALPHA-EVENTS']!} />)
     expect(screen.getByText('$101.90')).toBeTruthy()
     expect(screen.getByText('100.0% vs 62.0%')).toBeTruthy()
     expect(screen.getByText('paper')).toBeTruthy()
