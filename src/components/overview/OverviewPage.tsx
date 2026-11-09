@@ -66,6 +66,7 @@
 // a ruled block, so the sequence down the field is card → rule → table.
 
 import { useMemo } from 'react'
+import { AlphaSleevesPanel } from '@/components/runway/AlphaSleevesPanel'
 import { useApplicationStore } from '@/store/applicationStore'
 import { parseMarketRows } from '@/lib/mappers/markets'
 import { MarketArc } from './MarketArc'
@@ -158,6 +159,9 @@ export function OverviewPage() {
              detail is deliberately NOT repeated here — RunwayGroup already
              states it, and restating it was adding a page, not simplifying
              one. */}
+      {/* ALPHA paper sleeves (scope v8.8 §5.7): the default view of what the engine trades on paper now */}
+      <AlphaSleevesPanel />
+
       <FinancialSummary />
 
       {/* The runway reads the engine's sleeve ledgers only (/api/runway). The

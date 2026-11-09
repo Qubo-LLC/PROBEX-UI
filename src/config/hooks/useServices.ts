@@ -211,6 +211,16 @@ export function useEngineRanking(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getRanking(signal), () => null, [], refreshMs)
 }
 
+/** /api/alpha — the ALPHA paper sleeves (scope v8.8 §5.7). */
+export function useAlpha(refreshMs?: number) {
+  return useServiceQuery((signal) => services.engine.getAlpha(signal), () => null, [], refreshMs)
+}
+
+/** /api/sleeves/archive — closed sleeve epochs (Archived tab). */
+export function useSleeveArchive(refreshMs?: number) {
+  return useServiceQuery((signal) => services.engine.getSleeveArchive(signal), () => null, [], refreshMs)
+}
+
 /** /api/research/scanner — the universal edge scanner's latest run (v8.4 §5.5). */
 export function useEdgeScanner(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getEdgeScanner(signal), () => null, [], refreshMs)

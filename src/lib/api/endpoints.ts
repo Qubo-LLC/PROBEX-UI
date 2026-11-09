@@ -115,6 +115,8 @@ export const ENDPOINTS = {
     portfolioSummary: def('GET', '/sleeves/portfolio/summary',  'confirmed', 'Combined sleeve summary (simulated)', 'Sleeve Portfolio Summary'),
     eventsPositions:  def('GET', '/sleeves/events/positions',   'confirmed', 'EVENTS positions: market, side, entry, price, PnL, resolution (paper)', 'Events Positions'),
     shadow:           def('GET', '/shadow',                     'confirmed', 'Shadow-live accounts: equity, trades, skipped signals (never sent)', 'Shadow Live'),
+    alpha:            def('GET', '/alpha',                      'confirmed', 'ALPHA paper sleeves: equity, P&L with CI, per-source results, open positions', 'ALPHA Sleeves'),
+    sleeveArchive:    def('GET', '/sleeves/archive',            'confirmed', 'Closed sleeve epochs and their moved positions (Archived tab)', 'Archived Epochs'),
     edgeScanner:      def('GET', '/research/scanner',           'confirmed', 'Universal edge scanner: rows per source and the top rows by net edge', 'Edge Scanner'),
     gateRecords:      def('GET', '/recommendations/gate',       'confirmed', 'Recommendation gate: latest decision per market and rejection shares', 'Recommendation Gate'),
     researchLedgers:  def('GET', '/research/ledgers',           'confirmed', 'Active candidates: research and paper ledgers, profit per $ with CI', 'Research Ledgers'),

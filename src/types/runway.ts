@@ -305,4 +305,31 @@ export interface ScannerDTO {
   available: boolean; ts?: number; rows?: number; markets?: number
   by_source?: Record<string, number>; positive?: Record<string, number>; top: ScannerRowDTO[]
 }
+export interface AlphaPositionDTO {
+  market: string; question?: string | null; side: string; exec?: string; source: string; entry: number; shares: number
+  p_adj: number; p_lcb: number; mark?: number | null; end?: number | null
+}
+export interface AlphaSleeveDTO {
+  equity?: number; cash?: number; allocation?: number; hwm?: number; realized_pnl?: number; unrealized_pnl?: number
+  open_positions?: number; open_orders?: number; settled?: number; target_n?: number
+  pnl_total_ci?: (number | null)[]; pnl_per_usd_ci?: (number | null)[]; win_rate?: number | null; break_even?: number | null
+  clv_mean?: number | null; brier?: number | null; brier_mid?: number | null; halted?: boolean
+  by_source?: Record<string, { n: number; pnl: number; pnl_per_usd: number; win_rate: number }>
+  positions?: AlphaPositionDTO[]
+  orders?: { market: string; question?: string | null; side: string; bid: number; source: string; posted: number }[]
+  // ARB
+  fills?: number; plan_profit_locked?: number; capital_locked?: number; note?: string
+}
+export interface AlphaDTO {
+  available: boolean; ts?: number; label?: string; prereg_sha256?: string; started_at?: number
+  sleeves: Record<string, AlphaSleeveDTO>; paused?: string[][]
+  calibration?: Record<string, { w: number; n_settled: number }>
+}
+export interface ArchivedEpochDTO {
+  sleeve_id: string; epoch: number; archived_at: string; reason: string
+  final: { realized_pnl?: number; equity?: number; state?: string; moved_open_positions?: number; counts?: Record<string, number> }
+  moved_positions: { market_id: string; direction: string; shares: number; price: number; status: string; pnl?: number }[]
+  moved_settled_pnl: number
+}
+export interface SleeveArchiveDTO { archived: ArchivedEpochDTO[]; label?: string }
 export interface ResearchLedgersDTO { available: boolean; ts?: number; note?: string; ledgers: ResearchLedgerDTO[] }

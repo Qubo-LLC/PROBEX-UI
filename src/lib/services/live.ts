@@ -21,7 +21,7 @@ import { engineWrite } from '@/lib/api/engineWrite'
 import { toLedgerPage } from '@/lib/mappers/ledger'
 import type { LedgerPage, LedgerPageDTO, LedgerPageQuery } from '@/types/ledger'
 import { toEventsPositions, toRunway, toRunwayLive } from './runwayDto'
-import type { EventsPositions, EventsPositionsDTO, GateDTO, RankingDTO, ScannerDTO, ResearchLedgersDTO, ShadowDTO, GlobalHalt, GlobalHaltDTO, Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
+import type { EventsPositions, EventsPositionsDTO, GateDTO, RankingDTO, ScannerDTO, AlphaDTO, SleeveArchiveDTO, ResearchLedgersDTO, ShadowDTO, GlobalHalt, GlobalHaltDTO, Runway, RunwayDTO, RunwayLive, RunwayLiveDTO } from '@/types/runway'
 import { ENDPOINTS, endpointPath, endpointPathWith } from '@/lib/api/endpoints'
 import type {
   EngineHealthDTO, EngineRuntimeDTO, EngineStatsDTO, EngineConfigDTO, SurvivalDTO, PriceHistoryDTO,
@@ -208,6 +208,14 @@ export class LiveEngineService implements IEngineService {
 
   async getRanking(signal?: AbortSignal): Promise<ApiResult<RankingDTO>> {
     return ok(await apiGet<RankingDTO>(endpointPath(ENDPOINTS.runway.ranking), undefined, signal))
+  }
+
+  async getAlpha(signal?: AbortSignal): Promise<ApiResult<AlphaDTO>> {
+    return ok(await apiGet<AlphaDTO>(endpointPath(ENDPOINTS.runway.alpha), undefined, signal))
+  }
+
+  async getSleeveArchive(signal?: AbortSignal): Promise<ApiResult<SleeveArchiveDTO>> {
+    return ok(await apiGet<SleeveArchiveDTO>(endpointPath(ENDPOINTS.runway.sleeveArchive), undefined, signal))
   }
 
   async getEdgeScanner(signal?: AbortSignal): Promise<ApiResult<ScannerDTO>> {
