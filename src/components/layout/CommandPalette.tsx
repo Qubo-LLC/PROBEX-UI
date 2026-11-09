@@ -21,6 +21,7 @@ const COMMANDS: Cmd[] = [
   { label: 'Wallet',     href: ROUTES.WALLET,    group: 'Trading' },
   { label: 'Strategy',   href: ROUTES.STRATEGY,  group: 'Trading' },
   { label: 'Edge scanner', href: ROUTES.SCANNER, group: 'Insights' },
+  { label: 'Strategy Book', href: ROUTES.BOOK, group: 'Insights' },
   { label: 'Execution',  href: ROUTES.EXECUTION, group: 'Trading' },
   { label: 'Paper Trading', href: ROUTES.PAPER,  group: 'Trading' },
   { label: 'Analytics',  href: ROUTES.ANALYTICS, group: 'Insights' },
