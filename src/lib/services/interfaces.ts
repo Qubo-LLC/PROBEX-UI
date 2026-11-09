@@ -20,7 +20,7 @@ import type {
   SystemMetrics, TradesLedger, ExecutionOrders,
   MarketsSummary, MarketPriceHistory, MarketDetail, MutationResult,
 } from '@/types/engine'
-import type { EventsPositions, GlobalHalt, GateDTO, RankingDTO, ResearchLedgersDTO, Runway, RunwayLive, ShadowDTO } from '@/types/runway'
+import type { EventsPositions, GlobalHalt, GateDTO, RankingDTO, ScannerDTO, ResearchLedgersDTO, Runway, RunwayLive, ShadowDTO } from '@/types/runway'
 
 import type {
   MathLayersStatus, MathRecommendationsEnvelope, KalmanLayer,
@@ -81,6 +81,7 @@ export interface IEngineService {
   getRanking(signal?: AbortSignal): Promise<ApiResult<RankingDTO>>
   getResearchLedgers(signal?: AbortSignal): Promise<ApiResult<ResearchLedgersDTO>>
   getGateRecords(signal?: AbortSignal): Promise<ApiResult<GateDTO>>
+  getEdgeScanner(signal?: AbortSignal): Promise<ApiResult<ScannerDTO>>
 
   // ── Phase 3 (2026-07-22 redeploy) — 20 newly-live endpoints ────────────────
   getPositionsHistory(limit?: number, direction?: 'YES' | 'NO', signal?: AbortSignal): Promise<ApiResult<PositionsHistory>>

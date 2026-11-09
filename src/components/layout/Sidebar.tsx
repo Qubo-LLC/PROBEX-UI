@@ -123,6 +123,11 @@ export function Sidebar() {
             label="Strategy"
           />
           <SidebarItem
+            href={ROUTES.SCANNER}
+            icon={<Icons.Analytics />}
+            label="Edge scanner"
+          />
+          <SidebarItem
             href={ROUTES.ANALYTICS}
             icon={<Icons.Analytics />}
             label="Analytics"

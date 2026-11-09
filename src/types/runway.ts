@@ -296,4 +296,13 @@ export interface GateDTO {
   records: GateRecordDTO[]
   summary_24h: Record<string, { signals: number; booked: number; rejected: number; rejected_share: number | null; reasons: Record<string, number> }>
 }
+// ─── /api/research/scanner (v8.4 §5.5): universal edge scanner, research ledger ───
+export interface ScannerRowDTO {
+  market: string; question: string; side: 'YES' | 'NO'; source: string; p: number; p_lcb: number
+  taker_net: number | null; maker_net: number | null; exec: string; net: number | null; gate?: string; gate_reason?: string
+}
+export interface ScannerDTO {
+  available: boolean; ts?: number; rows?: number; markets?: number
+  by_source?: Record<string, number>; positive?: Record<string, number>; top: ScannerRowDTO[]
+}
 export interface ResearchLedgersDTO { available: boolean; ts?: number; note?: string; ledgers: ResearchLedgerDTO[] }

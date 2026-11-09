@@ -150,6 +150,7 @@ export const ROUTES = {
   HOME:       '/',
   LIVE:       '/live',
   STRATEGY:   '/strategy',
+  SCANNER:    '/scanner',
   POSITIONS:  '/positions',
   // Trade ledger — placement provisional pending the owner IA decision (spec §14).
   LEDGER:     '/ledger',

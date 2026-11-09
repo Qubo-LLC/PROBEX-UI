@@ -16,6 +16,7 @@ import { ActivityList } from './ActivityList'
 import { CurrentWindowPanel } from './CurrentWindowPanel'
 import { mergeCurves } from './EquityCurves'
 import { EventsPositionsTable } from './EventsPositionsPanel'
+import { EdgeScannerTable } from './EdgeScannerPanel'
 import { ShadowLiveView } from './ShadowLivePanel'
 import { LedgersTable, RankingTable, splitRanking } from './RankingPanel'
 
@@ -134,6 +135,20 @@ describe('ShadowLiveView', () => {
     expect(screen.getByTestId('shadow-SHADOW_LIVE_AGGR').textContent).toContain('Aggressive')
     expect(screen.getAllByTestId('shadow-skips')[0]!.textContent).toContain('min_size_edge_too_small: 4')
     expect(screen.getAllByTestId('shadow-equity')[1]!.textContent).toContain('53.6')
+  })
+})
+
+describe('Edge scanner (v8.4 §5.5)', () => {
+  it('lists rows with source, taker and maker net edge, execution type and the gate decision', () => {
+    render(<EdgeScannerTable data={{ available: true, ts: 1, markets: 2, by_source: { coherence: 2, mid: 2 }, positive: { coherence: 1 },
+      top: [{ market: 'm1', question: 'Q1', side: 'YES', source: 'coherence', p: 0.62, p_lcb: 0.587, taker_net: -0.013,
+              maker_net: 0.017, exec: 'maker', net: 0.017, gate: 'reject', gate_reason: 'strategy_side_bucket_not_passed' }] }} />)
+    const row = screen.getAllByTestId('scanner-row')[0]!
+    expect(row.textContent).toContain('coherence')
+    expect(row.textContent).toContain('+1.70¢')
+    expect(row.textContent).toContain('maker')
+    expect(row.textContent).toContain('reject: strategy side bucket not passed')
+    expect(screen.getByTestId('scanner-sources').textContent).toContain('coherence 2')
   })
 })
 

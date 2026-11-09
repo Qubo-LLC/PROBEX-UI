@@ -211,6 +211,11 @@ export function useEngineRanking(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getRanking(signal), () => null, [], refreshMs)
 }
 
+/** /api/research/scanner — the universal edge scanner's latest run (v8.4 §5.5). */
+export function useEdgeScanner(refreshMs?: number) {
+  return useServiceQuery((signal) => services.engine.getEdgeScanner(signal), () => null, [], refreshMs)
+}
+
 /** /api/recommendations/gate — the latest gate decision per market (v7.8 item 3c). */
 export function useGateRecords(refreshMs?: number) {
   return useServiceQuery((signal) => services.engine.getGateRecords(signal), () => null, [], refreshMs)
