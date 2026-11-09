@@ -103,7 +103,7 @@ describe('engine tokens', () => {
 
 describe('the engine-write allowlist', () => {
   it.each(['execution/emergency-stop', 'execution/create', 'execution/close/0xabc', 'execution/cancel/o-1',
-           'paper/start', 'paper/stop', 'paper/resolve', 'sleeves/global-halt/clear'])('allows %s', (p) => {
+           'paper/start', 'paper/stop', 'paper/resolve', 'sleeves/global-halt/clear', 'operator/probability'])('allows %s', (p) => {
     expect(allowedEnginePath(p)).toBe(true)
   })
   it.each(['paper/reset', 'config', 'execution/close/../../x', 'sleeves/global-halt', ''])('refuses %s', (p) => {
