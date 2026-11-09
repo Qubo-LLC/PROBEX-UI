@@ -1,4 +1,4 @@
-import { EdgeScannerPanel } from '@/components/runway/EdgeScannerPanel'
+import { EdgeScannerPanel, OperatorProbabilityForm } from '@/components/runway/EdgeScannerPanel'
 
 // Universal edge scanner (master scope v8.4 §5.5): research ledger, read-only, never books.
 export default function ScannerPage() {
@@ -10,6 +10,8 @@ export default function ScannerPage() {
         Research (not trading): rows book into a sleeve only through the recommendation gate.
       </p>
       <EdgeScannerPanel />
+      <h2 className="t-section-title mt-6">Your probability (a tracked p-source)</h2>
+      <OperatorProbabilityForm />
     </main>
   )
 }

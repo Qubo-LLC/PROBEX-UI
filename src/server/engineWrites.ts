@@ -8,6 +8,7 @@ export const ENGINE_WRITES: RegExp[] = [
   /^execution\/cancel\/[A-Za-z0-9_.:-]{1,128}$/,
   /^paper\/(start|stop|resolve)$/,
   /^sleeves\/global-halt\/clear$/,
+  /^operator\/probability$/,              // v8.4 §5.6: the operator's own probability (a scanner p-source)
 ]
 
 export function allowedEnginePath(path: string): boolean {

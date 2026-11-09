@@ -3,6 +3,9 @@
 // Universal edge scanner (v8.4 §5.5) from /api/research/scanner: rows per source, and the top rows by net edge with
 // their execution type (taker or maker) and the recommendation gate's decision. Research (not trading).
 
+import { useState } from 'react'
+
+import { engineWrite } from '@/lib/api/engineWrite'
 import { useEdgeScanner } from '@/config/hooks/useServices'
 import type { ScannerDTO } from '@/types/runway'
 
@@ -60,5 +63,35 @@ export function EdgeScannerPanel() {
         <p className="t-description">{slice.status === 'error' ? 'The engine did not answer /api/research/scanner.' : 'Loading…'}</p>
       ) : !data.available ? <p className="t-description">No scanner run published yet.</p> : <EdgeScannerTable data={data} />}
     </section>
+  )
+}
+
+/** Operator input (v8.4 §5.6): log your own probability for a market's side; the scanner tracks it as a p-source.
+ *  Signed write through the dashboard's server route; never books or sizes anything. */
+export function OperatorProbabilityForm() {
+  const [marketId, setMarketId] = useState('')
+  const [side, setSide] = useState<'YES' | 'NO'>('YES')
+  const [p, setP] = useState('')
+  const [msg, setMsg] = useState('')
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const v = Number(p)
+    if (!marketId.trim() || !(v > 0 && v < 1)) { setMsg('Enter a market id and a probability between 0 and 1.'); return }
+    try {
+      await engineWrite('/operator/probability', { market_id: marketId.trim(), side, p: v })
+      setMsg(`Recorded ${side} ${v} for market ${marketId.trim()}.`)
+      setP('')
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'write failed')
+    }
+  }
+  return (
+    <form onSubmit={submit} className="mt-6 flex flex-wrap items-end gap-2" aria-label="Operator probability" data-testid="operator-form">
+      <label className="t-label flex flex-col">Market id<input className="border px-2 py-1" value={marketId} onChange={(e) => setMarketId(e.target.value)} /></label>
+      <label className="t-label flex flex-col">Side<select className="border px-2 py-1" value={side} onChange={(e) => setSide(e.target.value as 'YES' | 'NO')}><option>YES</option><option>NO</option></select></label>
+      <label className="t-label flex flex-col">Your probability<input className="border px-2 py-1 w-24" value={p} onChange={(e) => setP(e.target.value)} placeholder="0.62" /></label>
+      <button type="submit" className="px-3 py-1 rounded bg-white/10">Log</button>
+      <span className="t-description" role="status">{msg}</span>
+    </form>
   )
 }
